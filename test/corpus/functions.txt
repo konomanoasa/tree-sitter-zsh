@@ -1,0 +1,1869 @@
+==================
+Multiple names share a function body
+==================
+f g() { print x; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal))
+                              argument: (word
+                                (literal)))))))))))))))))
+
+==================
+Modifier spellings remain function names before empty parentheses
+==================
+exec -a() { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))))))))))))
+
+==================
+Modifier spellings after the first name are plain function names
+==================
+print command -v () { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))))))))))))
+
+==================
+An anonymous function owns keyword spellings as invocation arguments
+==================
+() { :; } fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              argument: (word
+                (literal)))))))))
+
+==================
+A named keyword function retains only its header when its body is omitted
+==================
+function f
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal)))))))))
+
+==================
+An anonymous subshell body retains its invocation arguments
+==================
+() (:) arg
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (command
+                (complex_command
+                  (subshell
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal))))))))))
+              argument: (word
+                (literal)))))))))
+
+==================
+An anonymous simple body owns all of its command words and redirections
+==================
+() print BODY >out arg
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal))
+                  argument: (word
+                    (literal))
+                  (io_file
+                    (redirect_operator)
+                    filename: (word
+                      (literal)))
+                  argument: (word
+                    (literal)))))))))))
+
+==================
+An anonymous if body ends before its invocation arguments
+==================
+() if :; then :; fi arg
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (command
+                (complex_command
+                  (if_clause
+                    branch: (if_branch
+                      (if_keyword)
+                      condition: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal)))))))
+                      (then_keyword)
+                      body: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal))))))))
+                    (fi_keyword))))
+              argument: (word
+                (literal)))))))))
+
+==================
+A standalone anonymous function ends before an outer and operator
+==================
+() : && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal))))))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+A keyword anonymous function owns its short sublist body
+==================
+function () : && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))
+                (and_if)
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+Anonymous keyword options and empty parentheses do not create a function name
+==================
+function -T -- () { :; } fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              (function_option)
+              (function_option)
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              argument: (word
+                (literal)))))))))
+
+==================
+The option terminator permits a function name spelled like a tracing option
+==================
+function -- -T () { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              (function_option)
+              name: (word
+                (literal))
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))))))))))
+
+==================
+An anonymous keyword header permits comments and terminators before its body
+==================
+function # header
+; { :; } arg
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              separator: (term
+                (comment
+                  (comment_text)))
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              argument: (word
+                (literal)))))))))
+
+==================
+A keyword anonymous function retains a pipe in its short body
+==================
+function; : | :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal))))
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A standalone anonymous function retains an outer pipe
+==================
+() : | :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal)))))))
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+An anonymous keyword header retains its options and parentheses without a body
+==================
+function -T -- ()
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              (function_option)
+              (function_option))))))))
+
+==================
+Anonymous empty parentheses require a body
+:error
+==================
+()
+---
+
+==================
+A parentheses function owns redirections interspersed with its names
+==================
+f >out g() { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              name: (word
+                (literal))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))))))))))))
+
+==================
+A redirection target before parentheses does not become a function name
+==================
+f >g () :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal)))))))))))
+
+==================
+Header redirections retain their descriptors and order across function names
+==================
+f 2>&1 g {fd}>out () :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              (io_file
+                (io_number)
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              name: (word
+                (literal))
+              (io_file
+                (io_variable
+                  name: (variable_name))
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal)))))))))))
+
+==================
+A here document between function names retains its declaring newline sequence
+==================
+f <<E g () { cat; }
+DATA
+E
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              (io_here
+                (dless)
+                here_end: (word
+                  (literal)))
+              name: (word
+                (literal))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))))
+
+==================
+A here string between function names belongs to the definition
+==================
+f <<<DATA g () cat
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              (here_string
+                (here_string_operator)
+                value: (word
+                  (literal)))
+              name: (word
+                (literal))
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal)))))))))))
+
+==================
+A keyword function keeps a redirected inner function in its short body
+==================
+function f >out g () { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (function_definition
+                        (io_file
+                          (redirect_operator)
+                          filename: (word
+                            (literal)))
+                        name: (word
+                          (literal))
+                        body: (command
+                          (complex_command
+                            (brace_group
+                              body: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal))))))))))))))))))))))
+
+==================
+A separator before parentheses ends the redirected simple command
+==================
+f >out g; () { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (literal)))
+            argument: (word
+              (literal))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))))))))))
+
+==================
+A precommand spelling remains a function name across a header redirection
+==================
+exec -a >out g () :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              name: (word
+                (literal))
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal)))))))))))
+
+==================
+A redirected name list without parentheses cannot introduce a brace body
+:error
+==================
+f >out g { :; }
+---
+
+==================
+A redirected parentheses header still requires a body
+:error
+==================
+f >out g ()
+---
+
+==================
+Nocorrect modifies a named function without becoming a name
+==================
+nocorrect f () { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (precommand_modifier
+                name: (precommand_modifier_name))
+              name: (word
+                (literal))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))))))))))))
+
+==================
+Nocorrect before empty parentheses preserves an anonymous function
+==================
+nocorrect () { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (precommand_modifier
+                name: (precommand_modifier_name))
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))))))))))
+
+==================
+Repeated nocorrect modifiers preserve anonymous invocation arguments
+==================
+nocorrect nocorrect () { :; } arg
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (precommand_modifier
+                name: (precommand_modifier_name))
+              (precommand_modifier
+                name: (precommand_modifier_name))
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              argument: (word
+                (literal)))))))))
+
+==================
+Nocorrect modifiers interleave with redirections before a function name
+==================
+nocorrect >out nocorrect g () { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (precommand_modifier
+                name: (precommand_modifier_name))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              (precommand_modifier
+                name: (precommand_modifier_name))
+              name: (word
+                (literal))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))))))))))))
+
+==================
+Quoted nocorrect remains a function name
+==================
+"nocorrect" () { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (double_quoted
+                  (double_quote_text)))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))))))))))))
+
+==================
+Nocorrect cannot prefix a keyword function definition
+:error
+==================
+nocorrect function f { :; }
+---
+
+==================
+A colon without a preceding terminator remains a second function name
+==================
+function f :
+print BODY
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal))
+                      argument: (word
+                        (literal)))))))))))))
+
+==================
+A keyword function does not synthesize an empty body at EOF
+==================
+function f :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              name: (word
+                (literal)))))))))
+
+==================
+A redirection ends the keyword function names before a simple body
+==================
+function f g >out print BODY
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_file
+                        (redirect_operator)
+                        filename: (word
+                          (literal)))
+                      name: (word
+                        (literal))
+                      argument: (word
+                        (literal)))))))))))))
+
+==================
+A redirection alone is a keyword function body without an invented name
+==================
+function f >out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_file
+                        (redirect_operator)
+                        filename: (word
+                          (literal))))))))))))))
+
+==================
+A numeric descriptor begins the keyword function body
+==================
+function f 2>out :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_file
+                        (io_number)
+                        (redirect_operator)
+                        filename: (word
+                          (literal)))
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A variable descriptor spelling remains a name in a keyword function header
+==================
+function f {fd}>out :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              name: (word
+                (brace_expansion
+                  (literal)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_file
+                        (redirect_operator)
+                        filename: (word
+                          (literal)))
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A variable descriptor after the body command belongs to that simple command
+==================
+function f; : {fd}>out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal))
+                      (io_file
+                        (io_variable
+                          name: (variable_name))
+                        (redirect_operator)
+                        filename: (word
+                          (literal))))))))))))))
+
+==================
+A descriptor spelling at the start of the keyword function body forms a brace group
+==================
+function f; {fd}>out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              separator: (term)
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (io_file
+                  (redirect_operator)
+                  filename: (word
+                    (literal)))))))))))
+
+==================
+A keyword function brace body cannot precede another unseparated command
+:error
+==================
+function f; {fd}>out :
+---
+
+==================
+An anonymous keyword body can begin with a redirection
+==================
+function >out print BODY
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_file
+                        (redirect_operator)
+                        filename: (word
+                          (literal)))
+                      name: (word
+                        (literal))
+                      argument: (word
+                        (literal)))))))))))))
+
+==================
+A here document alone is a keyword body and retains its newline sequence
+==================
+function f <<E
+body
+E
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_here
+                        (dless)
+                        here_end: (word
+                          (literal))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))))
+
+==================
+A keyword body cannot end at an incomplete redirection
+:error
+==================
+function f >
+---
+
+==================
+A plus word remains a name in a bodyless keyword function
+==================
+function f +;
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              separator: (term))))))))
+
+==================
+An outer pipeline follows a bodyless keyword function
+==================
+function f| { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal)))))
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+Anonymous invocation redirections retain their order before between and after arguments
+==================
+() { :; } <input a 2>err b >out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              argument: (word
+                (literal))
+              (io_file
+                (io_number)
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              argument: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+Variable descriptor spellings remain invocation arguments across redirections
+==================
+() { :; } {first}>out a >other {second}>err b
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              argument: (word
+                (brace_expansion
+                  (literal)))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              argument: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              argument: (word
+                (brace_expansion
+                  (literal)))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              argument: (word
+                (literal)))))))))
+
+==================
+A here string between anonymous arguments belongs to the invocation
+==================
+() { :; } a <<<DATA b
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              argument: (word
+                (literal))
+              (here_string
+                (here_string_operator)
+                value: (word
+                  (literal)))
+              argument: (word
+                (literal)))))))))
+
+==================
+A here document between anonymous arguments retains its outer newline sequence
+==================
+() { :; } a <<E b
+DATA
+E
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              argument: (word
+                (literal))
+              (io_here
+                (dless)
+                here_end: (word
+                  (literal)))
+              argument: (word
+                (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))))
+
+==================
+Keyword anonymous arguments end before trailing invocation redirections
+==================
+function { :; } a {fd}>out 2>err
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              argument: (word
+                (literal))
+              argument: (word
+                (brace_expansion
+                  (literal)))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              (io_file
+                (io_number)
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+A keyword anonymous invocation can redirect without supplying arguments
+==================
+function () { :; } >out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+A keyword anonymous invocation cannot start arguments after a redirection
+:error
+==================
+function { :; } >out a
+---
+
+==================
+Empty parentheses do not allow keyword invocation arguments to resume after a redirection
+:error
+==================
+function () { :; } a >out b
+---
+
+==================
+A keyword invocation cannot bypass its argument boundary with a variable descriptor spelling
+:error
+==================
+function () { :; } a >out {fd}>err
+---
+
+==================
+An anonymous invocation redirection requires its target
+:error
+==================
+() { :; } a >
+---
+
+==================
+A bare function keyword omits both name and body
+==================
+function
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword))))))))
+
+==================
+A keyword function keeps every undelimited word as a name
+==================
+function f g h
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              name: (word
+                (literal)))))))))
+
+==================
+Parentheses and separated semicolons belong to the bodyless keyword header
+:cst
+==================
+function f () ; ;
+---
+0:0  - 0:17   program
+0:0  - 0:17     list
+0:0  - 0:17       sublist
+0:0  - 0:17         pipeline
+0:0  - 0:17           command
+0:0  - 0:17             complex_command
+0:0  - 0:17               function_definition
+0:0  - 0:8                  function_keyword `function`
+0:9  - 0:10                 name: word
+0:9  - 0:10                   literal `f`
+0:11 - 0:12                 "("
+0:12 - 0:13                 ")"
+0:14 - 0:17                 separator: term
+0:14 - 0:15                   ";"
+0:16 - 0:17                   ";"
+
+==================
+An enclosing fi follows the completed bodyless function header
+==================
+if :; then function f; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (function_definition
+                            (function_keyword)
+                            name: (word
+                              (literal))
+                            separator: (term))))))))
+              (fi_keyword))))))))
+
+==================
+A bodyless nested function remains the actual outer function body
+==================
+function f; function g
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (function_definition
+                        (function_keyword)
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+A logical operator remains outside a bodyless function
+==================
+function f && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+An asynchronous separator follows a bodyless keyword function
+==================
+function f & :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal)))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+A named parentheses function still requires a command body
+:error
+==================
+f()
+---
+
+
+==================
+A keyword function with an explicit subshell body needs its closer
+:error
+==================
+function f () ( :
+---
+
+
+==================
+A pipe after a bodyless function still requires its right command
+:error
+==================
+function f |
+---
+
+==================
+A keyword function owns its short sublist body
+==================
+function f; : && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))
+                (and_if)
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A parentheses function ends its short body after one command
+==================
+f() : && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal))))))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+A keyword function with a brace body leaves following sublist operators outside
+==================
+function f { :; } && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+A leading redirection keeps the brace command and pipe inside the keyword body
+==================
+function f >out { :; } | cat
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        (io_file
+                          (redirect_operator)
+                          filename: (word
+                            (literal)))
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal))))))))))
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A direct keyword brace body leaves the pipe outside the function
+==================
+function f { :; } | cat
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))))))
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+Parentheses retain a redirected brace command and and-operator in a short body
+==================
+function f() >out { :; } && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              name: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        (io_file
+                          (redirect_operator)
+                          filename: (word
+                            (literal)))
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal)))))))))))
+                (and_if)
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+An anonymous subshell keeps immediate redirections until invocation arguments begin
+==================
+() (:) >body a >outer b
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (command
+                (complex_command
+                  (subshell
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))
+                    (io_file
+                      (redirect_operator)
+                      filename: (word
+                        (literal))))))
+              argument: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              argument: (word
+                (literal)))))))))
+
+==================
+A keyword anonymous if body keeps immediate redirections before invocation arguments
+==================
+function () if :; then :; fi >body a >outer
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (function_keyword)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (if_clause
+                        branch: (if_branch
+                          (if_keyword)
+                          condition: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal)))))))
+                          (then_keyword)
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal))))))))
+                        (fi_keyword)
+                        (io_file
+                          (redirect_operator)
+                          filename: (word
+                            (literal))))))))
+              argument: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+A redirection before an anonymous brace body keeps it a short command body
+==================
+() >body { :; } a >outer b
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              body: (command
+                (complex_command
+                  (brace_group
+                    (io_file
+                      (redirect_operator)
+                      filename: (word
+                        (literal)))
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal))))))))))
+              argument: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              argument: (word
+                (literal)))))))))

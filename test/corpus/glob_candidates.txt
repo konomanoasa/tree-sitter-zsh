@@ -1,0 +1,211 @@
+==================
+Nested pattern parentheses and qualifier argument sources retain distinct ownership
+==================
+print *(e(ls)) *(e{ls}) *(e[ls])
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (pattern_star_source)
+              (pattern_group_source
+                (pattern_alternatives
+                  (pattern_alternative
+                    (literal)
+                    (pattern_group_source
+                      (pattern_alternatives
+                        (pattern_alternative
+                          (literal))))))))
+            argument: (word
+              (pattern_star_source)
+              (glob_qualifier_candidate
+                (glob_qualifier_list_candidate
+                  (glob_flag_candidate
+                    name: (glob_flag_name)
+                    argument: (glob_argument_candidate
+                      (glob_argument_source
+                        (brace_expansion
+                          (literal))))))))
+            argument: (word
+              (pattern_star_source)
+              (glob_qualifier_candidate
+                (glob_qualifier_list_candidate
+                  (glob_flag_candidate
+                    name: (glob_flag_name)
+                    argument: (glob_argument_candidate
+                      (glob_argument_delimiter)
+                      (glob_argument_source
+                        (glob_argument_text))
+                      (glob_argument_delimiter))))))))))))
+
+==================
+Bare and explicit qualifier lists keep commas and whole-result modifiers outside each list
+==================
+print *(W,X:t) *(#qW,X:t)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (pattern_star_source)
+              (glob_qualifier_candidate
+                (glob_qualifier_list_candidate
+                  (glob_flag_candidate name: (glob_flag_name)))
+                (glob_qualifier_separator)
+                (glob_qualifier_list_candidate
+                  (glob_flag_candidate name: (glob_flag_name)))
+                (glob_modifier_candidate
+                  (modifier_prefix)
+                  name: (modifier_name))))
+            argument: (word
+              (pattern_star_source)
+              (pattern_candidate
+                (pattern_candidate_source
+                  (pattern_flags_prefix)
+                  (glob_flag_candidate name: (glob_flag_name))
+                  (glob_qualifier_list_candidate
+                    (glob_flag_candidate name: (glob_flag_name)))
+                  (glob_qualifier_separator)
+                  (glob_qualifier_list_candidate
+                    (glob_flag_candidate name: (glob_flag_name)))
+                  (glob_modifier_candidate
+                    (modifier_prefix)
+                    name: (modifier_name)))))))))))
+
+==================
+Globbing flags retain an inline argument without applying its option
+==================
+print (#ia2)foo
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (pattern_candidate
+                (pattern_candidate_source
+                  (pattern_flags_prefix)
+                  (glob_flag_candidate name: (glob_flag_name))
+                  (glob_flag_candidate
+                    name: (glob_flag_name)
+                    argument: (glob_argument_candidate
+                      (glob_argument_source (glob_argument_text))))))
+              (literal))))))))
+
+==================
+Unresolved source after qualifier modifiers remains outside condition lists
+==================
+print *(:t!) *(#q:t!)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (pattern_star_source)
+              (glob_qualifier_candidate
+                (glob_modifier_candidate
+                  (modifier_prefix)
+                  name: (modifier_name))
+                (pattern_candidate_text)))
+            argument: (word
+              (pattern_star_source)
+              (pattern_candidate
+                (pattern_candidate_source
+                  (pattern_flags_prefix)
+                  (glob_flag_candidate name: (glob_flag_name))
+                  (glob_modifier_candidate
+                    (modifier_prefix)
+                    name: (modifier_name))
+                  (pattern_candidate_text))))))))))
+
+==================
+A qualifier argument preserves a quoted string without parsing its code
+==================
+print *(e:'true':)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (pattern_star_source)
+              (glob_qualifier_candidate
+                (glob_qualifier_list_candidate
+                  (glob_flag_candidate
+                    name: (glob_flag_name)
+                    argument: (glob_argument_candidate
+                      (glob_argument_delimiter)
+                      (glob_argument_source
+                        (single_quoted
+                          (single_quote_content)))
+                      (glob_argument_delimiter))))))))))))
+
+==================
+A glob modifier candidate retains a source count
+==================
+print *(:h2)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (pattern_star_source)
+              (glob_qualifier_candidate
+                (glob_modifier_candidate
+                  (modifier_prefix)
+                  name: (modifier_name)
+                  argument: (modifier_count))))))))))
+
+==================
+A numeric range stays inside a qualifier argument candidate
+==================
+print *(#qP:<1-2>:)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (pattern_star_source)
+              (pattern_candidate
+                (pattern_candidate_source
+                  (pattern_flags_prefix)
+                  (glob_flag_candidate
+                    name: (glob_flag_name))
+                  (glob_qualifier_list_candidate
+                    (glob_flag_candidate
+                      name: (glob_flag_name)
+                      argument: (glob_argument_candidate
+                        (glob_argument_delimiter)
+                        (glob_argument_source
+                          (glob_argument_text))
+                        (glob_argument_delimiter)))))))))))))

@@ -1,0 +1,282 @@
+==================
+A descriptor spelling at command start is a brace group with an ordinary redirection
+==================
+{fd}>out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+Argument positions permit variable descriptors for files strings and documents
+==================
+: {input}<in {output}>out {string}<<<text {document}<<E
+body
+E
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_file
+              (io_variable name: (variable_name))
+              (redirect_operator)
+              filename: (word (literal)))
+            (io_file
+              (io_variable name: (variable_name))
+              (redirect_operator)
+              filename: (word (literal)))
+            (here_string
+              (io_variable name: (variable_name))
+              (here_string_operator)
+              value: (word (literal)))
+            (io_here
+              (io_variable name: (variable_name))
+              (dless)
+              here_end: (word (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+Exec permits a variable descriptor without a following command name
+==================
+exec {fd}>out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (precommand_modifier
+              name: (precommand_modifier_name)
+              (io_file
+                (io_variable name: (variable_name))
+                (redirect_operator)
+                filename: (word (literal))))))))))
+
+==================
+Assignments do not establish an argument position for variable descriptors
+:error
+==================
+x=y {fd}>out
+---
+
+==================
+Nocorrect alone does not establish an argument position for variable descriptors
+:error
+==================
+nocorrect {fd}>out
+---
+
+==================
+A leading brace group redirection cannot become a command prefix
+:error
+==================
+{fd}>out :
+---
+
+==================
+A variable descriptor cannot follow a compound command before its enclosing keyword
+:error
+==================
+if :; then f() { :; } {fd}>out fi
+---
+
+==================
+A brace command owns redirections before and after its body
+==================
+>before { :; } >after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+An always clause directly owns redirections before and after the whole clause
+==================
+>before { :; } always { :; } >after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (always_clause
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              body: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (always_keyword)
+              always: (brace_group
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+A redirection cannot separate the try body from always
+:error
+==================
+{ :; } >middle always { :; }
+---
+
+==================
+A redirection cannot separate always from its handler
+:error
+==================
+{ :; } always >middle { :; }
+---
+
+==================
+Parenthesized filenames follow complete redirection operators without spaces
+==================
+cat &>(:) >|(:) <<<(:)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (glob_qualifier_candidate
+                  (glob_qualifier_list_candidate
+                    (pattern_candidate_text)))))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (glob_qualifier_candidate
+                  (glob_qualifier_list_candidate
+                    (pattern_candidate_text)))))
+            (here_string
+              (here_string_operator)
+              value: (word
+                (glob_qualifier_candidate
+                  (glob_qualifier_list_candidate
+                    (pattern_candidate_text)))))))))))
+
+==================
+A leading function redirection belongs to its definition
+==================
+>out f() :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              name: (word
+                (literal))
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal)))))))))))
+
+==================
+A redirection before time belongs to the timing command
+==================
+> /dev/null time print yes
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (simple_command
+                    name: (word
+                      (literal))
+                    argument: (word
+                      (literal))))))))))))
+
+==================
+A split append operator retains its filename despite native rejection
+==================
+: >\
+> /dev/null
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_file
+              (redirect_operator (line_continuation))
+              filename: (word (literal)))))))))

@@ -1,0 +1,263 @@
+==================
+A lone backslash at EOF remains a separate argument
+==================
+print x \
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))
+            argument: (word (escaped_character))))))))
+
+==================
+A lone backslash at EOF remains attached to its word
+==================
+print x\
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal) (escaped_character))))))))
+
+==================
+A final backslash newline is a continuation without another argument
+==================
+print x \
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal)))))))
+  (line_continuation))
+
+==================
+A trailing backslash in decoded source preserves its closing backquote
+==================
+print `print x \\` after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (backquote_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          argument: (word (literal))
+                          argument: (word (escaped_character)))))))))
+            argument: (word (literal))))))))
+
+==================
+A trailing backslash in a backquote preserves assignment subscript boundaries
+==================
+a[`print 1 \\`]=x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              subscript: (array_subscript
+                source: (subscript_source
+                  (backquote_substitution
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word (literal))
+                              argument: (word (literal))
+                              argument: (word (escaped_character))))))))))
+              (assignment_operator)
+              value: (assignment_value (literal)))))))))
+
+==================
+An escaped backquote does not close its substitution
+:error
+==================
+print `print x \`
+---
+
+==================
+A trailing backslash does not close a double quote
+:error
+==================
+print "x\
+---
+
+==================
+Adjacent quote segments belong to one argument
+==================
+print pre'quoted'"double"post
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (literal)
+              (single_quoted (single_quote_content))
+              (double_quoted (double_quote_text))
+              (literal))))))))
+
+==================
+A logical word retains a physical continuation
+==================
+pr\
+int value
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal (line_continuation)))
+            argument: (word (literal))))))))
+
+==================
+Unicode escape is one dollar quoted escape
+==================
+print $'\u03a3'
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (dollar_single_quoted (dollar_single_quote_escape)))))))))
+
+==================
+Dollar single quote spelling remains literal within double quotes
+==================
+print "$'x'"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted (double_quote_text)))))))))
+
+==================
+Dollar quote control prefixes preserve complete escapes and the closing quote
+==================
+print $'\c' $'\M-\C-x' $'\C-'
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (dollar_single_quoted (dollar_single_quote_escape)))
+            argument: (word
+              (dollar_single_quoted (dollar_single_quote_escape)))
+            argument: (word
+              (dollar_single_quoted (dollar_single_quote_escape)))))))))
+==================
+The backquote closes its command source and a trailing comment
+==================
+print `print x # comment` `# only a comment`
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (backquote_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          argument: (word (literal)))))))
+                (comment (comment_text))))
+            argument: (word
+              (backquote_substitution (comment (comment_text))))))))))
+==================
+The backquote closes a trailing comment after a terminated command
+==================
+print `print x
+#c`
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (backquote_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          argument: (word (literal)))))))
+                (comment (comment_text))))))))))
+
+==================
+A continued dollar quote prefix keeps its continuation outside quoted content
+==================
+print $\
+'a\
+b'
+
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (dollar_single_quoted
+                (line_continuation)
+                (dollar_single_quote_text)
+                (dollar_single_quote_escape)
+                (dollar_single_quote_text)))))))))

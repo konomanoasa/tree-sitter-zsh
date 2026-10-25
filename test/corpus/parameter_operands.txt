@@ -1,0 +1,498 @@
+==================
+Whitespace and shell operator characters inside parameter braces remain operand source
+==================
+print ${x:-{ }x} ${x:-{;}x} ${x:-{|}x} ${x:-{&}x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word (brace_expansion (literal)) (literal))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word (brace_expansion (literal)) (literal))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word (brace_expansion (literal)) (literal))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word (brace_expansion (literal)) (literal))))))))))
+
+==================
+Quoted braces keep their literal role inside and around a parameter operand
+==================
+print ${x:-"{ }"x} "${x:-{ }x}"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word (double_quoted (double_quote_text)) (literal))))
+            argument: (word
+              (double_quoted
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_value_operator)
+                  (parameter_word (literal)))
+                (double_quote_text)))))))))
+
+==================
+A brace followed by whitespace cannot supply the missing parameter closer
+:error
+==================
+print ${x:-{ }
+---
+
+==================
+An unfinished brace followed by whitespace still requires an outer parameter closer
+:error
+==================
+print ${x:-{ x}
+---
+
+==================
+Replacement owns its pattern and replacement
+==================
+print ${x/foo/bar}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_replacement
+                  (parameter_replacement_operator)
+                  pattern: (parameter_pattern (literal))
+                  (parameter_replacement_separator)
+                  replacement: (parameter_word (literal)))))))))))
+
+==================
+Substring owns the two source operands
+==================
+print ${x:1:2}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  offset: (parameter_word (literal))
+                  (parameter_substring_separator)
+                  length: (parameter_word (literal)))))))))))
+
+==================
+Modifier substitution retains each separator
+==================
+print ${x:s|a|b|}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_modifier
+                  (modifier_prefix)
+                  name: (modifier_name)
+                  (modifier_separator)
+                  pattern: (parameter_word (literal))
+                  (modifier_separator)
+                  replacement: (parameter_word (literal))
+                  (modifier_separator))))))))))
+
+==================
+A literal operand prefix does not swallow a numeric pattern range
+==================
+print ${x:-abc<1-2>}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word
+                  (literal)
+                  (pattern_numeric_range_source
+                    start: (pattern_number)
+                    (pattern_range_operator)
+                    end: (pattern_number)))))))))))
+
+==================
+An unmatched parenthesis in an operand stays text inside a command substitution
+==================
+print $(x ${y:-(})
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (command_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          argument: (word
+                            (parameter_expansion
+                              parameter: (variable_name)
+                              (parameter_value_operator)
+                              (parameter_word
+                                (pattern_group_source)))))))))))))))))
+
+==================
+Empty substring operands retain only their explicit separators
+==================
+print ${x:} ${x::} ${x:0:} ${x::1}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring (parameter_substring_operator))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  (parameter_substring_separator))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  offset: (parameter_word (literal))
+                  (parameter_substring_separator))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  (parameter_substring_separator)
+                  length: (parameter_word (literal)))))))))))
+
+==================
+Unconditional assignment requires the equals sign after both colons
+==================
+print ${x::=} ${x::=value}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word (literal))))))))))
+
+==================
+A substring owns its offset before a following modifier
+==================
+print ${x:1:h} ${x::h} ${x:1::h}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  offset: (parameter_word (literal)))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring (parameter_substring_operator))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  offset: (parameter_word (literal))
+                  (parameter_substring_separator))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))))))))
+
+==================
+A substring length cannot absorb a following modifier or substitution
+==================
+print ${x:1:2:h} ${x:1:2:s/b/B/}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  offset: (parameter_word (literal))
+                  (parameter_substring_separator)
+                  length: (parameter_word (literal)))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  offset: (parameter_word (literal))
+                  (parameter_substring_separator)
+                  length: (parameter_word (literal)))
+                (parameter_modifier
+                  (modifier_prefix)
+                  name: (modifier_name)
+                  (modifier_separator)
+                  pattern: (parameter_word (literal))
+                  (modifier_separator)
+                  replacement: (parameter_word (literal))
+                  (modifier_separator))))))))))
+
+==================
+Substring operands beginning with underscores are not modifier names
+==================
+print ${x:_offset:_length}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  offset: (parameter_word (literal))
+                  (parameter_substring_separator)
+                  length: (parameter_word (literal)))))))))))
+
+==================
+An explicit expansion owns its colons within a substring length
+==================
+print ${x:0:${n:-2}:q}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_substring
+                  (parameter_substring_operator)
+                  offset: (parameter_word (literal))
+                  (parameter_substring_separator)
+                  length: (parameter_word
+                    (parameter_expansion
+                      parameter: (variable_name)
+                      (parameter_value_operator)
+                      (parameter_word (literal)))))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))))))))
+
+==================
+The documented global modifier follows substitution despite native rejection
+==================
+print ${x:s/a/A/:G}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_modifier
+                  (modifier_prefix)
+                  name: (modifier_name)
+                  (modifier_separator)
+                  pattern: (parameter_word (literal))
+                  (modifier_separator)
+                  replacement: (parameter_word (literal))
+                  (modifier_separator))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))))))))
+
+==================
+The x modifier is unavailable in a braced parameter
+:error
+==================
+print ${x:x}
+---
+
+==================
+A global suffix follows a closed gs substitution among other modifiers
+==================
+print ${x:h:gs,a,A,:G:u}
+---
+(program (list (sublist (pipeline (command (simple_command
+  name: (word (literal))
+  argument: (word (parameter_expansion
+    parameter: (variable_name)
+    (parameter_modifier (modifier_prefix) name: (modifier_name))
+    (parameter_modifier
+      (modifier_prefix) name: (modifier_name)
+      (modifier_separator) pattern: (parameter_word (literal))
+      (modifier_separator) replacement: (parameter_word (literal))
+      (modifier_separator))
+    (parameter_modifier (modifier_prefix) name: (modifier_name))
+    (parameter_modifier (modifier_prefix) name: (modifier_name))))))))))
+
+==================
+A colon G before the substitution closing delimiter remains replacement source
+==================
+print ${x:s/a/A:G}
+---
+(program (list (sublist (pipeline (command (simple_command
+  name: (word (literal))
+  argument: (word (parameter_expansion
+    parameter: (variable_name)
+    (parameter_modifier
+      (modifier_prefix) name: (modifier_name)
+      (modifier_separator) pattern: (parameter_word (literal))
+      (modifier_separator) replacement: (parameter_word (literal)))))))))))
+
+==================
+A global modifier requires a preceding substitution
+:error
+==================
+print ${x:G}
+---
+
+==================
+An unrelated modifier does not introduce a global suffix
+:error
+==================
+print ${x:h:G}
+---
+
+==================
+An intervening modifier ends the global suffix position
+:error
+==================
+print ${x:s/a/A/:h:G}
+---
+
+==================
+A global substitution suffix cannot repeat
+:error
+==================
+print ${x:s/a/A/:G:G}
+---
+
+==================
+A global substitution suffix does not take modifier controls
+:error
+==================
+print ${x:s/a/A/:fG}
+---
+
+==================
+The p modifier is reserved for history expansion
+:error
+==================
+print ${x:p}
+---
+
+==================
+An undefined alphabetic modifier cannot become a substring offset
+:error
+==================
+print ${x:z}
+---
+
+==================
+A numeric suffix after length is not a third substring operand
+:error
+==================
+print ${x:1:2:3}
+---
+
+==================
+A modifier colon after length requires a modifier
+:error
+==================
+print ${x:1:2:}
+---
+
+==================
+A modifier forbidden for parameters also fails after a substring
+:error
+==================
+print ${x:1:2:x}
+---

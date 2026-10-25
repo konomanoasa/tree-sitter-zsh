@@ -1,0 +1,925 @@
+==================
+A case pattern retains an empty group without inventing an operand
+==================
+case x in a()) :;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal)
+                      (pattern_group_source))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+A case pattern retains alternation across brace source
+==================
+case x in {a|b}) :;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (brace_expansion
+                        (literal)))
+                    (pattern_alternation)
+                    (pattern_alternative
+                      (literal)
+                      (brace_closing_source))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+A brace case preserves comma source without determining brace expansion
+==================
+case x { {a,b}) ;; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (brace_expansion
+                        (brace_alternative
+                          (literal))
+                        (brace_separator)
+                        (brace_alternative
+                          (literal))))))
+                (case_break)))))))))
+
+==================
+A case clause owns the semicolon after a complete item terminator
+:cst
+==================
+case x in x) ;;; esac
+---
+0:0  - 0:21   program
+0:0  - 0:21     list
+0:0  - 0:21       sublist
+0:0  - 0:21         pipeline
+0:0  - 0:21           command
+0:0  - 0:21             complex_command
+0:0  - 0:21               case_clause
+0:0  - 0:4                  case_keyword `case`
+0:5  - 0:6                  word: word
+0:5  - 0:6                    literal `x`
+0:7  - 0:9                  in_keyword `in`
+0:10 - 0:15                 case_item
+0:10 - 0:12                   pattern_list
+0:10 - 0:11                     pattern_alternatives
+0:10 - 0:11                       pattern_alternative
+0:10 - 0:11                         literal `x`
+0:11 - 0:12                     ")"
+0:13 - 0:15                   case_break `;;`
+0:15 - 0:16                 ";"
+0:17 - 0:21                 esac_keyword `esac`
+
+==================
+Brace case items keep fallthrough and continue tokens before standalone separators
+==================
+case x { x) ;&; y) ;|; z) ;;; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_fallthrough))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_continue))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_break)))))))))
+
+==================
+Consecutive case breaks cannot supply an item without a pattern
+:error
+==================
+case x in a) ;;;; esac
+---
+
+==================
+A case fallthrough after a case break cannot become standalone separators
+:error
+==================
+case x in a) ;; ;& esac
+---
+
+==================
+A case item separates standalone semicolons from its terminator
+==================
+case x in x) ; ;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list)
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+Case items own their pattern body and explicit terminator
+==================
+case x in a|x) print yes;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))
+                    (pattern_alternation)
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))
+                          argument: (word
+                            (literal)))))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+Parenthesized case patterns retain internal spaces in one literal
+==================
+case 'a b' in (a b) ;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (single_quoted
+                  (single_quote_content)))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+Case terminators preserve distinct spellings without synthetic bodies
+==================
+case x { a) ;& b) ;| c) ;; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_fallthrough))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_continue))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_break)))))))))
+
+==================
+Unparenthesized case patterns do not absorb a second bare word
+:error
+==================
+case x in a b) :;; esac
+---
+
+==================
+A final brace case body can end directly at the closing brace
+==================
+case x { x) print yes }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))
+                          argument: (word
+                            (literal)))))))))))))))
+
+==================
+A final case body still needs its command boundary
+:error
+==================
+case x in x) print yes esac
+---
+
+==================
+A leading parenthesis belongs to the pattern when another case delimiter follows
+==================
+case a in (a|b)) print yes;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (pattern_group_source
+                        (pattern_alternatives
+                          (pattern_alternative
+                            (literal))
+                          (pattern_alternation)
+                          (pattern_alternative
+                            (literal)))))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))
+                          argument: (word
+                            (literal)))))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+A brace case accepts parentheses and command-like symbols as patterns
+==================
+case a { (a)) ;; !) ;; [[ ) ;; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (pattern_group_source
+                        (pattern_alternatives
+                          (pattern_alternative
+                            (literal)))))))
+                (case_break))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_break))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_break)))))))))
+
+==================
+Case patterns retain process substitution source
+==================
+case x in <(print x)) :;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (process_substitution
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal))
+                                  argument: (word
+                                    (literal)))))))))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+Comments may follow in and a case terminator where a pattern could start
+==================
+case x in # c
+a) :;; # d
+esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (comment
+                (comment_text))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break))
+              (comment
+                (comment_text))
+              (esac_keyword))))))))
+
+==================
+A right brace that is not a whole word starts a pattern
+==================
+case x in }a) :;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+A brace case header separator does not create an item
+==================
+case x; { }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal)))))))))
+
+==================
+A case in header separator does not create an item
+==================
+case x in; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (esac_keyword))))))))
+
+==================
+Case header separators leave the pattern and body in their item
+==================
+case x; ;
+in; ;
+x) :;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+A brace case also permits separators after its opening brace
+==================
+case x { ; ;
+x) :;; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break)))))))))
+
+==================
+An empty in case owns its mixed closing brace
+:cst
+==================
+case x in }
+---
+0:0  - 0:11   program
+0:0  - 0:11     list
+0:0  - 0:11       sublist
+0:0  - 0:11         pipeline
+0:0  - 0:11           command
+0:0  - 0:11             complex_command
+0:0  - 0:11               case_clause
+0:0  - 0:4                  case_keyword `case`
+0:5  - 0:6                  word: word
+0:5  - 0:6                    literal `x`
+0:7  - 0:9                  in_keyword `in`
+0:10 - 0:11                 "}"
+
+==================
+An empty brace case owns its mixed esac keyword
+:cst
+==================
+case x { esac
+---
+0:0  - 0:13   program
+0:0  - 0:13     list
+0:0  - 0:13       sublist
+0:0  - 0:13         pipeline
+0:0  - 0:13           command
+0:0  - 0:13             complex_command
+0:0  - 0:13               case_clause
+0:0  - 0:4                  case_keyword `case`
+0:5  - 0:6                  word: word
+0:5  - 0:6                    literal `x`
+0:7  - 0:8                  "{"
+0:9  - 0:13                 esac_keyword `esac`
+
+==================
+An in case closes with a brace after distinct item terminators
+==================
+case x in x) :;& y) :;| z) :;; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_fallthrough))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_continue))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break)))))))))
+
+==================
+A brace case closes with esac after a continue terminator
+==================
+case x { x) :;; y) :;& z) :;| esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_break))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_fallthrough))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (case_continue))
+              (esac_keyword))))))))
+
+==================
+Nested mixed case endings belong to their own clauses
+==================
+case x in x) case y { y) :;; esac;; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (case_clause
+                            (case_keyword)
+                            word: (word
+                              (literal))
+                            (case_item
+                              (pattern_list
+                                (pattern_alternatives
+                                  (pattern_alternative
+                                    (literal))))
+                              body: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal)))))))
+                              (case_break))
+                            (esac_keyword)))))))
+                (case_break)))))))))
+
+==================
+An in case can omit the final item terminator after a command separator
+==================
+case x in x) :; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (esac_keyword))))))))
+
+==================
+A mixed } ending needs an item terminator after an empty body
+:error
+==================
+case x in x) }
+---
+
+==================
+A mixed } ending needs an item terminator after a separated simple body
+:error
+==================
+case x in x) :; }
+---
+
+==================
+A mixed } ending needs an item terminator after a compound body
+:error
+==================
+case x in x) { :; } }
+---
+
+==================
+A mixed esac ending needs an item terminator after an empty body
+:error
+==================
+case x { x) esac
+---
+
+==================
+A mixed esac ending needs an item terminator after a separated simple body
+:error
+==================
+case x { x) :; esac
+---
+
+==================
+A mixed esac ending needs an item terminator after a compound body
+:error
+==================
+case x { x) { :; } esac
+---
+
+==================
+A bare esac closes a brace case rather than starting an item pattern
+:error
+==================
+case x { esac) :;; }
+---
+
+==================
+Protected esac spellings remain patterns before the mixed closing keyword
+==================
+case x { (esac) ;; "esac") ;; esacx) ;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_break))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (double_quoted
+                        (double_quote_text)))))
+                (case_break))
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                (case_break))
+              (esac_keyword))))))))

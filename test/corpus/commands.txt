@@ -1,0 +1,1012 @@
+==================
+Standalone nocorrect retains its modifier without a synthetic command name
+==================
+nocorrect
+---
+(program (list (sublist (pipeline (command (simple_command
+  (precommand_modifier name: (precommand_modifier_name))))))))
+
+==================
+Separators and comments do not require a command after nocorrect
+==================
+nocorrect; nocorrect # trailing
+nocorrect
+---
+(program
+  (list
+    (sublist (pipeline (command (simple_command
+      (precommand_modifier name: (precommand_modifier_name))))))
+    (sublist (pipeline (command (simple_command
+      (precommand_modifier name: (precommand_modifier_name))))))
+    (comment (comment_text))
+    (sublist (pipeline (command (simple_command
+      (precommand_modifier name: (precommand_modifier_name))))))))
+
+==================
+Groups retain standalone nocorrect with or without an explicit separator
+==================
+{ nocorrect }; (nocorrect;)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        (precommand_modifier
+                          name: (precommand_modifier_name))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (subshell
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        (precommand_modifier
+                          name: (precommand_modifier_name))))))))))))))
+
+==================
+Standalone nocorrect belongs to the condition or body before control keywords
+==================
+if nocorrect; then nocorrect fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          (precommand_modifier
+                            name: (precommand_modifier_name)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          (precommand_modifier
+                            name: (precommand_modifier_name))))))))
+              (fi_keyword))))))))
+
+==================
+Both substitution forms retain standalone nocorrect in their own bodies
+==================
+print $(nocorrect) `nocorrect`
+---
+(program (list (sublist (pipeline (command (simple_command
+  name: (word (literal))
+  argument: (word (command_substitution
+    body: (list (sublist (pipeline (command (simple_command
+      (precommand_modifier name: (precommand_modifier_name)))))))))
+  argument: (word (backquote_substitution
+    body: (list (sublist (pipeline (command (simple_command
+      (precommand_modifier name: (precommand_modifier_name)))))))))))))))
+
+==================
+Nocorrect keeps assignments and redirections while exec makes the following spelling a command name
+==================
+nocorrect x=1; nocorrect >out; exec nocorrect
+---
+(program
+  (list
+    (sublist (pipeline (command (simple_command
+      (precommand_modifier name: (precommand_modifier_name))
+      (assignment_word
+        name: (variable_name)
+        (assignment_operator)
+        value: (assignment_value (literal)))))))
+    (sublist (pipeline (command (simple_command
+      (precommand_modifier name: (precommand_modifier_name))
+      (io_file (redirect_operator) filename: (word (literal)))))))
+    (sublist (pipeline (command (simple_command
+      (precommand_modifier name: (precommand_modifier_name))
+      name: (word (literal))))))))
+
+==================
+Empty source
+==================
+
+---
+
+(program)
+
+==================
+Standalone semicolons form a list without synthetic commands
+==================
+; ;
+---
+(program (list))
+
+==================
+Leading and repeated semicolons preserve the two real commands
+==================
+; first; ; second; ;
+---
+(program
+  (list
+    (sublist (pipeline (command (simple_command name: (word (literal))))))
+    (sublist (pipeline (command (simple_command name: (word (literal))))))))
+
+==================
+Comments between standalone semicolons remain in the list
+==================
+; # before
+; :; # after
+;
+---
+(program
+  (list
+    (comment (comment_text))
+    (sublist (pipeline (command (simple_command name: (word (literal))))))
+    (comment (comment_text))))
+
+==================
+A brace group owns a list containing only semicolons
+==================
+{ ; ; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list))))))))
+
+==================
+A subshell owns a list containing only semicolons
+==================
+(; ;)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (subshell
+              body: (list))))))))
+
+==================
+Command substitution retains standalone semicolons in its body
+==================
+print "$(; ;)"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (command_substitution body: (list))))))))))
+
+==================
+Backquote substitution retains standalone semicolons in its body
+==================
+print `; ;`
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (backquote_substitution body: (list)))))))))
+
+==================
+Process substitution retains standalone semicolons in its body
+==================
+cat <(; ;)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (process_substitution body: (list)))))))))
+
+==================
+A case terminator outside case cannot become two semicolons
+:error
+==================
+: ;; :
+---
+
+==================
+Standalone semicolons cannot supply a command for a background separator
+:error
+==================
+; & :
+---
+
+==================
+Simple command and arguments
+==================
+print hello world
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))
+            argument: (word (literal))))))))
+==================
+Modifier spellings after the command name are arguments
+==================
+print command exec builtin noglob nocorrect -
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))
+            argument: (word (literal))
+            argument: (word (literal))
+            argument: (word (literal))
+            argument: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Builtin makes a declaration spelling an ordinary command name
+==================
+builtin typeset x=1
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (precommand_modifier name: (precommand_modifier_name))
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Exec owns options and the explicit argv zero operand
+==================
+exec -cl -a name print x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (precommand_modifier
+              name: (precommand_modifier_name)
+              option: (word (literal))
+              option: (word (literal))
+              operand: (word (literal)))
+            name: (word (literal))
+            argument: (word (literal))))))))
+==================
+Quoted modifier options keep word source and ownership
+==================
+exec "-a" name print x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (precommand_modifier
+              name: (precommand_modifier_name)
+              option: (word (double_quoted (double_quote_text)))
+              operand: (word (literal)))
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Declaration owns assignments and redirections before its keyword
+==================
+nocorrect x=1 >/dev/null typeset y=(one two)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (declaration_command
+              (precommand_modifier
+                name: (precommand_modifier_name))
+              (assignment_word
+                name: (variable_name)
+                (assignment_operator)
+                value: (assignment_value
+                  (literal)))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              (typeset_keyword)
+              (assignment_word
+                name: (variable_name)
+                (assignment_operator)
+                value: (array_assignment
+                  (word
+                    (literal))
+                  (word
+                    (literal)))))))))))
+
+==================
+Exec retains its pending operand across redirection
+==================
+exec -a 2>/dev/null name print x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (precommand_modifier
+              name: (precommand_modifier_name)
+              option: (word (literal))
+              (io_file
+                (io_number)
+                (redirect_operator)
+                filename: (word (literal)))
+              operand: (word (literal)))
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+An attached exec option argument preserves the command name
+==================
+exec -a}x /bin/echo output
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (precommand_modifier
+              name: (precommand_modifier_name)
+              option: (word
+                (literal)))
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+A command brace group opens without a separating space
+==================
+{print x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal))))))))))))))
+
+==================
+A final AND retains its operator without a synthetic right pipeline
+==================
+: &&
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if))))
+
+==================
+A semicolon after AND belongs to the same sublist as its following pipeline
+==================
+: && ; print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+A semicolon after OR belongs to the same sublist as its following pipeline
+==================
+false || ; print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (or_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+A semicolon after a stderr pipe precedes its real right command
+==================
+: |& ; print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command (simple_command name: (word (literal))))
+        (pipe_err)
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+A standalone negation pipeline contains its source without a synthetic command
+:cst
+==================
+!
+---
+0:0 - 0:1   program
+0:0 - 0:1     list
+0:0 - 0:1       sublist
+0:0 - 0:1         pipeline
+0:0 - 0:1           "!"
+
+==================
+Standalone negation supplies either pipeline in an AND or OR list
+==================
+!&& ! || !
+---
+(program
+  (list
+    (sublist
+      (pipeline)
+      (and_if)
+      (pipeline)
+      (or_if)
+      (pipeline))))
+
+==================
+A newline after negation starts an independent command
+==================
+!
+false
+---
+(program
+  (list
+    (sublist (pipeline))
+    (sublist
+      (pipeline
+        (command (simple_command name: (word (literal))))))))
+
+==================
+A comment after standalone negation ends at the newline
+==================
+! # comment
+false
+---
+(program
+  (list
+    (sublist (pipeline))
+    (comment (comment_text))
+    (sublist
+      (pipeline
+        (command (simple_command name: (word (literal))))))))
+
+==================
+A continued line keeps the following command under negation
+==================
+! \
+false
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (line_continuation)
+        (command (simple_command name: (word (literal))))))))
+
+==================
+Time owns a standalone negation pipeline
+==================
+time !
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline))))))))
+
+==================
+A subshell closes directly after a standalone negation pipeline
+==================
+(!)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (subshell
+              body: (list
+                (sublist
+                  (pipeline))))))))))
+
+==================
+Standalone negation cannot supply a command before a pipe
+:error
+==================
+! | :
+---
+
+==================
+Standalone negation cannot supply a command after a pipe
+:error
+==================
+: | !
+---
+
+==================
+Standalone negation cannot supply a command before a stderr pipe
+:error
+==================
+! |& :
+---
+
+==================
+Standalone negation cannot supply a command after a stderr pipe
+:error
+==================
+: |& !
+---
+
+==================
+Coproc cannot precede pipeline negation
+:error
+==================
+coproc !
+---
+
+==================
+Pipeline negation cannot precede coproc
+:error
+==================
+! coproc
+---
+
+==================
+A standalone coproc pipeline retains its keyword without a synthetic command
+==================
+coproc
+---
+(program (list (sublist (pipeline (coproc_keyword)))))
+
+==================
+Standalone coproc supplies either pipeline in an AND or OR list
+==================
+coproc&& coproc || coproc
+---
+(program
+  (list
+    (sublist
+      (pipeline (coproc_keyword))
+      (and_if)
+      (pipeline (coproc_keyword))
+      (or_if)
+      (pipeline (coproc_keyword)))))
+
+==================
+A newline and comment after coproc start an independent command
+==================
+coproc # comment
+false
+---
+(program
+  (list
+    (sublist (pipeline (coproc_keyword)))
+    (comment (comment_text))
+    (sublist
+      (pipeline
+        (command (simple_command name: (word (literal))))))))
+
+==================
+A continued line keeps the following command under coproc
+==================
+coproc \
+false
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (coproc_keyword)
+        (line_continuation)
+        (command (simple_command name: (word (literal))))))))
+
+==================
+A standalone coproc keyword retains its internal line continuation
+==================
+co\
+proc
+---
+(program
+  (list
+    (sublist
+      (pipeline (coproc_keyword (line_continuation))))))
+
+==================
+Time owns a standalone coproc pipeline
+==================
+time coproc
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (coproc_keyword)))))))))
+
+==================
+A subshell closes directly after a standalone coproc pipeline
+==================
+(coproc)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (subshell
+              body: (list
+                (sublist
+                  (pipeline
+                    (coproc_keyword)))))))))))
+
+==================
+Asynchronous separators retain prefix-only pipelines despite native rejection
+==================
+! &
+coproc &
+: && ! &!
+: || coproc &|
+---
+(program
+  (list
+    (sublist (pipeline))
+    (sublist (pipeline (coproc_keyword)))
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if)
+      (pipeline))
+    (async_disown)
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (or_if)
+      (pipeline (coproc_keyword)))
+    (async_disown)))
+
+==================
+Standalone coproc cannot supply a command before a pipe
+:error
+==================
+coproc | :
+---
+
+==================
+Standalone coproc cannot supply a command after a pipe
+:error
+==================
+: | coproc
+---
+
+==================
+Standalone coproc cannot supply a command before a stderr pipe
+:error
+==================
+coproc |& :
+---
+
+==================
+Standalone coproc cannot supply a command after a stderr pipe
+:error
+==================
+: |& coproc
+---
+
+==================
+Coproc cannot repeat before a command
+:error
+==================
+coproc coproc :
+---
+
+==================
+A semicolon after a pipe precedes its real right command
+==================
+: | ; :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command (simple_command name: (word (literal))))
+        (command (simple_command name: (word (literal))))))))
+
+==================
+A split AND operator retains both pipelines despite native rejection
+==================
+: &\
+& :
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if (line_continuation))
+      (pipeline (command (simple_command name: (word (literal))))))))
+
+==================
+A split OR operator retains both pipelines despite native rejection
+==================
+: |\
+| :
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (or_if (line_continuation))
+      (pipeline (command (simple_command name: (word (literal))))))))
+
+==================
+A split stderr pipe retains both commands despite native rejection
+==================
+: |\
+& :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command (simple_command name: (word (literal))))
+        (pipe_err (line_continuation))
+        (command (simple_command name: (word (literal))))))))
+
+==================
+A continued final logical operator retains its source without a right pipeline
+==================
+: &\
+&
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if (line_continuation)))))
+
+==================
+A final OR owns its following semicolon without a synthetic pipeline
+:cst
+==================
+: || ;
+---
+0:0 - 0:6   program
+0:0 - 0:6     list
+0:0 - 0:6       sublist
+0:0 - 0:1         pipeline
+0:0 - 0:1           command
+0:0 - 0:1             simple_command
+0:0 - 0:1               name: word
+0:0 - 0:1                 literal `:`
+0:2 - 0:4         or_if `||`
+0:5 - 0:6         ";"
+
+==================
+An EOF comment after a final logical operator remains at program level
+==================
+: && # comment
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if)))
+  (comment (comment_text)))
+
+==================
+Logical operator layout keeps comments newlines and separated semicolons before its right pipeline
+==================
+false && ; # layout
+; : ||
+# next
+; print RIGHT; print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if)
+      (comment (comment_text))
+      (pipeline (command (simple_command name: (word (literal)))))
+      (or_if)
+      (comment (comment_text))
+      (pipeline
+        (command (simple_command name: (word (literal)) argument: (word (literal))))))
+    (sublist
+      (pipeline
+        (command (simple_command name: (word (literal)) argument: (word (literal))))))))
+
+==================
+Pipe layout belongs to its pipeline while logical operators retain their own operands
+==================
+: | ; # pipe
+; : && ; : |& ; : || ;
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command (simple_command name: (word (literal))))
+        (comment (comment_text))
+        (command (simple_command name: (word (literal)))))
+      (and_if)
+      (pipeline
+        (command (simple_command name: (word (literal))))
+        (pipe_err)
+        (command (simple_command name: (word (literal)))))
+      (or_if))))
+
+==================
+A subshell closes after a final logical operator and its layout
+==================
+(: && ; )
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (subshell
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))
+                  (and_if))))))))))
+
+==================
+Asynchronous separators follow final logical operators despite native rejection
+==================
+: && &
+: || ; &!
+: && ; &|
+---
+(program
+  (list
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if))
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (or_if))
+    (async_disown)
+    (sublist
+      (pipeline (command (simple_command name: (word (literal)))))
+      (and_if))
+    (async_disown)))
+
+==================
+A final pipe cannot omit its right command
+:error
+==================
+: |
+---
+
+==================
+Semicolon layout cannot supply the missing command after a final stderr pipe
+:error
+==================
+: |& ;
+---
+
+==================
+A group closer cannot supply the missing command after a pipe
+:error
+==================
+(: | ; )
+---
+
+==================
+A logical operator cannot start a sublist without its left pipeline
+:error
+==================
+&& :
+---
+
+==================
+Consecutive logical operators cannot omit an intermediate pipeline
+:error
+==================
+: && || :
+---
+
+==================
+Semicolon layout cannot supply a pipeline between logical operators
+:error
+==================
+: || ; && :
+---
+
+==================
+A pipe cannot start the missing right pipeline after a logical operator
+:error
+==================
+: && | :
+---
+
+==================
+A case terminator outside case cannot split into operator layout
+:error
+==================
+: && ;; :
+---

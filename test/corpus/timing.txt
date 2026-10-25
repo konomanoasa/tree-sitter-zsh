@@ -1,0 +1,226 @@
+==================
+A second time in the target pipeline is an ordinary command name
+==================
+time time true
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (simple_command
+                    name: (word
+                      (literal))
+                    argument: (word
+                      (literal))))))))))))
+
+==================
+Timing extends across pipe operands
+==================
+time : | time true
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (simple_command
+                    name: (word
+                      (literal))))
+                (command
+                  (simple_command
+                    name: (word
+                      (literal))
+                    argument: (word
+                      (literal))))))))))))
+
+==================
+Logical operators end the timing target before the next pipeline
+==================
+time : && time true
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (simple_command
+                    name: (word
+                      (literal)))))))))
+      (and_if)
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (simple_command
+                    name: (word
+                      (literal))))))))))))
+
+==================
+A timed group inherits ordinary time words across its internal separators
+==================
+time { :; time true; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (complex_command
+                    (brace_group
+                      body: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal))))))
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal))
+                                argument: (word
+                                  (literal))))))))))))))))))
+
+==================
+A substitution starts an independent timing scope
+==================
+time print $(time true)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (simple_command
+                    name: (word
+                      (literal))
+                    argument: (word
+                      (command_substitution
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (complex_command
+                                  (time_command
+                                    (time_keyword)
+                                    pipeline: (pipeline
+                                      (command
+                                        (simple_command
+                                          name: (word
+                                            (literal)))))))))))))))))))))))
+
+==================
+A timing keyword without a target keeps no synthetic pipeline
+==================
+time
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword))))))))
+
+==================
+A command named time cannot take an unseparated brace command as an argument
+:error
+==================
+time time { :; }
+---
+
+==================
+A timed pipeline keeps later time spellings ordinary before a brace command
+:error
+==================
+time : | time { :; }
+---
+
+==================
+A timed group cannot reinterpret a command named time as another timing keyword
+:error
+==================
+time { time { :; }; }
+---
+
+==================
+A delimiter substitution keeps case as an argument of an ordinary time command
+==================
+cat <<$(time time case)
+BODY
+$(time time case)
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (complex_command
+                            (time_command
+                              (time_keyword)
+                              pipeline: (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal))
+                                    argument: (word
+                                      (literal))))))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))

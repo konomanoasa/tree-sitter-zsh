@@ -1,0 +1,350 @@
+==================
+A scalar assignment owns its adjacent closing brace as literal source
+:cst
+==================
+x=a}
+---
+0:0 - 0:4   program
+0:0 - 0:4     list
+0:0 - 0:4       sublist
+0:0 - 0:4         pipeline
+0:0 - 0:4           command
+0:0 - 0:4             simple_command
+0:0 - 0:4               assignment_word
+0:0 - 0:1                 name: variable_name `x`
+0:1 - 0:2                 assignment_operator `=`
+0:2 - 0:4                 value: assignment_value
+0:2 - 0:4                   literal `a}`
+
+==================
+Expanded appended indexed and brace-only scalar values share closing boundaries
+==================
+x=${x}} x+=a} x[1]=a} x=}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value
+                (parameter_expansion parameter: (variable_name))
+                (literal)))
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value (literal)))
+            (assignment_word
+              name: (variable_name)
+              subscript: (array_subscript
+                source: (subscript_source (subscript_number_candidate)))
+              (assignment_operator)
+              value: (assignment_value (literal)))
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value (literal)))))))))
+
+==================
+Declaration assignment values retain adjacent closing braces
+==================
+typeset x=a} y=${x}}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (declaration_command
+              (typeset_keyword)
+              (assignment_word
+                name: (variable_name)
+                (assignment_operator)
+                value: (assignment_value
+                  (literal)))
+              (assignment_word
+                name: (variable_name)
+                (assignment_operator)
+                value: (assignment_value
+                  (parameter_expansion
+                    parameter: (variable_name))
+                  (literal))))))))))
+
+==================
+A brace group closes after the scalar assignment word has ended
+==================
+{ x=a} }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        (assignment_word
+                          name: (variable_name)
+                          (assignment_operator)
+                          value: (assignment_value
+                            (literal)))))))))))))))
+
+==================
+Parameter and brace expansion closers precede literal assignment suffixes
+==================
+x=${y:-a}} x={a,b}}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_value_operator)
+                  (parameter_word
+                    (literal)))
+                (literal)))
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value
+                (brace_expansion
+                  (brace_alternative
+                    (literal))
+                  (brace_separator)
+                  (brace_alternative
+                    (literal)))
+                (literal)))))))))
+
+==================
+A scalar assignment brace cannot close an unfinished group
+:error
+==================
+{ x=a}
+---
+
+==================
+A declaration assignment brace cannot close an unfinished group
+:error
+==================
+{ typeset x=a}
+---
+
+==================
+An assignment spelling used as an ordinary argument retains the word boundary
+:error
+==================
+print x=a}
+---
+
+==================
+An ordinary array element cannot absorb a closing brace at its word boundary
+:error
+==================
+x=(a})
+---
+
+==================
+An explicit array element assignment retains the array word boundary
+:error
+==================
+x=([1]=a})
+---
+
+==================
+A closing array parenthesis ends the assignment before an adjacent command
+==================
+x=(a b)y
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment (word (literal)) (word (literal))))
+            name: (word (literal))))))))
+
+==================
+A continuation after an array belongs outside the completed assignment
+==================
+x=(a)\
+y
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment (word (literal))))
+            (line_continuation)
+            name: (word (literal))))))))
+
+==================
+An adjacent declaration argument remains a word regardless of name validity
+==================
+typeset x=(a)]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (declaration_command
+              (typeset_keyword)
+              (assignment_word
+                name: (variable_name)
+                (assignment_operator)
+                value: (array_assignment
+                  (word
+                    (literal))))
+              argument: (word
+                (literal)))))))))
+
+==================
+Adjacent array and scalar assignments retain separate targets and values
+==================
+x=(a)y=(b)c=d
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment (word (literal))))
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment (word (literal))))
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value (literal)))))))))
+
+==================
+A hash after an array starts a comment outside the assignment
+==================
+x=(a)# note
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment (word (literal)))))))))
+  (comment (comment_text)))
+
+==================
+A descriptor after an array belongs to the following redirection
+==================
+x=(a)1>&1
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment (word (literal))))
+            (io_file
+              (io_number)
+              (redirect_operator)
+              filename: (word (literal)))))))))
+
+==================
+An array assignment still requires its closing parenthesis
+:error
+==================
+x=(a b
+---
+
+==================
+An empty scalar assignment has no synthetic value
+==================
+x=
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator))))))))
+
+==================
+Declaration syntax preserves array elements without inferring a type
+==================
+typeset -a a=(x y)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (declaration_command
+              (typeset_keyword)
+              argument: (word
+                (literal))
+              (assignment_word
+                name: (variable_name)
+                (assignment_operator)
+                value: (array_assignment
+                  (word
+                    (literal))
+                  (word
+                    (literal)))))))))))
+
+==================
+Declaration append retains the same target and operator as ordinary assignment
+==================
+typeset x+=1
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (declaration_command
+              (typeset_keyword)
+              (assignment_word
+                name: (variable_name)
+                (assignment_operator)
+                value: (assignment_value
+                  (literal))))))))))

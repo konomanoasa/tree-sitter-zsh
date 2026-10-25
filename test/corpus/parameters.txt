@@ -1,0 +1,902 @@
+==================
+Quoted references own one nested parameter command or parenthesized arithmetic expansion
+==================
+print ${"${x}"} ${"$(print x)"} ${"$((1+2))"}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (double_quoted
+                  (parameter_expansion parameter: (variable_name)))))
+            argument: (word
+              (parameter_expansion
+                parameter: (double_quoted
+                  (command_substitution
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word (literal))
+                              argument: (word (literal)))))))))))
+            argument: (word
+              (parameter_expansion
+                parameter: (double_quoted
+                  (arithmetic_expansion
+                    (arithmetic_source
+                      (arithmetic_number)
+                      (arithmetic_operator)
+                      (arithmetic_number))))))))))))
+
+==================
+Empty reference quotes retain source outside the actual parameter field
+==================
+print ${""x} ${""${x}""} ${"${x}"""} ${""""}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (double_quoted)
+                parameter: (variable_name)))
+            argument: (word
+              (parameter_expansion
+                (double_quoted)
+                parameter: (parameter_expansion parameter: (variable_name))
+                (double_quoted)))
+            argument: (word
+              (parameter_expansion
+                parameter: (double_quoted
+                  (parameter_expansion parameter: (variable_name)))
+                (double_quoted)))
+            argument: (word
+              (parameter_expansion
+                (double_quoted)
+                (double_quoted)))))))))
+
+==================
+Empty reference quotes preserve flags control prefixes and length ownership
+==================
+print ${(U)^""x} ${""#x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags (parameter_flag (parameter_flag_name)))
+                (parameter_prefix_operator)
+                (double_quoted)
+                parameter: (variable_name)))
+            argument: (word
+              (parameter_expansion
+                (double_quoted)
+                (parameter_length_operator)
+                parameter: (variable_name)))))))))
+
+==================
+Subscripts modifiers and default operands follow complete reference quote sequences
+==================
+print ${"${x}"""[1]:h} ${""[1]} ${"":-fallback}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (double_quoted
+                  (parameter_expansion parameter: (variable_name)))
+                (double_quoted)
+                subscript: (array_subscript
+                  source: (subscript_source (subscript_number_candidate)))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))
+            argument: (word
+              (parameter_expansion
+                (double_quoted)
+                subscript: (array_subscript
+                  source: (subscript_source (subscript_number_candidate)))))
+            argument: (word
+              (parameter_expansion
+                (double_quoted)
+                (parameter_value_operator)
+                (parameter_word (literal))))))))))
+
+==================
+Empty quotes before a dollar special parameter do not make square bracket arithmetic
+==================
+print ${""$[1]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (double_quoted)
+                parameter: (special_parameter)
+                subscript: (array_subscript
+                  source: (subscript_source (subscript_number_candidate)))))))))))
+
+==================
+A parameter operand keeps ordinary quoted text and adjacent expansions
+==================
+print ${:-"text$x"${x}}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_value_operator)
+                (parameter_word
+                  (double_quoted
+                    (double_quote_text)
+                    (parameter_expansion parameter: (variable_name)))
+                  (parameter_expansion parameter: (variable_name)))))))))))
+
+==================
+A quoted reference cannot contain an unbraced parameter
+:error
+==================
+print ${"$x"}
+---
+
+==================
+A quoted reference cannot use literal text as a parameter name
+:error
+==================
+print ${"x"}
+---
+
+==================
+A quoted reference cannot use an escaped character as a parameter name
+:error
+==================
+print ${"\x"}
+---
+
+==================
+A quoted nested reference cannot concatenate trailing text
+:error
+==================
+print ${"${x}text"}
+---
+
+==================
+A quoted reference cannot concatenate two nested values
+:error
+==================
+print ${"${x}${x}"}
+---
+
+==================
+A quoted reference cannot contain a backquote substitution
+:error
+==================
+print ${"`print x`"}
+---
+
+==================
+A quoted reference cannot contain square bracket arithmetic
+:error
+==================
+print ${"$[1+2]"}
+---
+
+==================
+A scalar parameter name cannot take trailing empty reference quotes
+:error
+==================
+print ${x""}
+---
+
+==================
+A nested reference cannot concatenate another nonempty quote segment
+:error
+==================
+print ${"${x}""${x}"}
+---
+
+==================
+Reference quotes cannot follow a parameter subscript
+:error
+==================
+print ${"${x}"[1]""}
+---
+
+==================
+Nameless unbraced control prefixes retain source without inventing a parameter name
+==================
+print $~ $= $^ $~~^=
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (parameter_prefix_operator))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (parameter_prefix_operator))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (parameter_prefix_operator))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source
+                  (parameter_prefix_operator)
+                  (parameter_prefix_operator)
+                  (parameter_prefix_operator))))))))))
+
+==================
+Braces after nameless control prefixes remain outside the parameter expansion
+==================
+print $~{ $~{x} $={a,b}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source
+                  (parameter_prefix_operator)))
+              (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source
+                  (parameter_prefix_operator)))
+              (brace_expansion
+                (literal)))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source
+                  (parameter_prefix_operator)))
+              (brace_expansion
+                (brace_alternative
+                  (literal))
+                (brace_separator)
+                (brace_alternative
+                  (literal))))))))))
+
+==================
+An existence prefix without a name remains literal before brace expansion
+==================
+print $+ $+{x} $+{a,b}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))
+            argument: (word
+              (literal)
+              (brace_expansion
+                (literal)))
+            argument: (word
+              (literal)
+              (brace_expansion
+                (brace_alternative
+                  (literal))
+                (brace_separator)
+                (brace_alternative
+                  (literal))))))))))
+
+==================
+An invalid existence target leaves the complete unbraced prefix sequence as quoted text
+==================
+print "$+? $++x $+~x $~+{a,b}"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (double_quoted (double_quote_text)))))))))
+
+==================
+Valid existence targets and control targets stay inside the unbraced source
+==================
+print $~+x $+1 $^x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source
+                  (parameter_prefix_operator)
+                  (parameter_prefix_operator)
+                  (variable_name))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source
+                  (parameter_prefix_operator)
+                  (positional_parameter))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source
+                  (parameter_prefix_operator)
+                  (variable_name))))))))))
+
+==================
+Quoted literal prefix text preserves a following independent expansion
+==================
+print "$+${x}" "$~{x}"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (double_quote_text)
+                (parameter_expansion parameter: (variable_name))))
+            argument: (word
+              (double_quoted
+                (parameter_expansion
+                  parameter: (parameter_source (parameter_prefix_operator)))
+                (double_quote_text)))))))))
+
+==================
+Nameless control sources retain subscript and modifier suffix candidates
+==================
+print "$~[1]" "$=:u"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (parameter_expansion
+                  parameter: (parameter_source (parameter_prefix_operator))
+                  (parameter_suffix_source
+                    (array_subscript
+                      source: (subscript_source (subscript_number_candidate)))))))
+            argument: (word
+              (double_quoted
+                (parameter_expansion
+                  parameter: (parameter_source (parameter_prefix_operator))
+                  (parameter_suffix_source
+                    (parameter_modifier (modifier_prefix) name: (modifier_name))))))))))))
+
+==================
+Dollar special parameters retain operations and subscripts before nested expansions
+==================
+print ${$-abc} ${$[1]} ${$((1))} ${$(print x)} ${${x}}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (special_parameter)
+                (parameter_value_operator)
+                (parameter_word (literal))))
+            argument: (word
+              (parameter_expansion
+                parameter: (special_parameter)
+                subscript: (array_subscript
+                  source: (subscript_source (subscript_number_candidate)))))
+            argument: (word
+              (parameter_expansion
+                parameter: (arithmetic_expansion
+                  (arithmetic_source (arithmetic_number)))))
+            argument: (word
+              (parameter_expansion
+                parameter: (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            argument: (word (literal))))))))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_expansion parameter: (variable_name))))))))))
+
+==================
+Braced parameter references retain all repeated subscripts before modifiers
+==================
+print ${x[1][2]:h} ${${x}[1][2]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                subscript: (array_subscript
+                  source: (subscript_source (subscript_number_candidate)))
+                subscript: (array_subscript
+                  source: (subscript_source (subscript_number_candidate)))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_expansion parameter: (variable_name))
+                subscript: (array_subscript
+                  source: (subscript_source (subscript_number_candidate)))
+                subscript: (array_subscript
+                  source: (subscript_source (subscript_number_candidate)))))))))))
+
+==================
+Special parameter references take priority over parameter operations
+==================
+print ${#} ${?} ${-} ${##3}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (parameter_expansion parameter: (special_parameter)))
+            argument: (word (parameter_expansion parameter: (special_parameter)))
+            argument: (word (parameter_expansion parameter: (special_parameter)))
+            argument: (word
+              (parameter_expansion
+                parameter: (special_parameter)
+                (parameter_pattern_operator)
+                (parameter_pattern (literal))))))))))
+
+==================
+Length applies to special parameters and the default value of an empty reference
+==================
+print ${##} ${#?} ${#-} ${#:-word}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_length_operator)
+                parameter: (special_parameter)))
+            argument: (word
+              (parameter_expansion
+                (parameter_length_operator)
+                parameter: (special_parameter)))
+            argument: (word
+              (parameter_expansion
+                (parameter_length_operator)
+                parameter: (special_parameter)))
+            argument: (word
+              (parameter_expansion
+                (parameter_length_operator)
+                (parameter_value_operator)
+                (parameter_word (literal))))))))))
+
+==================
+Unbraced length candidates include positional and special parameters
+==================
+print $#12 $#? $#- $#$ $#* $#@
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (special_parameter) (positional_parameter))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (special_parameter) (special_parameter))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (special_parameter) (special_parameter))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (special_parameter) (special_parameter))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (special_parameter) (special_parameter))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source (special_parameter) (special_parameter))))))))))
+
+==================
+Unbraced length spelling retains an unresolved parameter source
+==================
+print $#name
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_source
+                  (special_parameter)
+                  (variable_name))))))))))
+
+==================
+An unbraced subscript is retained as a candidate
+==================
+print $a[1]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (array_subscript source: (subscript_source (subscript_number_candidate))))))))))))
+
+==================
+Closing braces inside subscripts remain subscript text
+==================
+x[a}]=1
+print $x[}]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              subscript: (array_subscript
+                source: (subscript_source
+                  (subscript_name_candidate)
+                  (subscript_text)))
+              (assignment_operator)
+              value: (assignment_value (literal)))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (array_subscript
+                    source: (subscript_source (subscript_text))))))))))))
+
+==================
+Nested parentheses after a subscript bracket are groups rather than flags
+==================
+print $x[((1))]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (array_subscript
+                    source: (subscript_source
+                      (subscript_group
+                        (subscript_source
+                          (subscript_group
+                            (subscript_source (subscript_number_candidate))))))))))))))))
+
+==================
+Subscript lexical candidates do not decide arithmetic or pattern interpretation
+==================
+print ${a[1+2,foo*]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                subscript: (array_subscript
+                  source: (subscript_source
+                    (subscript_number_candidate)
+                    (subscript_operator_candidate)
+                    (subscript_number_candidate)
+                    (subscript_comma)
+                    (subscript_name_candidate)
+                    (subscript_operator_candidate)))))))))))
+
+==================
+An unbraced incomplete subscript cannot consume an outer pipeline operator
+==================
+print $a[1|print next]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion parameter: (variable_name))
+              (literal))))
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+An unbraced opening bracket at EOF remains ordinary word source
+==================
+print $x[
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion parameter: (variable_name))
+              (literal))))))))
+
+==================
+An unbraced unfinished subscript at EOF remains ordinary word source
+==================
+print $x[1
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion parameter: (variable_name))
+              (literal))))))))
+
+==================
+A braced opening subscript requires its closing bracket
+:error
+==================
+print ${x[}
+---
+
+==================
+A braced subscript with an operand requires its closing bracket
+:error
+==================
+print ${x[1}
+---
+
+==================
+Double quotation cannot supply a missing braced parameter subscript closer
+:error
+==================
+print -r -- "${x[{}"
+---
+
+==================
+Arithmetic context cannot supply a missing braced parameter subscript closer
+:error
+==================
+(( ${x[} ))
+---
+
+==================
+A quoted braced parameter rejects an unmatched unescaped subscript brace
+:error
+==================
+print -r -- "${x[{]}"
+---
+
+==================
+An arithmetic braced parameter rejects an unmatched unescaped subscript brace
+:error
+==================
+(( ${x[{]} ))
+---
+
+==================
+An incomplete nested subscript preserves the enclosing parameter end
+==================
+print ${x:-$a[1}after]
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word
+                  (parameter_expansion
+                    parameter: (variable_name))
+                  (literal)))
+              (literal))))))))
+
+==================
+A quoted parameter does not give an apostrophe ownership of its closing brace
+==================
+print "${x:-'a}'"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (double_quoted
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_value_operator)
+                  (parameter_word
+                    (literal)))
+                (double_quote_text)))))))))
+
+==================
+A quoted parameter does not start a brace expansion
+==================
+print "${x:-{a}"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (double_quoted
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_value_operator)
+                  (parameter_word
+                    (literal)))))))))))
+
+==================
+incomplete source reports standard recovery: "print ${x:s}\n"
+:error
+==================
+print ${x:s}
+---
+
+==================
+incomplete source reports standard recovery: "print ${x:s/abc}\n"
+:error
+==================
+print ${x:s/abc}
+---
+
+==================
+incomplete source reports standard recovery: "print ${x:F}\n"
+:error
+==================
+print ${x:F}
+---
+
+==================
+An incomplete subscript candidate cannot cross the enclosing quote and word boundary
+==================
+print "$a[1" "]"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (parameter_expansion parameter: (variable_name))
+                (double_quote_text)))
+            argument: (word
+              (double_quoted (double_quote_text)))))))))
+
+==================
+Apostrophes in a double quoted suffix do not hide an explicit expansion
+==================
+print "$a['$i']"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_suffix_source
+                    (array_subscript
+                      source: (subscript_source
+                        (subscript_text)
+                        (parameter_expansion parameter: (variable_name))
+                        (subscript_text)))))))))))))

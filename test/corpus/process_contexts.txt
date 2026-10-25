@@ -1,0 +1,289 @@
+==================
+A dynamic directory name retains an original process substitution
+==================
+print ~[a<(:)]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (tilde_expansion
+                (literal)
+                (dynamic_directory_name
+                  source: (directory_name_source
+                    (directory_name_text)
+                    (process_substitution
+                      body: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command name: (word (literal))))))))))))))))))
+
+==================
+A file process spelling after a word prefix stays ordinary source
+==================
+print pre=(if)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal)
+              (glob_qualifier_candidate
+                (glob_qualifier_list_candidate
+                  (pattern_candidate_text))))))))))
+
+==================
+File redirections retain standalone process substitutions in all three forms
+==================
+: < <(:) > >(:) < =(:)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))))))))))
+
+==================
+A process substitution argument retains its trailing literal
+==================
+: <(:)x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (process_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command name: (word (literal))))))))
+              (literal))))))))
+
+==================
+File redirections with leading source retain process substitution concatenation
+==================
+: < pre<(:)x > "">(:)x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (literal)
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))
+                (literal)))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (double_quoted)
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))
+                (literal)))))))))
+
+==================
+Here string values retain process substitution concatenation
+==================
+: <<< <(:)x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (here_string
+              (here_string_operator)
+              value: (word
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))
+                (literal)))))))))
+
+==================
+Here document delimiters retain process substitution concatenation and their matching end
+==================
+: << <(:)x
+BODY
+<(:)x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))
+                (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+A separated argument and an adjacent redirect follow a complete process substitution filename
+==================
+: < <(:) x > >(:)<in
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))))
+            argument: (word (literal))
+            (io_file
+              (redirect_operator)
+              filename: (word
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command name: (word (literal))))))))))
+            (io_file (redirect_operator) filename: (word (literal)))))))))
+
+==================
+A direct input process substitution rejects a trailing literal
+:error
+==================
+: < <(:)x
+---
+
+==================
+A direct output process substitution rejects even an empty quoted suffix
+:error
+==================
+: > >(:)""
+---
+
+==================
+A direct process substitution rejects a suffix whose expansion could be empty
+:error
+==================
+: < <(:)${x}
+---
+
+==================
+Adjacent process substitutions cannot split into separate redirect arguments
+:error
+==================
+: < <(:)<(:)
+---
+
+==================
+A glob qualifier cannot follow a direct process substitution filename
+:error
+==================
+: < <(:)(N)
+---
+
+==================
+A continuation cannot separate a process substitution filename from a suffix
+:error
+==================
+: < <(:)\
+x
+---
+
+==================
+Append redirections require a complete process substitution filename
+:error
+==================
+: >> <(:)x
+---
+
+==================
+Temporary file substitutions require a complete redirection filename
+:error
+==================
+: > =(:)x
+---
+
+==================
+A redirect inside a function definition rejects a process substitution suffix
+:error
+==================
+f() { : < <(:)x; }
+---

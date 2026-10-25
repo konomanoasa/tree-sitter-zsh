@@ -1,0 +1,328 @@
+==================
+Modifier controls own delimited source arguments before the controlled modifier
+==================
+print ${x:W[,]u}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_modifier
+                  (modifier_prefix)
+                  (modifier_control
+                    name: (modifier_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter)))
+                  name: (modifier_name))))))))))
+
+==================
+Unbraced modifier operands retain neutral text and groups
+==================
+print $x:s/(a|b)/*/
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source
+                      (parameter_candidate_group
+                        (parameter_candidate_source
+                          (parameter_candidate_text)
+                          (parameter_candidate_text)
+                          (parameter_candidate_text))))
+                    (modifier_separator)
+                    replacement: (parameter_candidate_source
+                      (parameter_candidate_text))
+                    (modifier_separator)))))))))))
+
+==================
+A modifier operand boundary preserves the closing parenthesis and following word
+==================
+print $x:s/a(/)y/ next
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_group))
+                    (modifier_separator)
+                    replacement: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_text))
+                    (modifier_separator)))))
+            argument: (word (literal))))))))
+
+==================
+A parenthesis after the final modifier separator belongs to the surrounding word
+==================
+print $x:s/a(/y/)tail
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_group))
+                    (modifier_separator)
+                    replacement: (parameter_candidate_source
+                      (parameter_candidate_text))
+                    (modifier_separator))))
+              (literal)
+              (literal))))))))
+
+==================
+Nested candidate parentheses retain both closing characters across a modifier separator
+==================
+print $x:s/a((/))y/
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_group
+                        (parameter_candidate_source
+                          (parameter_candidate_group))))
+                    (modifier_separator)
+                    replacement: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_text)
+                      (parameter_candidate_text))
+                    (modifier_separator)))))))))))
+
+==================
+A modifier separator takes priority over a pattern flag prefix
+==================
+print $x:s#a(#)y#
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_group))
+                    (modifier_separator)
+                    replacement: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_text))
+                    (modifier_separator)))))))))))
+
+==================
+A quoted opening parenthesis cannot protect a modifier closing parenthesis
+:error
+==================
+print $x:s/a"("/)y/
+---
+
+==================
+Parentheses used as modifier delimiters preserve the following word boundary
+==================
+print $x:s(a(b(:s)b)c) next
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source
+                      (parameter_candidate_text))
+                    (modifier_separator)
+                    replacement: (parameter_candidate_source
+                      (parameter_candidate_text))
+                    (modifier_separator))
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source
+                      (parameter_candidate_text))
+                    (modifier_separator)
+                    replacement: (parameter_candidate_source
+                      (parameter_candidate_text))
+                    (modifier_separator)))))
+            argument: (word (literal))))))))
+
+==================
+An adjacent empty parenthesis pair still ends an unbraced modifier word
+:error
+==================
+print $x:s(a(b()))
+---
+
+==================
+A modifier cannot consume an extra outer closing parenthesis
+:error
+==================
+print $x:s/a(/)y/)
+---
+
+==================
+A quoted modifier operand keeps a literal unmatched parenthesis within its quote
+==================
+print "$x:s/a/(b"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_suffix_source
+                    (parameter_modifier
+                      (modifier_prefix)
+                      name: (modifier_name)
+                      (modifier_separator)
+                      pattern: (parameter_candidate_source (parameter_candidate_text))
+                      (modifier_separator)
+                      replacement: (parameter_candidate_source (parameter_candidate_text)))))))))))))
+
+==================
+Unbraced incomplete modifiers retain only source that is present
+==================
+print $x:f $x:F:3 $x:s/abc
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    (modifier_control name: (modifier_name))))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    (modifier_control
+                      name: (modifier_name)
+                      argument: (flag_argument
+                        (flag_argument_delimiter)
+                        (flag_argument_source (flag_argument_text))))))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source (parameter_candidate_text))))))))))))
+
+==================
+A modifier candidate cannot consume the bracket of a dynamic directory name
+==================
+print ~[$name:s/a/b]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (tilde_expansion
+                (literal)
+                (dynamic_directory_name
+                  source: (directory_name_source
+                    (parameter_expansion
+                      parameter: (variable_name)
+                      (parameter_suffix_source
+                        (parameter_modifier
+                          (modifier_prefix)
+                          name: (modifier_name)
+                          (modifier_separator)
+                          pattern: (parameter_candidate_source (parameter_candidate_text))
+                          (modifier_separator)
+                          replacement: (parameter_candidate_source (parameter_candidate_text)))))))))))))))

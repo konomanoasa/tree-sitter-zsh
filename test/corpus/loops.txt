@@ -1,0 +1,2020 @@
+==================
+A parenthesized for word list permits a do body
+==================
+for x (a b) do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+Parenthesized for layout preserves keyword spellings as words
+==================
+for x (
+if; do # words
+done
+); do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                word: (word
+                  (literal))
+                (comment
+                  (comment_text))
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+Separators in an empty parenthesized for word list do not create words
+==================
+for x (; ;
+) :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A comment and newline before in remain part of the for header
+==================
+for x # variable
+in a; do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              (comment
+                (comment_text))
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+Multiple for names remain names before a newline and in
+==================
+for x y
+in a b; :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A comment and newline before in remain part of the select header
+==================
+select x # variable
+in a b; do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              (comment
+                (comment_text))
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+A documented short select retains its sublist body after a newline
+==================
+select x in a b
+:
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A semicolon before in cannot continue a for header
+:error
+==================
+for x; in a b; do :; done
+---
+
+==================
+A semicolon before in cannot continue a select header
+:error
+==================
+select x; in a b; do :; done
+---
+
+==================
+A newline before parentheses does not introduce for words
+:error
+==================
+for x
+(a b) :
+---
+
+==================
+A parenthesized for with do still requires done
+:error
+==================
+for x (a) do :
+---
+
+==================
+A short select with in still requires its header terminator
+:error
+==================
+select x in a b :
+---
+
+==================
+Semicolon-only while condition and body remain separate lists
+==================
+while ; do; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list)
+              body: (do_group
+                (do_keyword)
+                body: (list)
+                (done_keyword)))))))))
+
+==================
+A for loop retains a semicolon-only do body
+==================
+for x in a; do; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (do_group
+                (do_keyword)
+                body: (list)
+                (done_keyword)))))))))
+
+==================
+A repeat loop retains a semicolon-only do body
+==================
+repeat 1 do; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (repeat_keyword)
+              count: (word
+                (literal))
+              body: (do_group
+                (do_keyword)
+                body: (list)
+                (done_keyword)))))))))
+
+==================
+A short for loop retains its parenthesized words and sublist body
+==================
+for x (a b) print $x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal))
+                      argument: (word
+                        (parameter_expansion
+                          parameter: (variable_name))))))))))))))
+
+==================
+Foreach uses native end syntax
+==================
+foreach x (a)
+print $x
+end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (parameter_expansion
+                            parameter: (variable_name))))))))
+              (end_keyword))))))))
+
+==================
+Short while uses a delimited condition and a sublist body
+==================
+while ((0)) print never
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (arithmetic_command
+                          (arithmetic_source
+                            (arithmetic_number))))))))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal))
+                      argument: (word
+                        (literal)))))))))))))
+
+==================
+Empty for parentheses denote an empty word list
+==================
+for x () :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A direct brace loop body leaves its following pipe outside the loop
+==================
+repeat 0 { :; } | :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (repeat_keyword)
+              count: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal)))))))))))))))
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+A zero-count repeat retains its header without a synthetic body
+==================
+repeat 0
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (repeat_keyword)
+              count: (word
+                (literal)))))))))
+
+==================
+A while condition at EOF retains only its source condition
+==================
+while :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+A for word header still requires its ending before EOF
+:error
+==================
+for x in a b
+---
+
+==================
+A newline completes a for word header without requiring a body
+==================
+for x in a b
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              separator: (term))))))))
+
+==================
+A brace after a while separator extends the condition of a bodyless loop
+==================
+while :; { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (brace_group
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal))))))))))))))))))))
+
+==================
+An empty for word header may end without a body
+==================
+for x in;
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword))
+              separator: (term))))))))
+
+==================
+A for header owns its final semicolon when the body is omitted
+:cst
+==================
+for x in a;
+---
+0:0  - 0:11   program
+0:0  - 0:11     list
+0:0  - 0:11       sublist
+0:0  - 0:11         pipeline
+0:0  - 0:11           command
+0:0  - 0:11             complex_command
+0:0  - 0:11               for_clause
+0:0  - 0:3                  for_keyword `for`
+0:4  - 0:5                  name: name `x`
+0:6  - 0:10                 words: loop_words
+0:6  - 0:8                    in_keyword `in`
+0:9  - 0:10                   word: word
+0:9  - 0:10                     literal `a`
+0:10 - 0:11                 separator: term
+0:10 - 0:11                   ";"
+
+==================
+Foreach requires its documented parenthesized words
+:error
+==================
+foreach x in a; :; end
+---
+
+==================
+Foreach accepts a direct brace body
+==================
+foreach x (a) { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal)))))))))))))))))))
+
+==================
+Foreach do body keeps the following redirect and pipe outside the body
+==================
+foreach x (a); # header
+do :; done >out | cat
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              separator: (term
+                (comment
+                  (comment_text)))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+Foreach brace body keeps the following redirect and and-or list outside the body
+==================
+foreach x (a) { :; } >out && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal))))))))))))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+The documented foreach list may begin with a brace group
+==================
+foreach x (a) { :; }; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (brace_group
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal)))))))))))))
+              (end_keyword))))))))
+
+==================
+The documented foreach list may begin with an always clause
+==================
+foreach x (a) { :; } always { :; }; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (always_clause
+                          body: (brace_group
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal))))))))
+                          (always_keyword)
+                          always: (brace_group
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal))))))))))))))
+              (end_keyword))))))))
+
+==================
+Nested foreach brace and do bodies leave end to the outer foreach
+==================
+foreach outer (a)
+  foreach inner (b) { :; }
+  foreach inner (c) do :; done
+end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (for_clause
+                          (foreach_keyword)
+                          name: (name)
+                          words: (loop_words
+                            word: (word
+                              (literal)))
+                          body: (sublist
+                            (pipeline
+                              (command
+                                (complex_command
+                                  (brace_group
+                                    body: (list
+                                      (sublist
+                                        (pipeline
+                                          (command
+                                            (simple_command
+                                              name: (word
+                                                (literal)))))))))))))))))
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (for_clause
+                          (foreach_keyword)
+                          name: (name)
+                          words: (loop_words
+                            word: (word
+                              (literal)))
+                          body: (do_group
+                            (do_keyword)
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))
+                            (done_keyword))))))))
+              (end_keyword))))))))
+
+==================
+Foreach accepts explicitly delimited empty bodies in all three forms
+==================
+foreach x (a) { }
+foreach x (a) do done
+foreach x (a) end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (do_group
+                (do_keyword)
+                (done_keyword)))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              (end_keyword))))))))
+
+==================
+Foreach requires end after an ordinary command body
+:error
+==================
+foreach x (a) :
+---
+
+==================
+Foreach requires end when its body starts with a redirection
+:error
+==================
+foreach x (a) >out { :; }
+---
+
+==================
+Foreach requires an explicit body after header separators
+:error
+==================
+foreach x (a);
+---
+
+==================
+Parenthesized for header separators leave the whole sublist in the body
+==================
+for x (a); ;
+: && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))
+                (and_if)
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+Repeat header separators precede its short body
+==================
+repeat 3; :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (repeat_keyword)
+              count: (word
+                (literal))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+Repeat header separators also precede its do body
+==================
+repeat 3; ;
+do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (repeat_keyword)
+              count: (word
+                (literal))
+              separator: (term)
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+A short for without parentheses requires a header terminator
+:error
+==================
+for x { :; }
+---
+
+==================
+A parenthesized for may omit its body after header separators
+==================
+for x (a);
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              separator: (term))))))))
+
+==================
+A nonzero repeat may omit its body after header separators
+==================
+repeat 3;
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (repeat_keyword)
+              count: (word
+                (literal))
+              separator: (term))))))))
+
+==================
+A while test ends directly before do
+==================
+while [[ x ]] do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (conditional_command
+                          condition: (word
+                            (literal))))))))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+An until arithmetic condition ends directly before do
+==================
+until ((1)) do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (until_clause
+              (until_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (arithmetic_command
+                          (arithmetic_source
+                            (arithmetic_number))))))))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+A brace after a separator remains in the condition before do
+==================
+while [[ x ]]; { :; } do :; done
+:
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (conditional_command
+                          condition: (word
+                            (literal)))))))
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (brace_group
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal)))))))))))))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+A second brace supplies the body after a brace in the condition
+==================
+until [[ x ]]; { :; } { :; }
+:
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (until_clause
+              (until_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (conditional_command
+                          condition: (word
+                            (literal)))))))
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (brace_group
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal)))))))))))))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal)))))))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+Explicit do and done preserve an empty body
+==================
+while ((0)) do done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (arithmetic_command
+                          (arithmetic_source
+                            (arithmetic_number))))))))
+              body: (do_group
+                (do_keyword)
+                (done_keyword)))))))))
+
+==================
+A while condition owns the brace after a conditional and separator
+==================
+while [[ x ]]; { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (conditional_command
+                          condition: (word
+                            (literal)))))))
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (brace_group
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal))))))))))))))))))))
+
+==================
+An until condition owns the brace after a conditional and separator
+==================
+until [[ x ]]; { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (until_clause
+              (until_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (conditional_command
+                          condition: (word
+                            (literal)))))))
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (brace_group
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal))))))))))))))))))))
+
+==================
+A substitution can end after a bodyless conditional loop
+==================
+print "$(while [[ x ]]; { :; })"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (double_quoted
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (complex_command
+                            (while_clause
+                              (while_keyword)
+                              condition: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (complex_command
+                                        (conditional_command
+                                          condition: (word
+                                            (literal)))))))
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (complex_command
+                                        (brace_group
+                                          body: (list
+                                            (sublist
+                                              (pipeline
+                                                (command
+                                                  (simple_command
+                                                    name: (word
+                                                      (literal))))))))))))))))))))))))))))
+
+==================
+A final simple command still needs a separator before do
+:error
+==================
+while [[ x ]]; true do :; done
+---
+
+==================
+A for name at EOF has no synthetic body
+:cst
+==================
+for x
+---
+0:0 - 0:5   program
+0:0 - 0:5     list
+0:0 - 0:5       sublist
+0:0 - 0:5         pipeline
+0:0 - 0:5           command
+0:0 - 0:5             complex_command
+0:0 - 0:5               for_clause
+0:0 - 0:3                 for_keyword `for`
+0:4 - 0:5                 name: name `x`
+
+==================
+A real EOF comment completes a for word header
+:cst
+==================
+for x in a # end
+---
+0:0  - 0:16   program
+0:0  - 0:16     list
+0:0  - 0:16       sublist
+0:0  - 0:16         pipeline
+0:0  - 0:16           command
+0:0  - 0:16             complex_command
+0:0  - 0:16               for_clause
+0:0  - 0:3                  for_keyword `for`
+0:4  - 0:5                  name: name `x`
+0:6  - 0:10                 words: loop_words
+0:6  - 0:8                    in_keyword `in`
+0:9  - 0:10                   word: word
+0:9  - 0:10                     literal `a`
+0:11 - 0:16                 comment
+0:11 - 0:16                   comment_text `# end`
+
+==================
+An empty parenthesized for header may end at EOF
+==================
+for x ()
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words))))))))
+
+==================
+An outer then and fi close bodyless loops in separate branches
+==================
+if for x then repeat 2 fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (for_clause
+                            (for_keyword)
+                            name: (name)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (repeat_clause
+                            (repeat_keyword)
+                            count: (word
+                              (literal)))))))))
+              (fi_keyword))))))))
+
+==================
+A do group can end after a bodyless nested repeat
+==================
+for x (a) do repeat 2 done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (repeat_clause
+                            (repeat_keyword)
+                            count: (word
+                              (literal))))))))
+                (done_keyword)))))))))
+
+==================
+A logical operator after an omitted loop body stays outside the loop
+==================
+for x && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+A pipe after an omitted loop body stays outside the loop
+==================
+repeat 2 | :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (repeat_keyword)
+              count: (word
+                (literal)))))
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+An asynchronous separator remains outside a bodyless loop by contract
+:cst
+==================
+repeat 2 &
+---
+0:0  - 0:10   program
+0:0  - 0:10     list
+0:0  - 0:8        sublist
+0:0  - 0:8          pipeline
+0:0  - 0:8            command
+0:0  - 0:8              complex_command
+0:0  - 0:8                repeat_clause
+0:0  - 0:6                  repeat_keyword `repeat`
+0:7  - 0:8                  count: word
+0:7  - 0:8                    literal `2`
+0:9  - 0:10       "&"
+
+==================
+A redirection after the loop header is a real short body
+==================
+repeat 2 >out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (repeat_keyword)
+              count: (word
+                (literal))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_file
+                        (redirect_operator)
+                        filename: (word
+                          (literal))))))))))))))
+
+==================
+A prefix redirection stays on a bodyless loop
+==================
+>out repeat 2
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (repeat_clause
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              (repeat_keyword)
+              count: (word
+                (literal)))))))))
+
+==================
+A missing for name is not body omission
+:error
+==================
+for
+---
+
+
+==================
+A missing repeat count is not body omission
+:error
+==================
+repeat
+---
+
+
+==================
+An unfinished parenthesized for header is not body omission
+:error
+==================
+for x (a
+---
+
+
+==================
+A started repeat do group still requires done
+:error
+==================
+repeat 0 do
+---
+
+
+==================
+A started for brace body still requires its closing brace
+:error
+==================
+for x (a) {
+---
+
+
+==================
+A started repeat subshell body still requires its closing parenthesis
+:error
+==================
+repeat 2 (
+---
+
+
+==================
+A redirection short body still needs the documented plain for terminator
+:error
+==================
+for x >out
+---
+
+
+==================
+An attached hash does not complete a for word header
+:error
+==================
+for x in a#end
+---
+
+
+==================
+A quoted hash does not complete a for word header
+:error
+==================
+for x in a '#end'
+---
+
+
+==================
+An explicit do body takes precedence over ending an outer condition
+==================
+if repeat 2 do done; then fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (repeat_clause
+                            (repeat_keyword)
+                            count: (word
+                              (literal))
+                            body: (do_group
+                              (do_keyword)
+                              (done_keyword))))))))
+                (then_keyword))
+              (fi_keyword))))))))
+
+==================
+An until loop without condition or body retains only its keyword
+:cst
+==================
+until
+---
+0:0 - 0:5   program
+0:0 - 0:5     list
+0:0 - 0:5       sublist
+0:0 - 0:5         pipeline
+0:0 - 0:5           command
+0:0 - 0:5             complex_command
+0:0 - 0:5               until_clause
+0:0 - 0:5                 until_keyword `until`
+
+==================
+An EOF comment remains outside the bodyless while condition
+:cst
+==================
+while false # tail
+---
+0:0  - 0:18   program
+0:0  - 0:12     list
+0:0  - 0:12       sublist
+0:0  - 0:12         pipeline
+0:0  - 0:12           command
+0:0  - 0:12             complex_command
+0:0  - 0:12               while_clause
+0:0  - 0:5                  while_keyword `while`
+0:6  - 0:12                 condition: list
+0:6  - 0:11                   sublist
+0:6  - 0:11                     pipeline
+0:6  - 0:11                       command
+0:6  - 0:11                         simple_command
+0:6  - 0:11                           name: word
+0:6  - 0:11                             literal `false`
+0:12 - 0:18     comment
+0:12 - 0:18       comment_text `# tail`
+
+==================
+Newlines and comments continue a while condition without making a body
+==================
+while false # condition
+false
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))
+                (comment
+                  (comment_text))
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+A bodyless until condition owns its separated semicolons
+:cst
+==================
+until true; ;
+---
+0:0  - 0:13   program
+0:0  - 0:13     list
+0:0  - 0:13       sublist
+0:0  - 0:13         pipeline
+0:0  - 0:13           command
+0:0  - 0:13             complex_command
+0:0  - 0:13               until_clause
+0:0  - 0:5                  until_keyword `until`
+0:6  - 0:13                 condition: list
+0:6  - 0:10                   sublist
+0:6  - 0:10                     pipeline
+0:6  - 0:10                       command
+0:6  - 0:10                         simple_command
+0:6  - 0:10                           name: word
+0:6  - 0:10                             literal `true`
+0:10 - 0:11                   ";"
+0:12 - 0:13                   ";"
+
+==================
+An asynchronous separator remains inside a bodyless while condition
+==================
+while false & false
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+A final logical operator remains in a bodyless until condition
+==================
+until true ||
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (until_clause
+              (until_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))
+                  (or_if))))))))))
+
+==================
+Outer then and fi delimit separate bodyless condition loops
+==================
+if while false; then until true; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (while_clause
+                            (while_keyword)
+                            condition: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (until_clause
+                            (until_keyword)
+                            condition: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal))))))))))))))
+              (fi_keyword))))))))
+
+==================
+Case termination follows a bodyless while condition
+==================
+case x in x) while false;; esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (while_clause
+                            (while_keyword)
+                            condition: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))
+                (case_break))
+              (esac_keyword))))))))
+
+==================
+Only redirects after a real loop body belong outside the condition
+==================
+>before while false >condition; do :; done >after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        (io_file
+                          (redirect_operator)
+                          filename: (word
+                            (literal))))))))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+An explicitly opened while do group still requires done
+:error
+==================
+while false; do
+---
+
+
+==================
+An explicitly opened until brace body still requires its closing brace
+:error
+==================
+until [[ x ]] {
+---
+
+
+==================
+An explicitly opened while subshell body still requires its closing parenthesis
+:error
+==================
+while ((0)) (
+---
+
+
+==================
+A while condition pipe still requires its next command
+:error
+==================
+while false |
+---
+
+
+==================
+A bodyless loop cannot absorb a case terminator outside a case
+:error
+==================
+until true;;
+---
+
+
+==================
+A newline comment after a condition logical operator remains in its sublist
+==================
+while false && # tail
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))
+                  (and_if)
+                  (comment
+                    (comment_text)))))))))))

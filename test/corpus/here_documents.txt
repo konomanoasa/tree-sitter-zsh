@@ -1,0 +1,493 @@
+==================
+Unquoted heredoc prefixes preserve literal fallback and independent expansions
+==================
+cat <<E
+$+${x} $~{a,b}
+E
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here (dless) here_end: (word (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text)
+          (parameter_expansion parameter: (variable_name))
+          (here_document_text)
+          (parameter_expansion
+            parameter: (parameter_source (parameter_prefix_operator)))
+          (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+Pending heredocs end with the command substitution without invented bodies
+==================
+print "$(<<E)" "$(cat <<F <<'G')"
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            (io_here (dless) here_end: (word (literal)))))))))))
+            argument: (word
+              (double_quoted
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            (io_here (dless) here_end: (word (literal)))
+                            (io_here (dless) here_end: (word (single_quoted (single_quote_content))))))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal)) argument: (word (literal))))))))
+
+==================
+Backquote and process substitutions release their pending heredocs
+==================
+print `cat <<E` <(cat <<F) >(cat <<G) =(cat <<H)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (backquote_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          (io_here (dless) here_end: (word (literal))))))))))
+            argument: (word
+              (process_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          (io_here (dless) here_end: (word (literal))))))))))
+            argument: (word
+              (process_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          (io_here (dless) here_end: (word (literal))))))))))
+            argument: (word
+              (process_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          (io_here (dless) here_end: (word (literal))))))))))))))))
+
+==================
+Closing an inner substitution preserves the pending outer document
+==================
+: <<OUT "$(cat <<E)"
+body
+OUT
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here (dless) here_end: (word (literal)))
+            argument: (word
+              (double_quoted
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            (io_here (dless) here_end: (word (literal)))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal)) argument: (word (literal))))))))
+
+==================
+Closing a substitution in a document preserves the active outer body
+==================
+cat <<OUT
+before$(<<F)after
+OUT
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here (dless) here_end: (word (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text)
+          (command_substitution
+            body: (list
+              (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_here (dless) here_end: (word (literal)))))))))
+          (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal)) argument: (word (literal))))))))
+
+==================
+A subshell close leaves its heredoc pending until the next newline
+==================
+(cat <<E)
+body
+E
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (subshell
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        (io_here
+                          (dless)
+                          here_end: (word
+                            (literal)))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+A parenthesis after body start is document text before the real substitution close
+==================
+print "$(cat <<E
+)
+E
+)"
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            (io_here (dless) here_end: (word (literal)))))))
+                    (here_document_sequence
+                      line_end: (here_document_line_end)
+                      document: (here_document
+                        (here_document_body (here_document_text))
+                        (here_document_end (here_document_end_text))))))))))))))
+
+==================
+A pending heredoc does not supply a missing command substitution close
+:error
+==================
+print "$(cat <<E
+---
+
+==================
+A parenthesis within an unterminated body does not close the command substitution
+:error
+==================
+print "$(cat <<E
+body)"
+print AFTER
+---
+
+==================
+An unclosed parameter opener in an unquoted heredoc is rejected
+:error
+==================
+cat <<OUT
+${
+OUT
+print AFTER
+---
+
+==================
+An unclosed named parameter in an unquoted heredoc is rejected
+:error
+==================
+cat <<OUT
+${x
+OUT
+print AFTER
+---
+
+==================
+An unclosed parameter subscript in an unquoted heredoc is rejected
+:error
+==================
+cat <<OUT
+${x[
+OUT
+print AFTER
+---
+
+==================
+A quoted operand brace cannot close the surrounding heredoc parameter
+:error
+==================
+cat <<OUT
+"${x:-"}"
+OUT
+print AFTER
+---
+
+==================
+Heredoc quotes outside a parameter remain text while operand quotes protect braces
+==================
+cat <<OUT
+"${x:-"}"}"
+OUT
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here (dless) here_end: (word (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text)
+          (parameter_expansion
+            parameter: (variable_name)
+            (parameter_value_operator)
+            (parameter_word (double_quoted (double_quote_text))))
+          (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+An ordinary heredoc separates its body and terminator
+==================
+cat <<E
+body
+E
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+Quoted heredoc content is not an expansion
+==================
+cat <<'E'
+$x $(print no) $((1 + 2)) $[3 + 4]
+${x[
+"${x:-"}"
+E
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word (single_quoted (single_quote_content))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (quoted_here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+Arithmetic layout belongs to expansions inside an unquoted heredoc
+==================
+cat <<Z
+pre $((1 + 2)) post
+$[3 + 4]
+Z
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here (dless) here_end: (word (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text)
+          (arithmetic_expansion
+            (arithmetic_source
+              (arithmetic_number)
+              (arithmetic_operator)
+              (arithmetic_number)))
+          (here_document_text)
+          (arithmetic_expansion
+            (arithmetic_source
+              (arithmetic_number)
+              (arithmetic_operator)
+              (arithmetic_number)))
+          (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Nested arithmetic preserves newlines inside a heredoc expansion
+==================
+cat <<Z
+$((1 +
+$((2 + 3))))
+Z
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here (dless) here_end: (word (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (arithmetic_expansion
+            (arithmetic_source
+              (arithmetic_number)
+              (arithmetic_operator)
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (arithmetic_number)))))
+          (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+A split heredoc operator retains its document despite native rejection
+==================
+: <\
+<E
+x
+E
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless (line_continuation))
+              here_end: (word (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))

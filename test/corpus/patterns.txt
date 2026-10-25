@@ -1,0 +1,654 @@
+==================
+Bracket patterns preserve negation ranges and character classes
+==================
+print [!a-z[:digit:]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (pattern_bracket_source
+                (pattern_negation)
+                (pattern_character_range_source
+                  start: (pattern_bracket_text)
+                  (pattern_range_operator)
+                  end: (pattern_bracket_text))
+                (pattern_character_class
+                  (pattern_class_delimiter)
+                  (pattern_class_source
+                    (pattern_class_text))
+                  (pattern_class_delimiter))))))))))
+
+==================
+Character ranges own only their endpoints and leave expanded endpoints unresolved
+==================
+print [ab-dx-z] [a-$x] [あ-お] [a-[:digit:]] []-z]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (pattern_bracket_source
+                (pattern_bracket_text)
+                (pattern_character_range_source
+                  start: (pattern_bracket_text)
+                  (pattern_range_operator)
+                  end: (pattern_bracket_text))
+                (pattern_character_range_source
+                  start: (pattern_bracket_text)
+                  (pattern_range_operator)
+                  end: (pattern_bracket_text))))
+            argument: (word
+              (pattern_bracket_source
+                (pattern_bracket_text)
+                (pattern_range_operator)
+                (parameter_expansion parameter: (variable_name))))
+            argument: (word
+              (pattern_bracket_source
+                (pattern_character_range_source
+                  start: (pattern_bracket_text)
+                  (pattern_range_operator)
+                  end: (pattern_bracket_text))))
+            argument: (word
+              (pattern_bracket_source
+                (pattern_bracket_text)
+                (pattern_range_operator)
+                (pattern_character_class
+                  (pattern_class_delimiter)
+                  (pattern_class_source (pattern_class_text))
+                  (pattern_class_delimiter))))
+            argument: (word
+              (pattern_bracket_source
+                (pattern_character_range_source
+                  start: (pattern_bracket_text)
+                  (pattern_range_operator)
+                  end: (pattern_bracket_text))))))))))
+
+==================
+Brace sequences own endpoints and optional steps while adjacent separators stay source
+==================
+print {1..5..2} {あ..う} {a....c}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (brace_expansion
+                (brace_sequence_source
+                  start: (word (literal))
+                  (brace_separator)
+                  end: (word (literal))
+                  (brace_separator)
+                  step: (word (literal)))))
+            argument: (word
+              (brace_expansion
+                (brace_sequence_source
+                  start: (word (literal))
+                  (brace_separator)
+                  end: (word (literal)))))
+            argument: (word
+              (brace_expansion
+                (literal)
+                (brace_separator)
+                (brace_separator)
+                (literal)))))))))
+
+==================
+Pattern alternatives remain part of one shell word
+==================
+print pre(a|b)post
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal)
+              (pattern_group_source
+                (pattern_alternatives
+                  (pattern_alternative
+                    (literal))
+                  (pattern_alternation)
+                  (pattern_alternative
+                    (literal))))
+              (literal))))))))
+
+==================
+Glob qualifier spelling stays an unresolved candidate
+==================
+print foo(.N)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal)
+              (glob_qualifier_candidate
+                (glob_qualifier_list_candidate
+                  (glob_flag_candidate
+                    name: (glob_flag_name))
+                  (glob_flag_candidate
+                    name: (glob_flag_name)))))))))))
+
+==================
+Numeric ranges retain omitted endpoints
+==================
+print <1->
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (pattern_numeric_range_source
+                start: (pattern_number)
+                (pattern_range_operator)))))))))
+
+==================
+Brace choices retain empty alternatives without synthetic words
+==================
+print {,a,}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (brace_expansion
+                (brace_separator)
+                (brace_alternative
+                  (literal))
+                (brace_separator)))))))))
+
+==================
+A brace word can start with a nested pattern group
+==================
+print {(a|b)}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (brace_expansion
+                (pattern_group_source
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))
+                    (pattern_alternation)
+                    (pattern_alternative
+                      (literal))))))))))))
+
+==================
+incomplete source reports standard recovery: "print [)]\n"
+:error
+==================
+print [)]
+---
+
+==================
+incomplete source reports standard recovery: "print [(a; b)]\n"
+:error
+==================
+print [(a; b)]
+---
+
+==================
+incomplete source reports standard recovery: "print {a, b}\n"
+:error
+==================
+print {a, b}
+---
+
+==================
+incomplete source reports standard recovery: "print a}\n"
+:error
+==================
+print a}
+---
+
+==================
+incomplete source reports standard recovery: "[[ \"|\" == [a|b] ]]\n"
+:error
+==================
+[[ "|" == [a|b] ]]
+---
+
+==================
+A bare bracket does not protect a pipeline separator
+==================
+print [a|print b]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Crossing bracket and parenthesis boundaries retain the shell group
+==================
+print [(a]b)]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal)
+              (pattern_group_source
+                (pattern_alternatives
+                  (pattern_alternative
+                    (literal))))
+              (literal))))))))
+
+==================
+An unclosed word parenthesis ends at a list separator
+==================
+print (a; print yes
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (pattern_group_source
+                (pattern_alternatives
+                  (pattern_alternative
+                    (literal)))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+Empty parentheses retain a function header even after an opening bracket
+==================
+print [()]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word
+                (literal))
+              name: (word
+                (literal))
+              body: (command
+                (simple_command
+                  name: (word
+                    (literal)))))))))))
+
+==================
+An unclosed brace preserves separate words without inventing a delimiter
+==================
+print {a,b c
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (brace_expansion
+                (brace_alternative
+                  (literal))
+                (brace_separator)
+                (brace_alternative
+                  (literal))))
+            argument: (word
+              (literal))))))))
+
+==================
+Parenthesized candidates preserve brace choices starting with whitespace
+==================
+print ({ ,a}x) (#q{ ,a}x)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (glob_qualifier_candidate
+                (glob_qualifier_list_candidate
+                  (brace_expansion
+                    (brace_alternative
+                      (literal))
+                    (brace_separator)
+                    (brace_alternative
+                      (literal)))
+                  (glob_flag_candidate
+                    name: (glob_flag_name)))))
+            argument: (word
+              (pattern_candidate
+                (pattern_candidate_source
+                  (pattern_flags_prefix)
+                  (glob_flag_candidate
+                    name: (glob_flag_name))
+                  (glob_qualifier_list_candidate
+                    (brace_expansion
+                      (brace_alternative
+                        (literal))
+                      (brace_separator)
+                      (brace_alternative
+                        (literal)))
+                    (glob_flag_candidate
+                      name: (glob_flag_name))))))))))))
+
+==================
+Bracket lookahead and parameter parsing agree on a brace followed by whitespace
+==================
+print ${x:-[a{ ,b}c]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word
+                  (pattern_bracket_source
+                    (pattern_bracket_text)
+                    (brace_expansion
+                      (brace_alternative
+                        (literal))
+                      (brace_separator)
+                      (brace_alternative
+                        (literal)))
+                    (pattern_bracket_text)))))))))))
+
+==================
+A pattern bracket preserves an explicit brace expansion
+==================
+print [a{b,c}d]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (pattern_bracket_source
+                (pattern_bracket_text)
+                (brace_expansion
+                  (brace_alternative
+                    (literal))
+                  (brace_separator)
+                  (brace_alternative
+                    (literal)))
+                (pattern_bracket_text)))))))))
+
+==================
+A character class owns its delimiters and preserves a parameter expansion
+==================
+print [[:$class:]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (pattern_bracket_source
+                (pattern_character_class
+                  (pattern_class_delimiter)
+                  (pattern_class_source
+                    (parameter_expansion parameter: (variable_name)))
+                  (pattern_class_delimiter))))))))))
+
+==================
+A brace opened inside a parenthesis retains its closing source outside it
+==================
+print (/{b)}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (glob_qualifier_candidate
+                (glob_qualifier_list_candidate
+                  (glob_flag_candidate
+                    name: (glob_flag_name))
+                  (brace_expansion
+                    (literal))))
+              (brace_closing_source))))))))
+
+==================
+A closing brace in the replacement leaves the parameter closer outside the modifier
+==================
+print ${x:s/a{/b}/}TAIL
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_modifier
+                  (modifier_prefix)
+                  name: (modifier_name)
+                  (modifier_separator)
+                  pattern: (parameter_word (literal) (brace_expansion))
+                  (modifier_separator)
+                  replacement: (parameter_word (literal) (brace_closing_source))
+                  (modifier_separator)))
+              (literal))))))))
+
+==================
+An outstanding brace after a modifier does not close the parameter
+:error
+==================
+print ${x:s/a{/b/}
+---
+
+==================
+A bracket source keeps the crossed brace separator and closer before the parameter closer
+==================
+print ${u:-[({a)b,c}d]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word
+                  (pattern_bracket_source
+                    (pattern_group_source
+                      (pattern_alternatives
+                        (pattern_alternative
+                          (brace_expansion
+                            (literal)))))
+                    (pattern_bracket_text)
+                    (brace_separator)
+                    (pattern_bracket_text)
+                    (brace_closing_source)
+                    (pattern_bracket_text)))))))))))
+
+==================
+A qualifier argument retains its crossed brace and surrounding text
+==================
+print (#qe:({a)b,c}d:)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (pattern_candidate
+                (pattern_candidate_source
+                  (pattern_flags_prefix)
+                  (glob_flag_candidate
+                    name: (glob_flag_name))
+                  (glob_qualifier_list_candidate
+                    (glob_flag_candidate
+                      name: (glob_flag_name)
+                      argument: (glob_argument_candidate
+                        (glob_argument_delimiter)
+                        (glob_argument_source
+                          (pattern_candidate_group
+                            (pattern_candidate_source
+                              (brace_expansion
+                                (literal))))
+                          (glob_argument_text)
+                          (brace_separator)
+                          (glob_argument_text)
+                          (brace_closing_source)
+                          (glob_argument_text))
+                        (glob_argument_delimiter)))))))))))))
+
+==================
+Unbraced modifier candidates keep the crossed brace separator and closer as text
+==================
+print $x:s/a{/b,c}/
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_group))
+                    (modifier_separator)
+                    replacement: (parameter_candidate_source
+                      (parameter_candidate_text)
+                      (parameter_candidate_text)
+                      (parameter_candidate_text)
+                      (parameter_candidate_text))
+                    (modifier_separator)))))))))))
+
+==================
+A heredoc delimiter contains both the crossed brace and the complete parameter
+==================
+cat <<${x:s/a{/b}/}
+body
+${x:s/a{/b}/}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_modifier
+                    (modifier_prefix)
+                    name: (modifier_name)
+                    (modifier_separator)
+                    pattern: (parameter_word (literal) (brace_expansion))
+                    (modifier_separator)
+                    replacement: (parameter_word (literal) (brace_closing_source))
+                    (modifier_separator)))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))

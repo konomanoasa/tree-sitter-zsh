@@ -1,0 +1,142 @@
+==================
+Filename expansions retain source without resolving names
+==================
+print ~user/file =cat
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (tilde_expansion (literal))
+              (literal))
+            argument: (word
+              (equals_expansion (literal)))))))))
+
+==================
+Assignment colons start further filename expansions
+==================
+p=~/bin:=cat
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value
+                (tilde_expansion (literal))
+                (literal)
+                (equals_expansion (literal))))))))))
+
+==================
+Modifier operands distinguish a leading tilde from a middle pattern candidate
+==================
+print ${x:s/a/~/} ${x:s/a/pre~post/}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_modifier
+                  (modifier_prefix)
+                  name: (modifier_name)
+                  (modifier_separator)
+                  pattern: (parameter_word (literal))
+                  (modifier_separator)
+                  replacement: (parameter_word (tilde_expansion (literal)))
+                  (modifier_separator))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_modifier
+                  (modifier_prefix)
+                  name: (modifier_name)
+                  (modifier_separator)
+                  pattern: (parameter_word (literal))
+                  (modifier_separator)
+                  replacement: (parameter_word
+                    (literal)
+                    (pattern_candidate (pattern_candidate_operator))
+                    (literal))
+                  (modifier_separator))))))))))
+
+==================
+A dynamic directory name owns explicit parameter expansion and leaves the suffix outside
+==================
+print ~[a$name]/file
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (tilde_expansion
+                (literal)
+                (dynamic_directory_name
+                  source: (directory_name_source
+                    (directory_name_text)
+                    (parameter_expansion parameter: (variable_name)))))
+              (literal))))))))
+
+==================
+The first unquoted closing bracket ends a dynamic directory name
+==================
+print ~[a[b]/file ~["a]b"]/file
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (tilde_expansion
+                (literal)
+                (dynamic_directory_name
+                  source: (directory_name_source (directory_name_text))))
+              (literal))
+            argument: (word
+              (tilde_expansion
+                (literal)
+                (dynamic_directory_name
+                  source: (directory_name_source
+                    (double_quoted (double_quote_text)))))
+              (literal))))))))
+==================
+A parameter operand protects spaces in a dynamic directory name
+==================
+print ${x:-~[a b]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word
+                  (tilde_expansion
+                    (literal)
+                    (dynamic_directory_name
+                      source: (directory_name_source (directory_name_text)))))))))))))

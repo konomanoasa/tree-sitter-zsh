@@ -1,0 +1,1153 @@
+==================
+Escape-processing flags own empty and paired option arguments
+==================
+print ${(g::)x} ${(g(oe))x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+Parameter flags retain their delimited arguments
+==================
+print ${(s.:.)value}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+Subscript flags leave the operand neutral
+==================
+print ${a[(r)foo]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                subscript: (array_subscript
+                  source: (subscript_source
+                    (subscript_flags (subscript_flag (subscript_flag_name)))
+                    (subscript_name_candidate)))))))))))
+
+==================
+Balanced braces remain literal flag argument source
+==================
+print ${(s:{a,b}:)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source
+                        (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+Supported symbolic flags and q variants keep separate flag names
+==================
+print ${(q+)x} ${(q-)x} ${(-~0%#@)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag (parameter_flag_name)))
+                parameter: (variable_name)))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag (parameter_flag_name)))
+                parameter: (variable_name)))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag (parameter_flag_name))
+                  (parameter_flag (parameter_flag_name))
+                  (parameter_flag (parameter_flag_name))
+                  (parameter_flag (parameter_flag_name))
+                  (parameter_flag (parameter_flag_name))
+                  (parameter_flag (parameter_flag_name)))
+                parameter: (variable_name)))))))))
+
+==================
+Padding flags own at most three argument pairs before the next flag
+==================
+print ${(l[5][0][X]j:-:)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter)))
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+Expansion prefixes are not parenthesized parameter flag names
+:error
+==================
+print ${(^)x}
+---
+
+==================
+Modifier names are not implicitly parameter flag names
+:error
+==================
+print ${(h)x}
+---
+
+==================
+The plus suffix requires a preceding q flag
+:error
+==================
+print ${(+)x}
+---
+
+==================
+Parameter flag names do not accept non-ASCII characters
+:error
+==================
+print ${(é)x}
+---
+
+==================
+A joining flag rejects an additional argument pair
+:error
+==================
+print ${(j:,::X:)x}
+---
+
+==================
+An escape-processing flag rejects an additional empty argument pair
+:error
+==================
+print ${(g::::)x}
+---
+
+==================
+A padding flag rejects a fourth argument pair
+:error
+==================
+print ${(l:5::0::X::Y:)x}
+---
+
+==================
+Optional padding arguments require the first delimiter pair
+:error
+==================
+print ${(r[5]:0:)x}
+---
+
+==================
+A parameter flag with an argument requires its delimiter pair
+:error
+==================
+print ${(j)x}
+---
+
+==================
+Fixed option flags allow empty arguments without source nodes
+==================
+print ${(_::g::Z::)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+  name: (word (literal))
+  argument: (word (parameter_expansion
+    (parameter_flags
+      (parameter_flag (parameter_flag_name)
+        argument: (flag_argument (flag_argument_delimiter) (flag_argument_delimiter)))
+      (parameter_flag (parameter_flag_name)
+        argument: (flag_argument (flag_argument_delimiter) (flag_argument_delimiter)))
+      (parameter_flag (parameter_flag_name)
+        argument: (flag_argument (flag_argument_delimiter) (flag_argument_delimiter))))
+    parameter: (variable_name)))))))))
+
+==================
+Fixed option flags retain combinations and repetitions with paired delimiters
+==================
+print ${(pg<coce>Z[cCnn])x}
+---
+(program (list (sublist (pipeline (command (simple_command
+  name: (word (literal))
+  argument: (word (parameter_expansion
+    (parameter_flags
+      (parameter_flag (parameter_flag_name))
+      (parameter_flag (parameter_flag_name)
+        argument: (flag_argument
+          (flag_argument_delimiter)
+          (flag_argument_source (flag_argument_text))
+          (flag_argument_delimiter)))
+      (parameter_flag (parameter_flag_name)
+        argument: (flag_argument
+          (flag_argument_delimiter)
+          (flag_argument_source (flag_argument_text))
+          (flag_argument_delimiter))))
+    parameter: (variable_name)))))))))
+
+==================
+String and arithmetic flag arguments remain unevaluated source
+==================
+print ${(pj:$opt:l:1/0:)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+  name: (word (literal))
+  argument: (word (parameter_expansion
+    (parameter_flags
+      (parameter_flag (parameter_flag_name))
+      (parameter_flag (parameter_flag_name)
+        argument: (flag_argument
+          (flag_argument_delimiter)
+          (flag_argument_source (flag_argument_text))
+          (flag_argument_delimiter)))
+      (parameter_flag (parameter_flag_name)
+        argument: (flag_argument
+          (flag_argument_delimiter)
+          (flag_argument_source (flag_argument_text))
+          (flag_argument_delimiter))))
+    parameter: (variable_name)))))))))
+
+==================
+The reserved underscore flag rejects a nonempty argument
+:error
+==================
+print ${(_:x:)x}
+---
+
+==================
+Escape option flags reject letters outside their documented set
+:error
+==================
+print ${(g:x:)x}
+---
+
+==================
+Lexical option flags reject letters outside their documented set
+:error
+==================
+print ${(Z:x:)x}
+---
+
+==================
+A preceding p flag does not evaluate the reserved flag argument
+:error
+==================
+print ${(p_:$empty:)x}
+---
+
+==================
+A preceding p flag does not decode escape option letters
+:error
+==================
+print ${(pg:\x6f:)x}
+---
+
+==================
+A preceding p flag does not expand lexical option letters
+:error
+==================
+print ${(pZ:$opt:)x}
+---
+
+==================
+A double quote spans two parameter flag arguments
+==================
+print ${(j:":j:":)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter)))
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+A single quote spans two parameter flag arguments
+==================
+print ${(j:':j:':)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter)))
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+A nested parameter boundary spans two raw flag arguments
+==================
+print ${(j:${sep:j:}:)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter)))
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+Crossed arithmetic brackets in a flag argument retain the complete source
+==================
+print ${(s:$[(1[)]]:)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+Command spelling in a joining argument stays literal source
+==================
+print ${(j:$(;):)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+A p flag parameter reference stays in its string argument
+==================
+print ${(pj:$sep:)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag (parameter_flag_name))
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+A quote does not protect a parameter flag argument delimiter
+:error
+==================
+print ${(j:":":)x}
+---
+
+
+==================
+A backslash does not protect a parameter flag argument delimiter
+:error
+==================
+print ${(j:\::)x}
+---
+
+
+==================
+An unmatched quote cannot finish inside the flag list
+:error
+==================
+print ${(j:":)x}
+---
+
+
+==================
+An unmatched arithmetic bracket cannot finish inside the flag list
+:error
+==================
+print ${(j:$[x:)x}
+---
+
+
+==================
+A single quoted raw flag argument preserves physical continuations
+==================
+print ${(j:'a\
+b':)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+A dollar single quoted raw flag argument preserves physical continuations
+==================
+print ${(j:$'a\
+b':)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+A double quoted raw flag argument records removed continuations
+==================
+print ${(j:"a\
+b":)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text (line_continuation)))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+A parameter owns a quote ending after its flag list
+==================
+print ${(j:"x:)x}"}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                (parameter_closing_source)))))))))
+
+==================
+A parameter owns a brace ending after its flag list
+==================
+print ${(j:${x:)x}TAIL}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                (parameter_closing_source)))))))))
+
+==================
+A carried quote ends before the following word suffix
+==================
+print ${(j:"x:)x}Q"}SUF
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                (parameter_closing_source))
+              (literal))))))))
+
+==================
+A carried brace ends before the following word suffix
+==================
+print ${(j:${x:)x}TAIL}SUF
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                (parameter_closing_source))
+              (literal))))))))
+
+==================
+A carried quote retains a structured array subscript
+==================
+print ${(j:"x:)x[1]}"}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                subscript: (array_subscript source: (subscript_source (subscript_number_candidate)))
+                (parameter_closing_source)))))))))
+
+==================
+A carried quote retains a structured value operator
+==================
+print ${(j:"x:)x:-Z}"}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                (parameter_value_operator)
+                (parameter_word (literal))
+                (parameter_closing_source)))))))))
+
+==================
+A carried quote preserves a nested parameter reference
+==================
+print ${(j:"x:)${x}}"}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (parameter_expansion parameter: (variable_name))
+                (parameter_closing_source)))))))))
+
+==================
+A carried quote preserves a nested flag scope
+==================
+print ${(j:"x:)${(q)x}}"}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (parameter_expansion (parameter_flags (parameter_flag (parameter_flag_name))) parameter: (variable_name))
+                (parameter_closing_source)))))))))
+
+==================
+Command spelling after the value boundary remains closing source
+==================
+print ${(j:"x:)x}Q$(;)"}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                (parameter_closing_source)))))))))
+
+==================
+A carried single quote preserves physical continuations
+==================
+print ${(j:'x:)x}Q\
+'}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                (parameter_closing_source)))))))))
+
+==================
+A carried double quote records removed continuations
+==================
+print ${(j:"x:)x}Q\
+"}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)
+                (parameter_closing_source (line_continuation))))))))))
+
+==================
+Closing a carried quote still requires the parameter closing brace
+:error
+==================
+print ${(j:"x:)x}"
+---
+
+
+==================
+A carried nested parameter still requires the outer closing brace
+:error
+==================
+print ${(j:${x:)x}
+---
+
+
+==================
+Closing a quote cannot replace the value closing boundary
+:error
+==================
+print ${(j:"x:)x"}
+---
+
+==================
+Dollar delimiters preserve quoted dollar characters
+==================
+print ${(j$'X$Y'$)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+name: (word (literal))
+argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name)))))))))
+
+==================
+An escaped special delimiter remains in the argument source
+==================
+print ${(j*X\*Y*)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+name: (word (literal))
+argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name)))))))))
+
+==================
+Braced comma source does not close a plain comma delimiter
+==================
+print ${(j,{X,Y},)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+name: (word (literal))
+argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name)))))))))
+
+==================
+Command source in a flag preserves case terminators
+==================
+print ${(j*$(case x in x) print * ;; esac)*)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+name: (word (literal))
+argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name)))))))))
+
+==================
+Command source in a flag preserves physical continuations
+==================
+print ${(j:$(a\
+b):)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+name: (word (literal))
+argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name)))))))))
+
+==================
+Command source in a flag preserves heredoc parentheses
+==================
+print ${(j:$(cat <<'INNER'
+)
+INNER
+print A
+):)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+name: (word (literal))
+argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name)))))))))
+
+==================
+A carried quote retains an ordinary modifier despite the native rejection
+==================
+print ${(j:"x:)x:h}"}
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name)
+(parameter_modifier (modifier_prefix) name: (modifier_name))
+(parameter_closing_source)))))))))
+
+==================
+A value command parses its own flags independently of outer argument quotes
+==================
+print ${(j:"x:)x:-$(print ${(j*"*"*)x})}"}
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name)
+(parameter_value_operator)
+(parameter_word (command_substitution body: (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion
+(parameter_flags
+  (parameter_flag
+    (parameter_flag_name)
+    argument: (flag_argument
+      (flag_argument_delimiter)
+      (flag_argument_source (flag_argument_text))
+      (flag_argument_delimiter))))
+parameter: (variable_name))))))))))
+(parameter_closing_source)))))))))
+
+==================
+A command source opened by a dollar delimiter still needs its matching parenthesis
+:error
+==================
+print ${(j$(X$)x}
+---
+
+==================
+Arithmetic source in a flag requires balanced parentheses
+:error
+==================
+print ${(j:$[X)Y]:)x}
+---
+
+==================
+Quoted outer parameters do not protect ordinary star delimiters
+:error
+==================
+print "${(j*'X*Y'*)x}"
+---
+
+==================
+A flag command boundary allows nested flags to carry quotes past their list
+==================
+print ${(j*$(print ${(j:"x:)x}"})*)x}
+---
+(program (list (sublist (pipeline (command (simple_command
+  name: (word (literal))
+  argument: (word (parameter_expansion
+    (parameter_flags (parameter_flag
+      (parameter_flag_name)
+      argument: (flag_argument
+        (flag_argument_delimiter)
+        (flag_argument_source (flag_argument_text))
+        (flag_argument_delimiter))))
+    parameter: (variable_name)))))))))
+
+==================
+A raw flag command source shares the conditional and case boundaries
+==================
+print ${(j.$(if [[ x ]] then case x in x) :;; esac; fi).)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+Anonymous brace arguments in raw source do not recognize case as a keyword
+==================
+print ${(j.$(() { :; } then case x in x).)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+Keyword anonymous brace arguments keep raw case spelling as words
+==================
+print ${(j.$(function () { :; } then case x in x).)x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags
+                  (parameter_flag
+                    (parameter_flag_name)
+                    argument: (flag_argument
+                      (flag_argument_delimiter)
+                      (flag_argument_source (flag_argument_text))
+                      (flag_argument_delimiter))))
+                parameter: (variable_name)))))))))
+
+==================
+A raw command case still requires a closing case boundary
+:error
+==================
+print ${(j.$(repeat 1 { :; } then case x in x).)x}
+---

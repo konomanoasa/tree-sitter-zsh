@@ -1,0 +1,1840 @@
+==================
+Leading parenthesized unary operands retain word candidates despite native rejection
+==================
+[[ -n (x) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (glob_qualifier_candidate
+                    (glob_qualifier_list_candidate
+                      (glob_flag_candidate
+                        name: (glob_flag_name)))))))))))))
+
+==================
+String ordering comparisons retain leading parenthesized word operands
+==================
+[[ x < (x) ]]
+[[ x > (x) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (word
+                  (glob_qualifier_candidate
+                    (glob_qualifier_list_candidate
+                      (glob_flag_candidate
+                        name: (glob_flag_name)))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (word
+                  (glob_qualifier_candidate
+                    (glob_qualifier_list_candidate
+                      (glob_flag_candidate
+                        name: (glob_flag_name)))))))))))))
+
+==================
+A suffixed parenthesized condition operand retains its pattern group inside the word
+==================
+[[ -n (x)y ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal))))
+                  (literal))))))))))
+
+==================
+Quoted and escaped condition parentheses preserve their own source
+==================
+[[ -n "(x)" ]]
+[[ -n \(x\) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (double_quoted
+                    (double_quote_text)))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (escaped_character)
+                  (literal)
+                  (escaped_character))))))))))
+
+==================
+Empty quotes and literal prefixes remain before condition operand candidates
+==================
+[[ -n ""(x) ]]
+[[ x < x(y) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (double_quoted)
+                  (glob_qualifier_candidate
+                    (glob_qualifier_list_candidate
+                      (glob_flag_candidate
+                        name: (glob_flag_name)))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (word
+                  (literal)
+                  (glob_qualifier_candidate
+                    (glob_qualifier_list_candidate
+                      (pattern_candidate_text))))))))))))
+
+==================
+Expression groups and comparison patterns keep distinct parenthesis ownership
+==================
+[[ (x) ]]
+[[ x = (x) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_group
+                condition: (word
+                  (literal))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (conditional_pattern
+                  (glob_qualifier_candidate
+                    (glob_qualifier_list_candidate
+                      (glob_flag_candidate
+                        name: (glob_flag_name)))))))))))))
+
+==================
+An empty conditional command requires an expression
+:error
+==================
+[[ ]]
+---
+
+==================
+Newlines cannot replace a conditional expression
+:error
+==================
+[[
+]]
+---
+
+==================
+A comment cannot replace a conditional expression
+:error
+==================
+[[ # no expression
+]]
+---
+
+==================
+An empty quoted word after a comment remains a conditional expression
+==================
+[[ # empty string
+"" ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              (comment
+                (comment_text))
+              condition: (word
+                (double_quoted)))))))))
+
+==================
+Standalone negation ends before condition and branch keywords without a separator
+==================
+if ! then ! else ! fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline)))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline))))
+              alternative: (else_clause
+                (else_keyword)
+                body: (list
+                  (sublist
+                    (pipeline))))
+              (fi_keyword))))))))
+
+==================
+Standalone coproc ends before condition and branch keywords without a separator
+==================
+if coproc then coproc else coproc fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (coproc_keyword))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (coproc_keyword)))))
+              alternative: (else_clause
+                (else_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (coproc_keyword)))))
+              (fi_keyword))))))))
+
+==================
+Conditional negation still requires its expression
+:error
+==================
+[[ ! ]]
+---
+
+==================
+An attached control keyword cannot follow a conditional close
+:error
+==================
+if [[ x ]]then :; fi
+---
+
+==================
+An attached hash remains conditional word text instead of starting a comment
+:error
+==================
+[[ x ]]#comment
+---
+
+==================
+A removed continuation cannot separate a conditional close from a keyword
+:error
+==================
+if [[ x ]]\
+then :; fi
+---
+
+==================
+Closing bracket prefixes remain source in string unary pattern and regex operands
+==================
+[[ ]]x ]]
+[[ -n ]]x ]]
+[[ x = ]]x ]]
+[[ x =~ ]]x ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (word
+                (literal)))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (literal))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (conditional_pattern
+                  (literal))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text)))))))))))
+
+==================
+Pattern groups and numeric ranges continue operands after closing bracket prefixes
+==================
+[[ -n ]](x) ]]
+[[ -n ]]<1-2> ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (literal)
+                  (glob_qualifier_candidate
+                    (glob_qualifier_list_candidate
+                      (glob_flag_candidate
+                        name: (glob_flag_name)))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (literal)
+                  (pattern_numeric_range_source
+                    start: (pattern_number)
+                    (pattern_range_operator)
+                    end: (pattern_number)))))))))))
+
+==================
+Shell operators and enclosing closers can immediately follow a conditional close
+==================
+([[ x ]])
+{ [[ x ]]}
+[[ x ]]&& :
+[[ x ]]>out
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (subshell
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (conditional_command
+                          condition: (word
+                            (literal)))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (conditional_command
+                          condition: (word
+                            (literal)))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (word
+                (literal))))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (word
+                (literal))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))))))
+
+==================
+An enclosing brace ends a bodyless if without supplying body nodes
+==================
+{ if :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (if_clause
+                          branch: (if_branch
+                            (if_keyword)
+                            condition: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))))))))))
+
+==================
+Explicit then and fi preserve an empty if body
+==================
+if :; then fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword))
+              (fi_keyword))))))))
+
+==================
+Conditional comments preserve grouped logic and operand fields
+==================
+[[ # head
+! # negation
+( # group
+-n # unary
+x
+&& # and
+x # left
+== # pattern
+x
+) # group end
+|| # or
+x ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              (comment
+                (comment_text))
+              condition: (conditional_or_expression
+                left: (conditional_negation
+                  (conditional_operator)
+                  (comment
+                    (comment_text))
+                  operand: (conditional_group
+                    (comment
+                      (comment_text))
+                    condition: (conditional_and_expression
+                      left: (conditional_unary_expression
+                        (conditional_operator)
+                        (comment
+                          (comment_text))
+                        operand: (word
+                          (literal)))
+                      (conditional_operator)
+                      (comment
+                        (comment_text))
+                      right: (conditional_binary_expression
+                        left: (word
+                          (literal))
+                        (comment
+                          (comment_text))
+                        (conditional_operator)
+                        (comment
+                          (comment_text))
+                        right: (conditional_pattern
+                          (literal))))))
+                (comment
+                  (comment_text))
+                (conditional_operator)
+                (comment
+                  (comment_text))
+                right: (word
+                  (literal))))))))))
+
+==================
+String comparison comments remain outside the operand words
+==================
+[[ x # left
+< # right
+y ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (comment
+                  (comment_text))
+                (conditional_operator)
+                (comment
+                  (comment_text))
+                right: (word
+                  (literal))))))))))
+
+==================
+Comments preserve and precedence inside or and a trailing condition boundary
+==================
+[[ x # or left
+|| x # and left
+&& ! x # tail
+]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_or_expression
+                left: (word
+                  (literal))
+                (comment
+                  (comment_text))
+                (conditional_operator)
+                right: (conditional_and_expression
+                  left: (word
+                    (literal))
+                  (comment
+                    (comment_text))
+                  (conditional_operator)
+                  right: (conditional_negation
+                    (conditional_operator)
+                    operand: (word
+                      (literal)))))
+              (comment
+                (comment_text)))))))))
+
+==================
+Comments do not turn binary operand spellings into unary operators
+==================
+[[ -n # left
+== # right
+-n ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (comment
+                  (comment_text))
+                (conditional_operator)
+                (comment
+                  (comment_text))
+                right: (conditional_pattern
+                  (literal))))))))))
+
+==================
+A comment before a regex operand does not become regex source
+==================
+[[ x =~ # regex
+x # end
+]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                (comment
+                  (comment_text))
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text))))
+              (comment
+                (comment_text)))))))))
+
+==================
+Condition comments hide closing brackets and incomplete shell syntax
+==================
+[[ x # ]] ) " $(
+]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (word
+                (literal))
+              (comment
+                (comment_text)))))))))
+
+==================
+A backslash in a condition comment does not continue the comment
+==================
+[[ # raw \
+x ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              (comment
+                (comment_text))
+              condition: (word
+                (literal)))))))))
+
+==================
+A word-initial hash cannot be a bare regex operand
+:error
+==================
+[[ x =~ # ]]
+---
+
+==================
+Closing brackets inside a comment cannot complete the condition
+:error
+==================
+[[ x # ]]
+---
+
+==================
+Semicolon-only if branches retain their condition and body lists
+==================
+if ; then; elif ; then; else; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list)
+                (then_keyword)
+                body: (list))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list)
+                (then_keyword)
+                body: (list))
+              alternative: (else_clause
+                (else_keyword)
+                body: (list))
+              (fi_keyword))))))))
+
+==================
+A simple command condition requires a separator before then
+:error
+==================
+if true then print yes; fi
+---
+
+==================
+A body requires a separator before fi
+:error
+==================
+if true; then print yes fi
+---
+
+==================
+A while condition requires a separator before do
+:error
+==================
+while true do print yes; done
+---
+==================
+Conditional logic owns its operands
+==================
+[[ -n $x && $x == yes ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_and_expression
+                left: (conditional_unary_expression
+                  (conditional_operator)
+                  operand: (word
+                    (parameter_expansion
+                      parameter: (variable_name))))
+                (conditional_operator)
+                right: (conditional_binary_expression
+                  left: (word
+                    (parameter_expansion
+                      parameter: (variable_name)))
+                  (conditional_operator)
+                  right: (conditional_pattern
+                    (literal)))))))))))
+
+==================
+Process substitutions are condition operands rather than comparison operators
+==================
+[[ >(x) && -n <(y) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_and_expression
+                left: (word
+                  (process_substitution
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal)))))))))
+                (conditional_operator)
+                right: (conditional_unary_expression
+                  (conditional_operator)
+                  operand: (word
+                    (process_substitution
+                      body: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal))))))))))))))))))
+
+==================
+A numeric range after a unary operator is an operand rather than a comparison
+==================
+[[ -n <1-2> ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (pattern_numeric_range_source
+                    start: (pattern_number)
+                    (pattern_range_operator)
+                    end: (pattern_number)))))))))))
+
+==================
+Regex groups remain regex text
+==================
+[[ $x =~ (a|b) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (parameter_expansion
+                    parameter: (variable_name)))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text)))))))))))
+
+==================
+Invalid regex internals remain shell source
+==================
+[[ $x =~ [ ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (parameter_expansion
+                    parameter: (variable_name)))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text)))))))))))
+
+==================
+Unmatched shell parentheses in a regex operand require recovery
+:error
+==================
+[[ $x =~ ( ]]
+---
+
+==================
+Direct regex intervals remain source before a following condition
+==================
+[[ aaa =~ a{3} && 123 =~ ^[0-9]{2,4}$ ]]
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_and_expression
+                left: (conditional_binary_expression
+                  left: (word
+                    (literal))
+                  (conditional_operator)
+                  right: (regex_operand
+                    source: (regex_source
+                      (regex_text))))
+                (conditional_operator)
+                right: (conditional_binary_expression
+                  left: (word
+                    (literal))
+                  (conditional_operator)
+                  right: (regex_operand
+                    source: (regex_source
+                      (regex_text))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+A regex brace pair survives an intervening parameter expansion
+==================
+[[ aaa =~ a{${count}} ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text)
+                    (parameter_expansion
+                      parameter: (variable_name))
+                    (regex_text)))))))))))
+
+==================
+A regex parenthesis cannot protect a shell semicolon
+:error
+==================
+[[ aaa =~ (a;b) ]]
+---
+
+==================
+A unary operator spelling can be the left operand of a binary comparison
+==================
+[[ -n = -n ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (conditional_pattern
+                  (literal))))))))))
+
+==================
+An operator prefix attached to quoted source remains one condition word
+==================
+[[ -n"$x" ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (word
+                (literal)
+                (double_quoted
+                  (parameter_expansion
+                    parameter: (variable_name)))))))))))
+
+==================
+A standalone long condition spelling remains a word
+==================
+[[ -custom ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (word
+                (literal)))))))))
+
+==================
+A pattern comparison operator cannot split a longer word
+:error
+==================
+[[ x ==y ]]
+---
+
+==================
+A regex comparison operator cannot split a longer word
+:error
+==================
+[[ x =~a ]]
+---
+
+==================
+A prefix condition retains all arguments without resolving a module condition
+==================
+[[ -custom a b c ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (literal))
+                operand: (word
+                  (literal))
+                operand: (word
+                  (literal))))))))))
+
+==================
+A condition name retains quoted source without evaluating parameter expansion
+==================
+[[ -n"$x" value ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_unary_expression
+                (conditional_operator)
+                operand: (word
+                  (literal))))))))))
+
+==================
+A single-letter unary condition cannot serve as a binary operator
+:error
+==================
+[[ -n -x x ]]
+---
+==================
+An unmatched closing brace after a regex interval is a shell boundary
+:error
+==================
+[[ x =~ ()a{3}} ]]
+---
+
+==================
+Empty regex parentheses and unclosed opening braces remain operand source
+==================
+[[ x =~ ()a{ ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text)))))))))))
+
+==================
+Regex numeric-range spellings stay text before a following logical condition
+==================
+[[ x =~ <1-2>(x<-3><4->)<-><2-1> && y ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_and_expression
+                left: (conditional_binary_expression
+                  left: (word
+                    (literal))
+                  (conditional_operator)
+                  right: (regex_operand
+                    source: (regex_source
+                      (regex_text))))
+                (conditional_operator)
+                right: (word
+                  (literal))))))))))
+
+==================
+All process substitution forms retain their command bodies in a regex operand
+==================
+[[ x =~ =(:)<(:)>(:) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (process_substitution
+                      body: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal))))))))
+                    (process_substitution
+                      body: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal))))))))
+                    (process_substitution
+                      body: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal))))))))))))))))))
+
+==================
+Regex braces and parentheses survive an intervening process substitution
+==================
+[[ x =~ a{(<(:))}tail ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text)
+                    (process_substitution
+                      body: (list
+                        (sublist
+                          (pipeline
+                            (command
+                              (simple_command
+                                name: (word
+                                  (literal))))))))
+                    (regex_text)))))))))))
+
+==================
+A noninitial equals and parentheses remain regex text
+==================
+[[ x =~ x=(:)(=(:)) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text)))))))))))
+
+==================
+A regex parenthesis protects an unmatched closing brace
+==================
+[[ x =~ (}) ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  source: (regex_source
+                    (regex_text)))))))))))
+
+==================
+A bare closing brace cannot supply a string condition despite native acceptance
+:error
+==================
+[[ } ]]
+---
+
+==================
+A bare closing brace cannot begin a regex operand
+:error
+==================
+[[ x =~ } ]]
+---
+
+==================
+A quoted opening brace cannot protect an outer regex closing brace
+:error
+==================
+[[ x =~ a"{"} ]]
+---
+
+==================
+An ordinary less-than cannot continue a regex operand
+:error
+==================
+[[ x =~ a<b ]]
+---
+
+==================
+A nonnumeric angle-bracket pair cannot begin a regex operand
+:error
+==================
+[[ x =~ <a> ]]
+---
+
+==================
+A conditional command ends directly before then
+==================
+if [[ x ]] then :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A brace condition ends directly before then
+==================
+if { :; } then :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (brace_group
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A timed brace condition ends directly before then
+==================
+if time { :; } then :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (time_command
+                            (time_keyword)
+                            pipeline: (pipeline
+                              (command
+                                (complex_command
+                                  (brace_group
+                                    body: (list
+                                      (sublist
+                                        (pipeline
+                                          (command
+                                            (simple_command
+                                              name: (word
+                                                (literal)))))))))))))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A bodyless if at EOF retains only its source keyword
+==================
+if
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)))))))))
+
+==================
+A separated brace remains in the omitted if condition
+==================
+if [[ x ]]; { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal)))))))
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (brace_group
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))))))))))
+
+==================
+A final elif may omit its condition and body
+==================
+if :; then :; elif
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              branch: (if_branch
+                (elif_keyword)))))))))
+
+==================
+A final elif condition remains inside its original if
+==================
+if false; then :; elif :;
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))))))))))
+
+==================
+An outer elif follows an inner if with an omitted body
+==================
+if :; then if false; elif :; then :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (if_clause
+                            branch: (if_branch
+                              (if_keyword)
+                              condition: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal)))))))))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A brace branch can continue with a then branch
+==================
+if [[ x ]] { :; } elif :; then :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal)))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A then branch can continue with a brace branch before fi
+==================
+if :; then :; elif [[ x ]] { :; } fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal)))))))))
+              (fi_keyword))))))))
+
+==================
+A then branch can end with a short sublist elif
+==================
+if :; then :; elif [[ x ]] :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                body: (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+An omitted if body leaves following redirects in the condition
+==================
+>before if false >condition;
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))
+                          (io_file
+                            (redirect_operator)
+                            filename: (word
+                              (literal))))))))))))))))
+
+==================
+An outer else cannot follow an uncompleted inner short if
+:error
+==================
+if :; then if false; else :; fi
+---
+
+
+==================
+An explicit then still requires its closing fi
+:error
+==================
+{ if :; then :; }
+---
+
+
+==================
+A missing elif body cannot manufacture a matching fi
+:error
+==================
+if :; then :; elif :; fi
+---
+
+
+==================
+A condition pipe still requires its next command
+:error
+==================
+{ if : | }
+---
+
+==================
+A short brace if retains an outer list separator
+==================
+if ((1)) { :; }; :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (arithmetic_command
+                            (arithmetic_source
+                              (arithmetic_number))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal))))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+A backslash in a trailing comment does not remove a short if terminator
+==================
+if ((1)) { :; } # comment\
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (arithmetic_command
+                            (arithmetic_source
+                              (arithmetic_number))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal))))))))))))))
+    (comment
+      (comment_text))))

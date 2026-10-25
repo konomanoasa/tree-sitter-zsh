@@ -1,0 +1,213 @@
+==================
+Nocorrect after a builtin precommand modifier is an ordinary command word
+==================
+noglob nocorrect :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (precommand_modifier name: (precommand_modifier_name))
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+A misplaced fi cannot be an unquoted command name
+:error
+==================
+fi
+---
+
+==================
+A prefix redirect preserves the following reserved word position
+:error
+==================
+> /dev/null fi
+---
+
+==================
+Nocorrect preserves reserved word recognition after its prefix
+:error
+==================
+nocorrect fi
+---
+
+==================
+A long loop condition cannot turn then into the long if delimiter
+:error
+==================
+if for x in a; do :; done then :; fi
+---
+
+==================
+A second unquoted pipeline negation cannot become a command name
+:error
+==================
+! ! :
+---
+
+==================
+Nocorrect cannot precede a conditional command
+:error
+==================
+nocorrect [[ x ]]
+---
+
+==================
+A reserved spelling followed by a literal brace remains one command word
+==================
+if}x arg
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+a misplaced reserved word enters standard recovery: "then\n"
+:error
+==================
+then
+---
+
+==================
+a misplaced reserved word enters standard recovery: "else\n"
+:error
+==================
+else
+---
+
+==================
+a misplaced reserved word enters standard recovery: "elif\n"
+:error
+==================
+elif
+---
+
+==================
+a misplaced reserved word enters standard recovery: "done\n"
+:error
+==================
+done
+---
+
+==================
+a misplaced reserved word enters standard recovery: "do\n"
+:error
+==================
+do
+---
+
+==================
+a misplaced reserved word enters standard recovery: "fi() { :; }\n"
+:error
+==================
+fi() { :; }
+---
+
+==================
+a misplaced reserved word enters standard recovery: "! fi\n"
+:error
+==================
+! fi
+---
+
+==================
+a misplaced reserved word enters standard recovery: "time fi\n"
+:error
+==================
+time fi
+---
+
+==================
+a misplaced reserved word enters standard recovery: "x=1 fi\n"
+:error
+==================
+x=1 fi
+---
+
+==================
+a misplaced reserved word enters standard recovery: "x=$(print x) fi\n"
+:error
+==================
+x=$(print x) fi
+---
+
+==================
+a misplaced reserved word enters standard recovery: "print $(fi)\n"
+:error
+==================
+print $(fi)
+---
+
+==================
+a misplaced reserved word enters standard recovery: "for x fi in a b; do :; done\n"
+:error
+==================
+for x fi in a b; do :; done
+---
+
+==================
+a misplaced reserved word enters standard recovery: "nocorrect if ((1)) print yes\n"
+:error
+==================
+nocorrect if ((1)) print yes
+---
+
+==================
+a misplaced reserved word enters standard recovery: "nocorrect ! :\n"
+:error
+==================
+nocorrect ! :
+---
+
+==================
+a misplaced reserved word enters standard recovery: "nocorrect (print yes)\n"
+:error
+==================
+nocorrect (print yes)
+---
+
+==================
+a misplaced reserved word enters standard recovery: "if for x in a; do :; done { :; }\n"
+:error
+==================
+if for x in a; do :; done { :; }
+---
+
+==================
+a misplaced reserved word enters standard recovery: "if for x in a; do :; done then print yes; fi\n"
+:error
+==================
+if for x in a; do :; done then print yes; fi
+---
+
+==================
+a misplaced reserved word enters standard recovery: "if repeat 0 { :; } then print yes; fi\n"
+:error
+==================
+if repeat 0 { :; } then print yes; fi
+---
+
+==================
+A misplaced esac cannot be an unquoted command name
+:error
+==================
+esac
+---
+
+==================
+A misplaced end cannot be an unquoted command name
+:error
+==================
+end
+---

@@ -1,0 +1,1187 @@
+==================
+Unexpanded delimiter source does not validate flag options or global modifier positions
+==================
+cat <<${(_:x:)x}${(g:x:)x}${(Z:x:)x}${x:G}
+${(_:x:)x}${(g:x:)x}${(Z:x:)x}${x:G}
+---
+(program
+  (list
+    (sublist (pipeline (command (simple_command
+      name: (word (literal))
+      (io_here (dless) here_end: (word
+        (parameter_expansion
+          (parameter_flags (parameter_flag (parameter_flag_name)
+            argument: (flag_argument
+              (flag_argument_delimiter)
+              (flag_argument_source (flag_argument_text))
+              (flag_argument_delimiter))))
+          parameter: (variable_name))
+        (parameter_expansion
+          (parameter_flags (parameter_flag (parameter_flag_name)
+            argument: (flag_argument
+              (flag_argument_delimiter)
+              (flag_argument_source (flag_argument_text))
+              (flag_argument_delimiter))))
+          parameter: (variable_name))
+        (parameter_expansion
+          (parameter_flags (parameter_flag (parameter_flag_name)
+            argument: (flag_argument
+              (flag_argument_delimiter)
+              (flag_argument_source (flag_argument_text))
+              (flag_argument_delimiter))))
+          parameter: (variable_name))
+        (parameter_expansion parameter: (variable_name)
+          (parameter_modifier (modifier_prefix) name: (modifier_name)))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_end (here_document_end_text))))))
+
+==================
+Nested commands in delimiter source preserve unevaluated parameter options and modifiers
+==================
+cat <<$(print ${(_:x:)x} ${x:G})
+$(print ${(_:x:)x} ${x:G})
+---
+(program
+  (list
+    (sublist (pipeline (command (simple_command
+      name: (word (literal))
+      (io_here (dless) here_end: (word (command_substitution
+        body: (list (sublist (pipeline (command (simple_command
+          name: (word (literal))
+          argument: (word (parameter_expansion
+            (parameter_flags (parameter_flag (parameter_flag_name)
+              argument: (flag_argument
+                (flag_argument_delimiter)
+                (flag_argument_source (flag_argument_text))
+                (flag_argument_delimiter))))
+            parameter: (variable_name)))
+          argument: (word (parameter_expansion
+            parameter: (variable_name)
+            (parameter_modifier (modifier_prefix) name: (modifier_name))))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_end (here_document_end_text))))))
+
+==================
+Unexpanded parameter shaped delimiters retain ordinary quoted reference source
+==================
+cat <<${"$x"} <<${"x"} <<${"${x}text"}
+ONE
+${$x}
+TWO
+${x}
+THREE
+${${x}text}
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (parameter_expansion
+                  parameter: (double_quoted
+                    (parameter_expansion parameter: (variable_name))))))
+            (io_here
+              (dless)
+              here_end: (word
+                (parameter_expansion
+                  parameter: (double_quoted (double_quote_text)))))
+            (io_here
+              (dless)
+              here_end: (word
+                (parameter_expansion
+                  parameter: (double_quoted
+                    (parameter_expansion parameter: (variable_name))
+                    (double_quote_text)))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (quoted_here_document_text))
+        (here_document_end (here_document_end_text)))
+      document: (here_document
+        (here_document_body (quoted_here_document_text))
+        (here_document_end (here_document_end_text)))
+      document: (here_document
+        (here_document_body (quoted_here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal)) argument: (word (literal))))))))
+
+==================
+A delimiter substitution closes with an inner pending heredoc
+==================
+cat <<$(cat <<E)
+body
+$(cat <<E)
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            (io_here (dless) here_end: (word (literal)))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal)) argument: (word (literal))))))))
+
+==================
+A parameter shaped delimiter retains braces followed by whitespace
+==================
+cat <<${x:-{ }x}
+body
+${x:-{ }x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_value_operator)
+                  (parameter_word (brace_expansion (literal)) (literal)))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+An escaped backquote remains inside the delimiter and quotes the body
+==================
+cat <<`E\`X`
+$value
+`E`X`
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word (here_document_delimiter_quoted)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (quoted_here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Escaped UTF-8 bytes match a literal heredoc terminator
+==================
+cat <<$'\xC3\xA9'
+$value
+é
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (dollar_single_quoted
+                  (dollar_single_quote_escape)
+                  (dollar_single_quote_escape))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (quoted_here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+==================
+Non-UTF-8 delimiter bytes stay distinct from deleted or replaced bytes
+==================
+cat <<a$'\xFF'b
+ab
+aÿb
+a�b
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (literal)
+                (dollar_single_quoted (dollar_single_quote_escape))
+                (literal)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (quoted_here_document_text))))))
+
+==================
+Tab stripping applies after quote removal to the delimiter value
+==================
+cat <<-$'\tE'
+$value
+E
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dlessdash)
+              here_end: (word
+                (dollar_single_quoted
+                  (dollar_single_quote_escape)
+                  (dollar_single_quote_text))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (quoted_here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Ordinary delimiter braces do not protect whitespace from shell parsing
+:error
+==================
+cat <<{a b}
+---
+
+==================
+A bracket in the delimiter does not protect whitespace
+==================
+cat <<x[a b]
+body
+x[a
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word (literal)))
+            argument: (word (literal))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+An unclosed delimiter brace ends at whitespace
+==================
+cat <<{a
+body
+{a
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word (brace_expansion (literal))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+A continuation directly after the delimiter ends the declaration
+==================
+cat <<E\
+
+body
+E
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word (literal) (line_continuation)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+A continuation inside the delimiter joins its remaining structure
+==================
+cat <<E\
+$x
+body
+E$x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (literal)
+                (line_continuation)
+                (parameter_expansion parameter: (variable_name))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+A parameter shaped delimiter still requires its closing brace
+:error
+==================
+cat <<${x
+---
+
+==================
+Square arithmetic shaped delimiters require their closing bracket
+:error
+==================
+cat <<$[x
+---
+
+==================
+Here document parameter spellings use the ordinary word structure without evaluation
+==================
+cat <<${x}
+body
+${x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (parameter_expansion parameter: (variable_name))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+A delimiter command substitution retains its semicolon-only list
+==================
+cat <<$(;)
+body
+$(;)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution body: (list))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+A case pattern terminator does not close a substitution in the delimiter
+==================
+cat <<$(case x in x) :;; esac)
+body
+$(case x in x) :;; esac)
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (complex_command
+                            (case_clause
+                              (case_keyword)
+                              word: (word
+                                (literal))
+                              (in_keyword)
+                              (case_item
+                                (pattern_list
+                                  (pattern_alternatives
+                                    (pattern_alternative
+                                      (literal))))
+                                body: (list
+                                  (sublist
+                                    (pipeline
+                                      (command
+                                        (simple_command
+                                          name: (word
+                                            (literal)))))))
+                                (case_break))
+                              (esac_keyword))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+Comment parentheses and quotes do not delimit a substitution in a heredoc word
+==================
+cat <<$(print INNER # ) '
+# (
+)
+$foo
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            argument: (word (literal))))))
+                    (comment (comment_text))
+                    (comment (comment_text))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (parameter_expansion parameter: (variable_name))
+          (here_document_text))))))
+
+==================
+Quotes inside a delimiter substitution remain in its value and do not quote the outer body
+==================
+cat <<$(print 'E' `print X`)
+$foo
+$(print 'E' `print X`)
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            argument: (word
+                              (single_quoted (single_quote_content)))
+                            argument: (word
+                              (backquote_substitution
+                                body: (list
+                                  (sublist
+                                    (pipeline
+                                      (command
+                                        (simple_command
+                                          name: (word (literal))
+                                          argument: (word (literal)))))))))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (parameter_expansion parameter: (variable_name))
+          (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Nested heredoc bodies in a delimiter keep their parentheses and quoting separate
+==================
+cat <<$(cat <<'E'
+)
+E
+# (
+)
+$foo
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            (io_here
+                              (dless)
+                              here_end: (word
+                                (single_quoted (single_quote_content))))))))
+                    (here_document_sequence
+                      line_end: (here_document_line_end)
+                      document: (here_document
+                        (here_document_body (quoted_here_document_text))
+                        (here_document_end (here_document_end_text))))
+                    (comment (comment_text))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (parameter_expansion parameter: (variable_name))
+          (here_document_text))))))
+
+==================
+A heredoc terminator ends before the closing backquote without a newline
+==================
+print `cat <<E
+body
+E`
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (backquote_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word (literal))
+                          (io_here
+                            (dless)
+                            here_end: (word (literal)))))))
+                  (here_document_sequence
+                    line_end: (here_document_line_end)
+                    document: (here_document
+                      (here_document_body (here_document_text))
+                      (here_document_end (here_document_end_text)))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+A quoted tab-stripped heredoc terminator preserves its enclosing backquote and double quote
+==================
+print "`cat <<-'E'
+	body
+	E`"
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (double_quoted
+                (backquote_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            (io_here
+                              (dlessdash)
+                              here_end: (word
+                                (single_quoted (single_quote_content))))))))
+                    (here_document_sequence
+                      line_end: (here_document_line_end)
+                      document: (here_document
+                        (here_document_body (quoted_here_document_text))
+                        (here_document_end (here_document_end_text))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+An unmatched parenthesis inside a braced expansion ends with the brace
+==================
+cat <<${x:-(}
+body
+${x:-(}
+after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_value_operator)
+                  (parameter_word (pattern_group_source)))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal))))))))
+
+==================
+An ordinary delimiter brace cannot close its inner pattern group at EOF
+==================
+: <<{a(}
+body
+{a(}
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (brace_expansion
+                  (literal)
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal)
+                        (brace_expansion
+                          (literal)
+                          (pattern_group_source
+                            (pattern_alternatives
+                              (pattern_alternative
+                                (literal)))))))))))))))))
+
+==================
+An ordinary brace inside a delimiter pattern stays inside the parentheses
+==================
+: <<{a(}b)
+body
+{a(}b)
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (brace_expansion
+                  (literal)
+                  (glob_qualifier_candidate
+                    (glob_qualifier_list_candidate
+                      (pattern_candidate_text))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+Numeric ranges and process substitutions remain delimiter source
+==================
+: <<x<1-2><(a;b)
+body
+x<1-2><(a;b)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (literal)
+                (pattern_numeric_range_source
+                  start: (pattern_number)
+                  (pattern_range_operator)
+                  end: (pattern_number))
+                (process_substitution
+                  body: (list
+                    (sublist
+                      (pipeline (command (simple_command name: (word (literal))))))
+                    (sublist
+                      (pipeline (command (simple_command name: (word (literal))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))))
+
+==================
+A delimiter shares the reserved boundary between a conditional and then
+==================
+cat <<$(if [[ x ]] then case x in x) :;; esac; fi)
+BODY
+$(if [[ x ]] then case x in x) :;; esac; fi)
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (complex_command
+                            (if_clause
+                              branch: (if_branch
+                                (if_keyword)
+                                condition: (list
+                                  (sublist
+                                    (pipeline
+                                      (command
+                                        (complex_command
+                                          (conditional_command
+                                            condition: (word
+                                              (literal))))))))
+                                (then_keyword)
+                                body: (list
+                                  (sublist
+                                    (pipeline
+                                      (command
+                                        (complex_command
+                                          (case_clause
+                                            (case_keyword)
+                                            word: (word
+                                              (literal))
+                                            (in_keyword)
+                                            (case_item
+                                              (pattern_list
+                                                (pattern_alternatives
+                                                  (pattern_alternative
+                                                    (literal))))
+                                              body: (list
+                                                (sublist
+                                                  (pipeline
+                                                    (command
+                                                      (simple_command
+                                                        name: (word
+                                                          (literal)))))))
+                                              (case_break))
+                                            (esac_keyword))))))))
+                              (fi_keyword))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+A delimiter restores the reserved boundary after a redirection target
+==================
+cat <<$(if [[ x ]] >out then case x in x) :;; esac; fi)
+BODY
+$(if [[ x ]] >out then case x in x) :;; esac; fi)
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (complex_command
+                            (if_clause
+                              branch: (if_branch
+                                (if_keyword)
+                                condition: (list
+                                  (sublist
+                                    (pipeline
+                                      (command
+                                        (complex_command
+                                          (conditional_command
+                                            condition: (word
+                                              (literal))
+                                            (io_file
+                                              (redirect_operator)
+                                              filename: (word
+                                                (literal)))))))))
+                                (then_keyword)
+                                body: (list
+                                  (sublist
+                                    (pipeline
+                                      (command
+                                        (complex_command
+                                          (case_clause
+                                            (case_keyword)
+                                            word: (word
+                                              (literal))
+                                            (in_keyword)
+                                            (case_item
+                                              (pattern_list
+                                                (pattern_alternatives
+                                                  (pattern_alternative
+                                                    (literal))))
+                                              body: (list
+                                                (sublist
+                                                  (pipeline
+                                                    (command
+                                                      (simple_command
+                                                        name: (word
+                                                          (literal)))))))
+                                              (case_break))
+                                            (esac_keyword))))))))
+                              (fi_keyword))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+A delimiter command beginning with adjacent double brackets remains a word
+==================
+cat <<$([[x]] case)
+BODY
+$([[x]] case)
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (pattern_bracket_source
+                                (pattern_bracket_text))
+                              (literal))
+                            argument: (word
+                              (literal))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+A delimiter loop header and ordinary body preserve the following case boundary
+==================
+cat <<$(if for x (a) [[ x ]] then case x in x) :;; esac; fi)
+BODY
+$(if for x (a) [[ x ]] then case x in x) :;; esac; fi)
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (complex_command
+                            (if_clause
+                              branch: (if_branch
+                                (if_keyword)
+                                condition: (list
+                                  (sublist
+                                    (pipeline
+                                      (command
+                                        (complex_command
+                                          (for_clause
+                                            (for_keyword)
+                                            name: (name)
+                                            words: (loop_words
+                                              word: (word
+                                                (literal)))
+                                            body: (sublist
+                                              (pipeline
+                                                (command
+                                                  (complex_command
+                                                    (conditional_command
+                                                      condition: (word
+                                                        (literal)))))))))))))
+                                (then_keyword)
+                                body: (list
+                                  (sublist
+                                    (pipeline
+                                      (command
+                                        (complex_command
+                                          (case_clause
+                                            (case_keyword)
+                                            word: (word
+                                              (literal))
+                                            (in_keyword)
+                                            (case_item
+                                              (pattern_list
+                                                (pattern_alternatives
+                                                  (pattern_alternative
+                                                    (literal))))
+                                              body: (list
+                                                (sublist
+                                                  (pipeline
+                                                    (command
+                                                      (simple_command
+                                                        name: (word
+                                                          (literal)))))))
+                                              (case_break))
+                                            (esac_keyword))))))))
+                              (fi_keyword))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body
+          (here_document_text))
+        (here_document_end
+          (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))

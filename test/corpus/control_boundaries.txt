@@ -1,0 +1,615 @@
+==================
+A conditional command ends the body before an adjacent fi
+==================
+if :; then [[ x ]] fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal)))))))))
+              (fi_keyword))))))))
+
+==================
+Else and fi remain outside the preceding compound bodies
+==================
+if :; then [[ x ]] else ((1)) fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal)))))))))
+              alternative: (else_clause
+                (else_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (arithmetic_command
+                            (arithmetic_source
+                              (arithmetic_number)))))))))
+              (fi_keyword))))))))
+
+==================
+Elif starts the outer branch after a compound body
+==================
+if :; then [[ x ]] elif :; then :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal)))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A subshell body ends before the loop done keyword
+==================
+for x in a; do ( : ) done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (subshell
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))
+                (done_keyword)))))))))
+
+==================
+A final compound case item can end directly before esac
+==================
+case x in x) [[ x ]] esac
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (case_clause
+              (case_keyword)
+              word: (word
+                (literal))
+              (in_keyword)
+              (case_item
+                (pattern_list
+                  (pattern_alternatives
+                    (pattern_alternative
+                      (literal))))
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal)))))))))
+              (esac_keyword))))))))
+
+==================
+An ordinary foreach list ends before end after a conditional command
+==================
+foreach x (a); [[ x ]] end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (conditional_command
+                          condition: (word
+                            (literal))))))))
+              (end_keyword))))))))
+
+==================
+A case condition ends before then without a separator
+==================
+if case x in esac then :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (case_clause
+                            (case_keyword)
+                            word: (word
+                              (literal))
+                            (in_keyword)
+                            (esac_keyword)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A case condition ends before do without a separator
+==================
+while case x in esac do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (case_clause
+                          (case_keyword)
+                          word: (word
+                            (literal))
+                          (in_keyword)
+                          (esac_keyword)))))))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+A short loop inherits its ordinary body boundary
+==================
+if :; then repeat 1 [[ x ]] fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (repeat_clause
+                            (repeat_keyword)
+                            count: (word
+                              (literal))
+                            body: (sublist
+                              (pipeline
+                                (command
+                                  (complex_command
+                                    (conditional_command
+                                      condition: (word
+                                        (literal))))))))))))))
+              (fi_keyword))))))))
+
+==================
+A named function passes its ordinary body boundary through a short loop
+==================
+if :; then repeat 1 f() [[ x ]] fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (repeat_clause
+                            (repeat_keyword)
+                            count: (word
+                              (literal))
+                            body: (sublist
+                              (pipeline
+                                (command
+                                  (complex_command
+                                    (function_definition
+                                      name: (word
+                                        (literal))
+                                      body: (command
+                                        (complex_command
+                                          (conditional_command
+                                            condition: (word
+                                              (literal)))))))))))))))))
+              (fi_keyword))))))))
+
+==================
+An anonymous ordinary body can end before an outer keyword
+==================
+if :; then () [[ x ]] fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (function_definition
+                            body: (command
+                              (complex_command
+                                (conditional_command
+                                  condition: (word
+                                    (literal))))))))))))
+              (fi_keyword))))))))
+
+==================
+Keyword anonymous arguments preserve their inherited boundary
+==================
+if :; then function () [[ x ]] a >out fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (function_definition
+                            (function_keyword)
+                            body: (sublist
+                              (pipeline
+                                (command
+                                  (complex_command
+                                    (conditional_command
+                                      condition: (word
+                                        (literal)))))))
+                            argument: (word
+                              (literal))
+                            (io_file
+                              (redirect_operator)
+                              filename: (word
+                                (literal))))))))))
+              (fi_keyword))))))))
+
+==================
+A commandless assignment and redirect end before the outer keyword
+==================
+if :; then v=x >out fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          (assignment_word
+                            name: (variable_name)
+                            (assignment_operator)
+                            value: (assignment_value
+                              (literal)))
+                          (io_file
+                            (redirect_operator)
+                            filename: (word
+                              (literal)))))))))
+              (fi_keyword))))))))
+
+==================
+Elif can belong to an outer if after an ordinary short if body
+==================
+if :; then if [[ x ]] [[ x ]] elif :; then :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (if_clause
+                            branch: (if_branch
+                              (if_keyword)
+                              condition: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (complex_command
+                                        (conditional_command
+                                          condition: (word
+                                            (literal))))))))
+                              body: (sublist
+                                (pipeline
+                                  (command
+                                    (complex_command
+                                      (conditional_command
+                                        condition: (word
+                                          (literal)))))))))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A simple command word does not create a keyword boundary
+:error
+==================
+if :; then : fi
+---
+
+==================
+An anonymous direct brace body keeps following keywords as arguments
+:error
+==================
+if :; then () { :; } fi
+---
+
+==================
+An anonymous direct subshell body keeps following keywords as arguments
+:error
+==================
+if :; then () ( : ) fi
+---
+
+==================
+An invocation argument ends inherited keyword recognition in parentheses form
+:error
+==================
+if :; then () [[ x ]] a fi
+---
+
+==================
+An ordinary short if cannot pass an immediate else to the outer if
+:error
+==================
+if :; then if [[ x ]] [[ x ]] else :; fi
+---
+
+==================
+A redirection target cannot supply the outer closing keyword
+:error
+==================
+if :; then [[ x ]] >fi
+---
+
+==================
+A named direct brace body cannot grow into an always clause
+:error
+==================
+if :; then f() { :; } always { :; } fi
+---
+
+==================
+A compound boundary does not separate a following ordinary command
+:error
+==================
+{ :; } print NEXT
+---
+
+==================
+A keyword after an anonymous ordinary body needs its enclosing owner
+:error
+==================
+function -T -- () (:) fi
+---

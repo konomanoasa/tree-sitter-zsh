@@ -1,0 +1,606 @@
+==================
+Anonymous arguments within a loop cannot become the enclosing if body
+==================
+if for x; () { :; } :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (for_clause
+                            (for_keyword)
+                            name: (name)
+                            separator: (term)
+                            body: (sublist
+                              (pipeline
+                                (command
+                                  (complex_command
+                                    (function_definition
+                                      body: (brace_group
+                                        body: (list
+                                          (sublist
+                                            (pipeline
+                                              (command
+                                                (simple_command
+                                                  name: (word
+                                                    (literal))))))))
+                                      argument: (word
+                                        (literal)))))))))))))))))))))
+
+==================
+A simple function body does not split its arguments into an if body
+==================
+if f() : :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (function_definition
+                            name: (word
+                              (literal))
+                            body: (command
+                              (simple_command
+                                name: (word
+                                  (literal))
+                                argument: (word
+                                  (literal))))))))))))))))))
+
+==================
+Anonymous function arguments do not become an implicit if body
+==================
+if () { :; } :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (function_definition
+                            body: (brace_group
+                              body: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal))))))))
+                            argument: (word
+                              (literal))))))))))))))))
+
+==================
+A long loop body needs a separator before the enclosing fi
+:error
+==================
+if true; then while false; do :; done fi
+---
+
+==================
+A long if body needs a separator before the enclosing fi
+:error
+==================
+if true; then if true; then :; fi fi
+---
+
+==================
+A brace short loop body needs a separator before the enclosing fi
+:error
+==================
+if true; then repeat 0 { :; } fi
+---
+
+==================
+A redirect remains attached to its compound condition
+==================
+if >file (:) print yes
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (subshell
+                            (io_file
+                              (redirect_operator)
+                              filename: (word
+                                (literal)))
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))
+                body: (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal))))))))))))))
+
+==================
+A trailing comment without a newline after a terminated list belongs to the program
+==================
+print x
+#c
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal)))))))
+  (comment (comment_text)))
+
+==================
+Adjacent closing braces at a word boundary close nested commands
+==================
+{ { :; }}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (brace_group
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal))))))))))))))))))))
+
+==================
+An extra closing brace cannot become a literal argument
+:error
+==================
+{ print }}
+---
+
+==================
+A word ending in adjacent braces retains all but its final closing delimiter
+==================
+{ print a}}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal))))))))))))))
+
+==================
+Adjacent braces followed by a word character remain one argument
+==================
+{ print }}a }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal))))))))))))))
+
+==================
+A case at the end of a pipeline terminates a short if condition
+==================
+if : | case x in x) :;; esac :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))
+                      (command
+                        (complex_command
+                          (case_clause
+                            (case_keyword)
+                            word: (word
+                              (literal))
+                            (in_keyword)
+                            (case_item
+                              (pattern_list
+                                (pattern_alternatives
+                                  (pattern_alternative
+                                    (literal))))
+                              body: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal)))))))
+                              (case_break))
+                            (esac_keyword)))))))
+                body: (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+A completed long if can end a condition before an ordinary short body
+==================
+if if :; then :; fi :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (if_clause
+                            branch: (if_branch
+                              (if_keyword)
+                              condition: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal)))))))
+                              (then_keyword)
+                              body: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal))))))))
+                            (fi_keyword)))))))
+                body: (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+An always clause terminates a short while condition
+==================
+while { :; } always { :; } { break; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (while_clause
+              (while_keyword)
+              condition: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (always_clause
+                          body: (brace_group
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal))))))))
+                          (always_keyword)
+                          always: (brace_group
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal))))))))))))))
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal)))))))))))))))))))
+
+==================
+An anonymous ordinary body leaves the next reserved brace outside its arguments
+==================
+if () [[ x ]] { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (function_definition
+                            body: (command
+                              (complex_command
+                                (conditional_command
+                                  condition: (word
+                                    (literal)))))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal))))))))))))))))
+
+==================
+Time inherits the final command boundary of a short condition
+==================
+if time case x in x) :;; esac :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (time_command
+                            (time_keyword)
+                            pipeline: (pipeline
+                              (command
+                                (complex_command
+                                  (case_clause
+                                    (case_keyword)
+                                    word: (word
+                                      (literal))
+                                    (in_keyword)
+                                    (case_item
+                                      (pattern_list
+                                        (pattern_alternatives
+                                          (pattern_alternative
+                                            (literal))))
+                                      body: (list
+                                        (sublist
+                                          (pipeline
+                                            (command
+                                              (simple_command
+                                                name: (word
+                                                  (literal)))))))
+                                      (case_break))
+                                    (esac_keyword)))))))))))
+                body: (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+An empty parenthesized word list with layout ends a loop condition
+==================
+if for x ( ) { :; } :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (for_clause
+                            (for_keyword)
+                            name: (name)
+                            words: (loop_words)
+                            body: (sublist
+                              (pipeline
+                                (command
+                                  (complex_command
+                                    (brace_group
+                                      body: (list
+                                        (sublist
+                                          (pipeline
+                                            (command
+                                              (simple_command
+                                                name: (word
+                                                  (literal))))))))))))))))))
+                body: (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))))))))))))))
+
+==================
+A completed long if does not restore reserved brace recognition
+:error
+==================
+if if :; then :; fi { :; }
+---
+
+==================
+A direct short loop brace does not restore reserved brace recognition
+:error
+==================
+if repeat 1 { :; } { :; }
+---
+
+==================
+A short condition cannot split ordinary command arguments
+==================
+if : :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))
+                          argument: (word
+                            (literal)))))))))))))))
+
+==================
+A brace word after a completed condition is not a reserved brace body
+==================
+if if :; then :; fi {x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (if_clause
+                            branch: (if_branch
+                              (if_keyword)
+                              condition: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal)))))))
+                              (then_keyword)
+                              body: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal))))))))
+                            (fi_keyword)))))))
+                body: (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (brace_expansion
+                            (literal)))))))))))))))

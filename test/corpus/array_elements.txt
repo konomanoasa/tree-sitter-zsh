@@ -1,0 +1,118 @@
+==================
+Explicit array elements retain their key and empty values
+==================
+a=([1]=x [2]=)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment
+                (array_element_assignment
+                  key: (array_element_key
+                    source: (array_key_source (array_key_text)))
+                  (assignment_operator)
+                  value: (assignment_value (literal)))
+                (array_element_assignment
+                  key: (array_element_key
+                    source: (array_key_source (array_key_text)))
+                  (assignment_operator))))))))))
+
+==================
+Element keys preserve literal brackets and do not introduce subscript flags
+==================
+a=([a[b]=x [(r)x]=y)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment
+                (array_element_assignment
+                  key: (array_element_key
+                    source: (array_key_source (array_key_text)))
+                  (assignment_operator)
+                  value: (assignment_value (literal)))
+                (array_element_assignment
+                  key: (array_element_key
+                    source: (array_key_source
+                      (array_key_group
+                        (array_key_source (array_key_text)))
+                      (array_key_text)))
+                  (assignment_operator)
+                  value: (assignment_value (literal)))))))))))
+
+==================
+Quoted closing brackets remain within an assignment subscript
+==================
+a[']']=x
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              subscript: (array_subscript
+                source: (subscript_source
+                  (single_quoted (single_quote_content))))
+              (assignment_operator)
+              value: (assignment_value (literal)))))))))
+
+==================
+Positional assignment and unbraced positional word suffix have distinct roles
+==================
+12=x print $2[3,5]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (positional_parameter)
+              (assignment_operator)
+              value: (assignment_value (literal)))
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion parameter: (positional_parameter))
+              (pattern_bracket_source (pattern_bracket_text)))))))))
+
+==================
+A partial subscript candidate does not borrow the key delimiter
+==================
+a=([$x[1]=y)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment
+                (array_element_assignment
+                  key: (array_element_key
+                    source: (array_key_source
+                      (parameter_expansion
+                        parameter: (variable_name)
+                        (parameter_suffix_source
+                          (array_subscript
+                            source: (subscript_source (subscript_text)))))))
+                  (assignment_operator)
+                  value: (assignment_value (literal)))))))))))

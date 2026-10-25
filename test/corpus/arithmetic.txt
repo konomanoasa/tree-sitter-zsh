@@ -1,0 +1,681 @@
+==================
+Arithmetic operators do not decide precedence
+==================
+((a + 2 * 3))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_variable)
+                (arithmetic_operator)
+                (arithmetic_number)
+                (arithmetic_operator)
+                (arithmetic_number)))))))))
+
+==================
+Arithmetic grouping and function arguments keep their source
+==================
+print $((f(1,2) + (3)))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_function_source
+                    name: (arithmetic_function_name)
+                    arguments: (arithmetic_argument_source
+                      (arithmetic_number)
+                      (arithmetic_operator)
+                      (arithmetic_number)))
+                  (arithmetic_operator)
+                  (parenthesized_arithmetic
+                    (arithmetic_source (arithmetic_number))))))))))))
+
+==================
+An arithmetic for owns the separator between its header and short body
+:cst
+==================
+for ((;0;)); :
+---
+0:0  - 0:14   program
+0:0  - 0:14     list
+0:0  - 0:14       sublist
+0:0  - 0:14         pipeline
+0:0  - 0:14           command
+0:0  - 0:14             complex_command
+0:0  - 0:14               arithmetic_for_clause
+0:0  - 0:3                  for_keyword `for`
+0:4  - 0:11                 header: arithmetic_for_header
+0:4  - 0:5                    "("
+0:5  - 0:6                    "("
+0:6  - 0:7                    ";"
+0:7  - 0:8                    condition: arithmetic_source
+0:7  - 0:8                      arithmetic_number `0`
+0:8  - 0:9                    ";"
+0:9  - 0:10                   ")"
+0:10 - 0:11                   ")"
+0:11 - 0:13                 separator: term
+0:11 - 0:12                   ";"
+0:13 - 0:14                 body: sublist
+0:13 - 0:14                   pipeline
+0:13 - 0:14                     command
+0:13 - 0:14                       simple_command
+0:13 - 0:14                         name: word
+0:13 - 0:14                           literal `:`
+
+==================
+Arithmetic for header layout precedes the whole body sublist and the next command
+==================
+for ((;0;)); ; # HEADER
+: && :
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_for_clause
+              (for_keyword)
+              header: (arithmetic_for_header
+                condition: (arithmetic_source
+                  (arithmetic_number)))
+              separator: (term
+                (comment
+                  (comment_text)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))
+                (and_if)
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+An arithmetic for newline can precede a brace body
+==================
+for ((;0;))
+{ :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_for_clause
+              (for_keyword)
+              header: (arithmetic_for_header
+                condition: (arithmetic_source
+                  (arithmetic_number)))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal)))))))))))))))))))
+
+==================
+Arithmetic for header separators may precede an omitted body
+==================
+for ((;0;));
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_for_clause
+              (for_keyword)
+              header: (arithmetic_for_header
+                condition: (arithmetic_source
+                  (arithmetic_number)))
+              separator: (term))))))))
+
+==================
+A case terminator cannot be split into arithmetic for header separators
+:error
+==================
+for ((;0;));; :
+---
+
+==================
+Arithmetic for retains omitted expressions
+==================
+for ((;1;)) do break; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_for_clause
+              (for_keyword)
+              header: (arithmetic_for_header
+                condition: (arithmetic_source
+                  (arithmetic_number)))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+Unterminated arithmetic keeps standard recovery
+:error
+==================
+print $((1+
+---
+
+==================
+Character prefixes preserve explicit substitutions and groups
+==================
+print $((##\M-$(print A) + ##^${a} + ##(1)))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_operator)
+                  (command_substitution
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word (literal))
+                              argument: (word (literal))))))))
+                  (arithmetic_operator)
+                  (arithmetic_operator)
+                  (parameter_expansion parameter: (variable_name))
+                  (arithmetic_operator)
+                  (arithmetic_operator)
+                  (parenthesized_arithmetic
+                    (arithmetic_source (arithmetic_number))))))))))))
+
+==================
+An incomplete character value cannot consume an arithmetic for separator
+==================
+for ((##;0;)) do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_for_clause
+              (for_keyword)
+              header: (arithmetic_for_header
+                initializer: (arithmetic_source
+                  (arithmetic_operator))
+                condition: (arithmetic_source
+                  (arithmetic_number)))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+Character values retain complete escapes and explicit parameter expansions
+==================
+print $((##\M-\C-x + ##\u0041 + ##$a))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (arithmetic_operator)
+                  (parameter_expansion parameter: (variable_name)))))))))))
+
+==================
+Arithmetic character values own literal quote characters
+==================
+print $((##")) $[##']
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_number))))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_number))))))))))
+
+==================
+An unmatched arithmetic quote remains a source fragment
+==================
+(("1))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_source_fragment)
+                (arithmetic_number)))))))))
+
+==================
+An unmatched square bracket selects a subshell instead of arithmetic
+==================
+print $((1]))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (command_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (subshell
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))))))))))
+
+==================
+Arithmetic parameter operands do not start brace expansion
+==================
+print $((${x:-{}))
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (parameter_expansion
+                    parameter: (variable_name)
+                    (parameter_value_operator)
+                    (parameter_word
+                      (literal))))))))))))
+
+==================
+Arithmetic source fragments cannot consume for header separators
+==================
+for ((@;0;)) do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_for_clause
+              (for_keyword)
+              header: (arithmetic_for_header
+                initializer: (arithmetic_source
+                  (arithmetic_source_fragment))
+                condition: (arithmetic_source
+                  (arithmetic_number)))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+Crossed inner brackets preserve the outer arithmetic boundary
+==================
+print $((([1)]))
+---
+
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (parenthesized_arithmetic
+                    (arithmetic_source
+                      (arithmetic_source_fragment)
+                      (arithmetic_number)))
+                  (arithmetic_source_fragment))))))))))
+
+==================
+Arithmetic quote fragments cannot absorb the start of an inner bracket
+:cst
+==================
+print $[1"["2]]x
+---
+0:0  - 0:16   program
+0:0  - 0:16     list
+0:0  - 0:16       sublist
+0:0  - 0:16         pipeline
+0:0  - 0:16           command
+0:0  - 0:16             simple_command
+0:0  - 0:5                name: word
+0:0  - 0:5                  literal `print`
+0:6  - 0:16               argument: word
+0:6  - 0:15                 arithmetic_expansion
+0:6  - 0:7                    "$"
+0:7  - 0:8                    "["
+0:8  - 0:14                   arithmetic_source
+0:8  - 0:9                      arithmetic_number `1`
+0:9  - 0:10                     arithmetic_source_fragment `\"`
+0:10 - 0:14                     array_subscript
+0:10 - 0:11                       "["
+0:11 - 0:13                       source: subscript_source
+0:11 - 0:12                         subscript_text `\"`
+0:12 - 0:13                         subscript_number_candidate `2`
+0:13 - 0:14                       "]"
+0:14 - 0:15                   "]"
+0:15 - 0:16                 literal `x`
+
+==================
+An inner bracket after an arithmetic quote cannot supply the expansion closing bracket
+:error
+==================
+print $[1"["2]
+---
+
+==================
+Square arithmetic counts fragment brackets across parenthesized groups
+:cst
+==================
+print $[(1[)]]x
+---
+0:0  - 0:15   program
+0:0  - 0:15     list
+0:0  - 0:15       sublist
+0:0  - 0:15         pipeline
+0:0  - 0:15           command
+0:0  - 0:15             simple_command
+0:0  - 0:5                name: word
+0:0  - 0:5                  literal `print`
+0:6  - 0:15               argument: word
+0:6  - 0:14                 arithmetic_expansion
+0:6  - 0:7                    "$"
+0:7  - 0:8                    "["
+0:8  - 0:13                   arithmetic_source
+0:8  - 0:12                     parenthesized_arithmetic
+0:8  - 0:9                        "("
+0:9  - 0:11                       arithmetic_source
+0:9  - 0:10                         arithmetic_number `1`
+0:10 - 0:11                         arithmetic_source_fragment `[`
+0:11 - 0:12                       ")"
+0:12 - 0:13                     arithmetic_source_fragment `]`
+0:13 - 0:14                   "]"
+0:14 - 0:15                 literal `x`
+
+==================
+A crossed fragment bracket still requires a separate expansion closing bracket
+:error
+==================
+print $[(1[)]
+---
+
+==================
+A fragment bracket can close inside a later arithmetic group
+:cst
+==================
+print $[[(1])]
+---
+0:0  - 0:14   program
+0:0  - 0:14     list
+0:0  - 0:14       sublist
+0:0  - 0:14         pipeline
+0:0  - 0:14           command
+0:0  - 0:14             simple_command
+0:0  - 0:5                name: word
+0:0  - 0:5                  literal `print`
+0:6  - 0:14               argument: word
+0:6  - 0:14                 arithmetic_expansion
+0:6  - 0:7                    "$"
+0:7  - 0:8                    "["
+0:8  - 0:13                   arithmetic_source
+0:8  - 0:9                      arithmetic_source_fragment `[`
+0:9  - 0:13                     parenthesized_arithmetic
+0:9  - 0:10                       "("
+0:10 - 0:12                       arithmetic_source
+0:10 - 0:11                         arithmetic_number `1`
+0:11 - 0:12                         arithmetic_source_fragment `]`
+0:12 - 0:13                       ")"
+0:13 - 0:14                   "]"
+
+==================
+A nested square expansion cannot close an outer fragment bracket
+:error
+==================
+print $[(1[) + $[2]]
+---
+
+==================
+A square expansion closing bracket cannot be a fragment inside an unclosed parenthesis
+:error
+==================
+print $[(1])]
+---
+
+==================
+Escaped opening brackets do not consume the square expansion closing bracket
+:cst
+==================
+print $[1\[2]]
+---
+0:0  - 0:14   program
+0:0  - 0:14     list
+0:0  - 0:14       sublist
+0:0  - 0:14         pipeline
+0:0  - 0:14           command
+0:0  - 0:14             simple_command
+0:0  - 0:5                name: word
+0:0  - 0:5                  literal `print`
+0:6  - 0:14               argument: word
+0:6  - 0:13                 arithmetic_expansion
+0:6  - 0:7                    "$"
+0:7  - 0:8                    "["
+0:8  - 0:12                   arithmetic_source
+0:8  - 0:9                      arithmetic_number `1`
+0:9  - 0:11                     escaped_character `\\[`
+0:11 - 0:12                     arithmetic_number `2`
+0:12 - 0:13                   "]"
+0:13 - 0:14                 literal `]`
+
+==================
+Square arithmetic escapes retain their effect inside groups and function arguments
+==================
+print $[(1\(2)] $[f(1\[2)]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (parenthesized_arithmetic
+                    (arithmetic_source
+                      (arithmetic_number)
+                      (escaped_character)
+                      (arithmetic_number))))))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_function_source
+                    name: (arithmetic_function_name)
+                    arguments: (arithmetic_argument_source
+                      (arithmetic_number)
+                      (escaped_character)
+                      (arithmetic_number))))))))))))
+
+==================
+Parenthesized arithmetic still counts opening brackets after a backslash
+==================
+print $((1\[2]))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_number)
+                  (arithmetic_source_fragment)
+                  (arithmetic_number))))))))))
+
+==================
+A group closing before the final parentheses makes a command substitution
+==================
+print $((a)|(b))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (command_substitution
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (subshell
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal))))))))))
+                      (command
+                        (complex_command
+                          (subshell
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))))))))))
+
+==================
+Explicit groups in unresolved arithmetic function arguments remain candidates
+==================
+((f((1))))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_function_source
+                  name: (arithmetic_function_name)
+                  arguments: (arithmetic_argument_source
+                    (parenthesized_arithmetic
+                      (arithmetic_argument_source
+                        (arithmetic_number)))))))))))))
