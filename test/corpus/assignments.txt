@@ -1,6 +1,8 @@
 ==================
 A scalar assignment owns its adjacent closing brace as literal source
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 x=a}
 ---
@@ -18,6 +20,8 @@ x=a}
 
 ==================
 Expanded appended indexed and brace-only scalar values share closing boundaries
+:language(zsh)
+:language(zsh_default)
 ==================
 x=${x}} x+=a} x[1]=a} x=}
 ---
@@ -40,7 +44,7 @@ x=${x}} x+=a} x[1]=a} x=}
             (assignment_word
               name: (variable_name)
               subscript: (array_subscript
-                source: (subscript_source (subscript_number_candidate)))
+                source: (subscript_source candidate: (arithmetic_candidate_number)))
               (assignment_operator)
               value: (assignment_value (literal)))
             (assignment_word
@@ -50,6 +54,8 @@ x=${x}} x+=a} x[1]=a} x=}
 
 ==================
 Declaration assignment values retain adjacent closing braces
+:language(zsh)
+:language(zsh_default)
 ==================
 typeset x=a} y=${x}}
 ---
@@ -76,6 +82,8 @@ typeset x=a} y=${x}}
 
 ==================
 A brace group closes after the scalar assignment word has ended
+:language(zsh)
+:language(zsh_default)
 ==================
 { x=a} }
 ---
@@ -99,6 +107,8 @@ A brace group closes after the scalar assignment word has ended
 
 ==================
 Parameter and brace expansion closers precede literal assignment suffixes
+:language(zsh)
+:language(zsh_default)
 ==================
 x=${y:-a}} x={a,b}}
 ---
@@ -133,6 +143,8 @@ x=${y:-a}} x={a,b}}
 ==================
 A scalar assignment brace cannot close an unfinished group
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 { x=a}
 ---
@@ -140,6 +152,8 @@ A scalar assignment brace cannot close an unfinished group
 ==================
 A declaration assignment brace cannot close an unfinished group
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 { typeset x=a}
 ---
@@ -147,6 +161,8 @@ A declaration assignment brace cannot close an unfinished group
 ==================
 An assignment spelling used as an ordinary argument retains the word boundary
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print x=a}
 ---
@@ -154,6 +170,8 @@ print x=a}
 ==================
 An ordinary array element cannot absorb a closing brace at its word boundary
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 x=(a})
 ---
@@ -161,12 +179,16 @@ x=(a})
 ==================
 An explicit array element assignment retains the array word boundary
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 x=([1]=a})
 ---
 
 ==================
 A closing array parenthesis ends the assignment before an adjacent command
+:language(zsh)
+:language(zsh_default)
 ==================
 x=(a b)y
 ---
@@ -184,6 +206,8 @@ x=(a b)y
 
 ==================
 A continuation after an array belongs outside the completed assignment
+:language(zsh)
+:language(zsh_default)
 ==================
 x=(a)\
 y
@@ -203,6 +227,8 @@ y
 
 ==================
 An adjacent declaration argument remains a word regardless of name validity
+:language(zsh)
+:language(zsh_default)
 ==================
 typeset x=(a)]]
 ---
@@ -225,6 +251,8 @@ typeset x=(a)]]
 
 ==================
 Adjacent array and scalar assignments retain separate targets and values
+:language(zsh)
+:language(zsh_default)
 ==================
 x=(a)y=(b)c=d
 ---
@@ -249,6 +277,8 @@ x=(a)y=(b)c=d
 
 ==================
 A hash after an array starts a comment outside the assignment
+:language(zsh)
+:language(zsh_default)
 ==================
 x=(a)# note
 ---
@@ -266,6 +296,8 @@ x=(a)# note
 
 ==================
 A descriptor after an array belongs to the following redirection
+:language(zsh)
+:language(zsh_default)
 ==================
 x=(a)1>&1
 ---
@@ -287,12 +319,16 @@ x=(a)1>&1
 ==================
 An array assignment still requires its closing parenthesis
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 x=(a b
 ---
 
 ==================
 An empty scalar assignment has no synthetic value
+:language(zsh)
+:language(zsh_default)
 ==================
 x=
 ---
@@ -308,6 +344,8 @@ x=
 
 ==================
 Declaration syntax preserves array elements without inferring a type
+:language(zsh)
+:language(zsh_default)
 ==================
 typeset -a a=(x y)
 ---
@@ -332,6 +370,8 @@ typeset -a a=(x y)
 
 ==================
 Declaration append retains the same target and operator as ordinary assignment
+:language(zsh)
+:language(zsh_default)
 ==================
 typeset x+=1
 ---

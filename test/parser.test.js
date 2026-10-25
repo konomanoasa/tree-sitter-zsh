@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { sourceNodes } from "./support/cst.js";
+import { language } from "./support/language.js";
 import { parse, parseSummary, valid } from "./support/parser.js";
 
 test("exec operands retain word source and keep the following command name", () => {
   for (const { source, expected } of [
     { source: "exec -a <(:) print x\n", expected: /process_substitution/ },
-    { source: "exec -a (a) print x\n", expected: /glob_qualifier_candidate/ },
+    { source: "exec -a (a) print x\n", expected: /glob_qualifier/ },
     {
       source: "exec -a <1-2> print x\n",
       expected: /pattern_numeric_range_source/,
@@ -167,12 +168,12 @@ test("heredoc text does not activate dollar single quoting", () => {
   assert.match(output, /parameter_expansion/);
 });
 
-test("unbraced subscript candidates preserve shell word and pipeline boundaries", () => {
+test("unbraced subscripts preserve shell word and pipeline boundaries", () => {
   const unquoted = valid("print $a[1 + 0]\n");
-  assert.doesNotMatch(unquoted, /array_subscript/);
+  assert.match(unquoted, /array_subscript/);
   assert.equal((unquoted.match(/argument: word/g) ?? []).length, 3);
   const pipeline = valid("print $a[1|print next]\n");
-  assert.doesNotMatch(pipeline, /array_subscript/);
+  assert.match(pipeline, /array_subscript/);
   assert.equal((pipeline.match(/simple_command/g) ?? []).length, 2);
   assert.match(valid('print "$a[1 + 0]"\n'), /array_subscript/);
   assert.match(valid(`print \${a[1 + 0]}\n`), /array_subscript/);
@@ -180,9 +181,9 @@ test("unbraced subscript candidates preserve shell word and pipeline boundaries"
   assert.match(valid("a[(1 + 0)]=x\n"), /assignment_word/);
 });
 
-test("a subscript candidate cannot join two separately quoted words", () => {
+test("an unfinished subscript cannot join two separately quoted words", () => {
   const output = valid('print "$a[1" "]"\n');
-  assert.doesNotMatch(output, /array_subscript/);
+  assert.match(output, /array_subscript/);
   assert.equal((output.match(/argument: word/g) ?? []).length, 2);
 });
 
@@ -191,8 +192,6 @@ for (const source of [
   'print "$x:s/a/b c"\n',
   'print "$x:s/a/(b"\n',
   "print \"$x:s/a/'$i'\"\n",
-  'print "$x:F:3"\n',
-  "print $x:f $x:F $x:s $x:F:3 $x:s/abc\n",
   "print $x:F(1 + 0)h\n",
   `print \${x:ffh} \${x:fF:2:h}\n`,
 ]) {
@@ -201,20 +200,23 @@ for (const source of [
   });
 }
 
-test("incomplete modifier candidates cannot consume other words or commands", () => {
-  const words = valid("print $x:s a b\n");
+test("unrecognized modifier prefixes preserve surrounding words and commands", () => {
+  const words = valid("print $x:f a b\n");
   assert.equal((words.match(/argument: word/g) ?? []).length, 3);
-  for (const source of [
-    "print $x:s/abc|print marker\n",
-    "print $x:F:2|print marker\n",
-  ])
-    assert.equal((valid(source).match(/simple_command/g) ?? []).length, 2);
+  assert.doesNotMatch(words, /parameter_modifier/);
+  assert.equal(
+    (valid("print $x:F:2|print marker\n").match(/simple_command/g) ?? [])
+      .length,
+    2,
+  );
+  for (const source of ["print $x:s a b\n", "print $x:s/abc|print marker\n"])
+    assert.equal(parse(source).hasError, true);
 });
 
 test("heredoc suffixes preserve implicit quoting without adding quote nodes", () => {
   const output = valid("cat <<E\n$a[1 + 0]\n$x:s/a b/c/\n$a['$i']\nE\n");
-  assert.match(output, /subscript_number_candidate/);
-  assert.match(output, /parameter_candidate_text `a b`/);
+  assert.match(output, /arithmetic_candidate_number/);
+  assert.match(output, /parameter_modifier_text `a b`/);
   assert.match(output, /parameter: variable_name `i`/);
   assert.doesNotMatch(output, /single_quoted/);
 });
@@ -246,7 +248,7 @@ test("backquote EOF ends incomplete patterns and filename prefixes at their phys
     },
     {
       source: "print `print *(.)`\n",
-      expected: /0:14 +- +0:17 +glob_qualifier_candidate/,
+      expected: /0:14 +- +0:17 +glob_qualifier/,
     },
   ]) {
     assert.match(valid(source), expected);
@@ -353,7 +355,9 @@ test("filename eligibility that depends on preceding values stays unresolved", (
   for (const source of ['x=a":"~+\n', "x=$prefix~+\n", "x=a\\:~+\n"]) {
     const output = valid(source);
     assert.doesNotMatch(output, /tilde_expansion/);
-    assert.match(output, /pattern_candidate_operator `~`/);
+    if (language.name === "zsh")
+      assert.match(output, /operator: pattern_operator `~`/);
+    else assert.doesNotMatch(output, /extended_pattern/);
   }
 });
 
@@ -361,13 +365,9 @@ for (const source of [
   "print ~[$name:s/a/b]\n",
   "a=([$name:s/a/b]=x)\n",
   "print [$name:s/a/b]\n",
-  "print ~[$name:F:3]\n",
   "print ($name:s/a/b c)\n",
   "print $name:s/a/(b\n",
   "print $name:s/a/{b\n",
-  `print \${x:-$y:s}\n`,
-  `print \${x:-$y:f}\n`,
-  `print \${x:-$y:F:3}\n`,
 ]) {
   test(`a suffix candidate preserves its containing delimiter in ${JSON.stringify(source)}`, () => {
     assert.match(valid(source), /parameter_suffix_source/);
@@ -461,18 +461,29 @@ test("process substitution remains structural inside original bracket arguments"
   const parameter = valid(`print \${x:-~[a<(:)]}\n`);
   assert.match(parameter, /dynamic_directory_name/);
   assert.doesNotMatch(parameter, /process_substitution/);
-  const numeric = valid("a=([a<1-3>]=x)\n");
-  assert.match(numeric, /array_key_text `a<1-3>`/);
+  const source = "a=([a<1-3>]=x)\n";
+  const numeric = valid(source);
+  assert.doesNotMatch(
+    numeric,
+    /pattern_numeric_range_source|process_substitution/,
+  );
+  assert.equal(
+    sourceNodes(numeric, source).find(({ type }) => type === "array_key_source")
+      ?.text,
+    "a<1-3>",
+  );
 });
 
-test("glob flags retain source arguments without selecting a globbing option", () => {
+test("glob flags follow the language while bare qualifiers keep their arguments", () => {
   const output = valid(
     "print (#ia2)foo (#c2,4)bar *(Lk-50am+5om[1,3]u0g[root]f70?+check)\n",
   );
-  assert.equal((output.match(/pattern_flags_prefix/g) ?? []).length, 2);
+  assert.equal(
+    (output.match(/pattern_flags_prefix/g) ?? []).length,
+    language.name === "zsh" ? 2 : 0,
+  );
   for (const argument of [
-    "2",
-    "2,4",
+    ...(language.name === "zsh" ? ["2", "2,4"] : []),
     "k-50",
     "m+5",
     "m",
@@ -494,12 +505,13 @@ test("glob code arguments preserve shell quoting without parsing evaluated code"
   const expanded = valid('print *(P:"$tag":)\n');
   assert.match(expanded, /glob_argument_source/);
   assert.match(expanded, /parameter: variable_name `tag`/);
-  assert.match(valid("print *(P:$(print tag):)\n"), /glob_qualifier_candidate/);
+  assert.match(valid("print *(P:$(print tag):)\n"), /glob_qualifier/);
 });
 
-test("glob modifiers keep control arguments and counts inside their candidate", () => {
-  const output = valid("print *.c(#q:s/c/$suffix/:h2) *(:F:2:s/a/b/)\n");
-  assert.equal((output.match(/glob_modifier_candidate/g) ?? []).length, 3);
+test("glob modifiers own control arguments and counts", () => {
+  const prefix = language.name === "zsh" ? "#q" : "";
+  const output = valid(`print *.c(${prefix}:s/c/$suffix/:h2) *(:F:2:s/a/b/)\n`);
+  assert.equal((output.match(/glob_modifier/g) ?? []).length, 3);
   assert.match(output, /argument: modifier_count `2`/);
   assert.match(output, /modifier_control/);
   assert.match(output, /parameter: variable_name `suffix`/);
@@ -507,8 +519,14 @@ test("glob modifiers keep control arguments and counts inside their candidate", 
 
 test("glob argument delimiters cannot replace enclosing shell boundaries", () => {
   const grouped = valid("print *(#qP:(a:b):)\n");
-  assert.match(grouped, /pattern_candidate_group/);
-  assert.equal((grouped.match(/glob_argument_delimiter/g) ?? []).length, 2);
+  assert.match(
+    grouped,
+    language.name === "zsh" ? /glob_group/ : /pattern_group_source/,
+  );
+  assert.equal(
+    (grouped.match(/glob_argument_delimiter/g) ?? []).length,
+    language.name === "zsh" ? 2 : 0,
+  );
   const incomplete = valid("print *(e:unclosed)\n");
   assert.equal((incomplete.match(/glob_argument_delimiter/g) ?? []).length, 1);
   assert.doesNotMatch(incomplete, /MISSING|•/);
@@ -1333,7 +1351,10 @@ test("parameter operand prefixes do not hide following pattern source", () => {
       valid(`print \${x:-${prefix}(a|b)}\n`),
       /pattern_group_source/,
     );
-    assert.match(valid(`print \${x:-${prefix}(#q)}\n`), /pattern_candidate/);
+    assert.match(
+      valid(`print \${x:-${prefix}(#q)}\n`),
+      language.name === "zsh" ? /glob_qualifier/ : /pattern_group_source/,
+    );
     assert.doesNotMatch(
       valid(`print "\${x:-${prefix}<1-2>}"\n`),
       /pattern_numeric_range_source/,
@@ -1748,7 +1769,7 @@ test("arithmetic fragments preserve every for header separator", () => {
   }
 });
 
-test("nested unbraced subscript candidates stop at their enclosing parameter", () => {
+test("nested unbraced subscript sources stop at their enclosing parameter", () => {
   for (const source of [
     `print \${x:-$a[1}\n`,
     `print \${x:-$a[1}after]\n`,
@@ -1757,8 +1778,8 @@ test("nested unbraced subscript candidates stop at their enclosing parameter", (
     `[[ -n \${x:-$a[1} ]]\n`,
   ]) {
     const output = valid(source);
-    assert.doesNotMatch(output, /parameter_suffix_source/);
-    assert.match(output, /literal `\[1`/);
+    assert.match(output, /parameter_suffix_source/);
+    assert.match(output, /subscript_text `1`/);
   }
   assert.match(valid(`print \${x:-$a[{foo}]}\n`), /parameter_suffix_source/);
 });
@@ -2745,3 +2766,317 @@ const limitWorkloads = [
 for (const { name, source } of limitWorkloads) {
   test(`limit input completes: ${name}`, () => parseSummary(source, false));
 }
+
+test("arithmetic edits switch between native expression structure and unresolved source", () => {
+  for (const [before, after] of [
+    ["1 + 2 * 3", "1 + $x * 3"],
+    ["1 + $x * 3", "1 + (2 * 3)"],
+    ["1 + 2 * 3", "1 + 2 & 3"],
+    ["1 + 2 * 3", "1 + 2 * 3 +"],
+    ["1 + 2 * 3", "[#16]1 + 2 * 3"],
+  ]) {
+    for (const [open, close] of [
+      ["((", "))"],
+      ["print $((", "))"],
+      ["print $[", "]"],
+      ["for ((", ";0;)) do :; done"],
+      ["cat <<END\n$((", "))\nEND"],
+      ["print `print $((", "))`"],
+    ]) {
+      const original = `${open}${before}${close}\n`;
+      const changed = `${open}${after}${close}\n`;
+      const edit = {
+        byte: open.length,
+        deleteBytes: before.length,
+        insert: after,
+      };
+      const undo = {
+        byte: open.length,
+        deleteBytes: after.length,
+        insert: before,
+      };
+      assert.equal(valid(original, [edit]), valid(changed));
+      assert.equal(valid(original, [edit, undo]), valid(original));
+    }
+  }
+});
+
+test("subscript candidates retain native expression fields without inferring declarations", () => {
+  for (const declaration of ["", "typeset -a a; ", "typeset -A a; "]) {
+    const source = `${declaration}print \${a[1+2&3]}\n`;
+    const nodes = sourceNodes(valid(source), source);
+    assert.deepEqual(
+      nodes
+        .filter(({ type }) => type.startsWith("arithmetic_candidate_"))
+        .map(({ type, field, text }) => [type, field, text]),
+      [
+        ["arithmetic_candidate_binary_expression", "candidate", "1+2&3"],
+        ["arithmetic_candidate_number", "left", "1"],
+        ["arithmetic_candidate_operator", "operator", "+"],
+        ["arithmetic_candidate_binary_expression", "right", "2&3"],
+        ["arithmetic_candidate_number", "left", "2"],
+        ["arithmetic_candidate_operator", "operator", "&"],
+        ["arithmetic_candidate_number", "right", "3"],
+      ],
+    );
+  }
+});
+
+test("explicit key candidate edits preserve first bracket boundaries and shell substitutions", () => {
+  for (const [before, after] of [
+    ["1+2", "1+2*3"],
+    ["1+(2*3)", "1+(2*$x)"],
+    ["x[2", "x[3+1"],
+    ["(r)x", "(r)$x"],
+    ["foo<(:)", "foo<(print x)"],
+    ["1+2", "1+$((2*3))"],
+    ["1+2", "1+"],
+    ["'quoted]key'", '"quoted]key"'],
+  ]) {
+    for (const declaration of ["typeset -a a; ", "typeset -A a; "]) {
+      const open = `${declaration}a=([`;
+      const close = "]=value untouched)\nprint after\n";
+      const source = open + before + close;
+      const changed = open + after + close;
+      const edit = {
+        byte: open.length,
+        deleteBytes: before.length,
+        insert: after,
+      };
+      const undo = {
+        byte: edit.byte,
+        deleteBytes: after.length,
+        insert: before,
+      };
+      const output = valid(changed);
+      assert.equal(valid(source, [edit]), output, changed);
+      assert.equal(valid(source, [edit, undo]), valid(source), source);
+      assert.equal(
+        sourceNodes(output, changed).find(
+          ({ type }) => type === "array_key_source",
+        )?.text,
+        after,
+      );
+    }
+  }
+});
+
+test("arithmetic argument candidate edits preserve call boundaries and explicit arithmetic expansions", () => {
+  for (const [before, after] of [
+    ["1+2", "1+2&3,4"],
+    ["1+2", "1+$x"],
+    ["1+(2*3)", "1+(2*$x)"],
+    ["1+2", "1+$((2*3))"],
+    ["1+2", "g(1+2)"],
+    ["1+2", "1+"],
+    ["(1+2)", "(1+)"],
+    ["1+2", '"text+1"'],
+    ["1+2", ""],
+  ]) {
+    for (const [open, close] of [
+      ["((f(", ")))\n"],
+      ["print $((f(", ")))\n"],
+      ["print $[f(", ")]\n"],
+      ["cat <<END\n$((f(", ")))\nEND\n"],
+      ["print `print $((f(", ")))`\n"],
+      ["for ((f(", ");0;)) do :; done\n"],
+    ]) {
+      const source = open + before + close;
+      const changed = open + after + close;
+      const edit = {
+        byte: open.length,
+        deleteBytes: before.length,
+        insert: after,
+      };
+      const undo = {
+        byte: edit.byte,
+        deleteBytes: after.length,
+        insert: before,
+      };
+      assert.equal(valid(source, [edit]), valid(changed), changed);
+      assert.equal(valid(source, [edit, undo]), valid(source), source);
+    }
+  }
+  const source = "((f(1+$((2*3)))))\n";
+  const nodes = sourceNodes(valid(source), source);
+  assert.deepEqual(
+    nodes
+      .filter(({ type }) => type.endsWith("binary_expression"))
+      .map(({ type, field, text }) => [type, field, text]),
+    [
+      ["arithmetic_candidate_binary_expression", "candidate", "1+$((2*3))"],
+      ["arithmetic_binary_expression", "expression", "2*3"],
+    ],
+  );
+});
+
+test("subscript pattern candidates follow language syntax and preserve explicit expansions once", () => {
+  const source = `print "\${a[(r)^foo~bar#]}" \${a[(r)foo\${part}#]} \${a[(r)(#i)foo]}\n`;
+  const nodes = sourceNodes(valid(source), source);
+  assert.deepEqual(
+    nodes
+      .filter(({ type }) => type === "pattern_candidate_operator")
+      .map(({ text }) => text),
+    language.name === "zsh" ? ["^", "~", "#"] : [],
+  );
+  assert.equal(
+    nodes.filter(({ type }) => type === "pattern_candidate_flags").length,
+    language.name === "zsh" ? 1 : 0,
+  );
+  assert.equal(
+    nodes.filter(
+      ({ type, text }) => type === "parameter_expansion" && text === `\${part}`,
+    ).length,
+    1,
+  );
+  assert.equal(
+    nodes.filter(
+      ({ type, text }) =>
+        type === "pattern_candidate_operator_source" && text === "#",
+    ).length,
+    language.name === "zsh" ? 1 : 0,
+  );
+  assert.equal(
+    nodes.filter(({ type }) => type === "subscript_pattern_candidate").length,
+    3,
+  );
+});
+
+test("editing subscript flags operands and ranges restores candidate structure in each shell context", () => {
+  for (const [before, after] of [
+    ["1+2", "(r)foo*"],
+    ["(r)foo*", "(re)foo*"],
+    ["(re)foo*(bar)", "(r)foo*(bar)"],
+    ["(r)foo*", "(r)foo*,(R)bar?"],
+    ["(r)^foo~bar#", `(r)^foo~\${part}#`],
+    ["1+2", "1+$x"],
+    ["1+(2*3)", "1+(2*$x)"],
+    ["*", "(e)*"],
+    ["x[2]", "x[2,3]"],
+    ["(r)(#i)foo", "(r)(foo|bar)"],
+    ["(r)[a-z]", `(r)[a\${part}-z]`],
+    ["1+2", "1+"],
+  ]) {
+    let common = 0;
+    while (
+      common < Math.min(before.length, after.length) &&
+      before[common] === after[common]
+    )
+      common++;
+    let tail = 0;
+    while (
+      tail < Math.min(before.length, after.length) - common &&
+      before.at(-tail - 1) === after.at(-tail - 1)
+    )
+      tail++;
+    const removed = before.slice(common, before.length - tail);
+    const inserted = after.slice(common, after.length - tail);
+    for (const [open, close] of [
+      ["print ${a[", "]} tail\nprint after\n"],
+      ['print "${a[', ']}" tail\nprint after\n'],
+      ["print $a[", "] tail\nprint after\n"],
+      ["a[", "]=value\nprint after\n"],
+      ["cat <<END\n${a[", "]}\nEND\nprint after\n"],
+    ]) {
+      const source = open + before + close;
+      const changed = open + after + close;
+      const edit = {
+        byte: open.length + common,
+        deleteBytes: removed.length,
+        insert: inserted,
+      };
+      const undo = {
+        byte: edit.byte,
+        deleteBytes: inserted.length,
+        insert: removed,
+      };
+      assert.equal(valid(source, [edit]), valid(changed), changed);
+      assert.equal(valid(source, [edit, undo]), valid(source), source);
+    }
+  }
+});
+
+test("regex source edits preserve shell boundaries and match fresh ERE structure", () => {
+  for (const [before, after] of [
+    ["(ab|cd)+", `(a\${part}|cd)+`],
+    ["[a-z]", `[a\${part}-z]`],
+    ["a{2,3}", `a{\${count},3}`],
+    ["[abc]", "[abc"],
+    ["ab+", '"ab"+'],
+    ["<1-2>(x)", "<1-2><(print x)"],
+    ["(a|b)", "(a||b)"],
+    ["[[:alpha:]]", `[[:\${class}:]]`],
+  ]) {
+    for (const [prefix, suffix] of [
+      ["[[ x =~ ", " ]] && print AFTER\n"],
+      ["print $( [[ x =~ ", " ]] )\n"],
+      ["print `[[ x =~ ", " ]]`\n"],
+      ["cat <<END\n$( [[ x =~ ", " ]] )\nEND\n"],
+    ]) {
+      const original = prefix + before + suffix;
+      const changed = prefix + after + suffix;
+      const edit = {
+        byte: prefix.length,
+        deleteBytes: before.length,
+        insert: after,
+      };
+      const undo = {
+        byte: prefix.length,
+        deleteBytes: after.length,
+        insert: before,
+      };
+      assert.equal(valid(original, [edit]), valid(changed));
+      assert.equal(valid(original, [edit, undo]), valid(original));
+    }
+  }
+});
+
+test("language selection fixes extended glob while explicit substitution flags stay local", () => {
+  for (const setting of [
+    "setopt extendedglob",
+    "unsetopt extendedglob",
+    "emulate zsh",
+  ]) {
+    const output = valid(`${setting}\nprint a#\n`);
+    assert.equal(output.includes("extended_pattern"), language.name === "zsh");
+  }
+  for (const quote of ["", '"']) {
+    const output = valid(`print ${quote}\${(*)x/a#/_}${quote} \${x/a#/_}\n`);
+    assert.equal(
+      (output.match(/extended_pattern/g) ?? []).length,
+      language.name === "zsh" ? 2 : 1,
+    );
+  }
+  const quoted = valid(`print "\${x#a*}" "\${x:-a*}"\n`);
+  assert.equal((quoted.match(/pattern_star_source/g) ?? []).length, 1);
+});
+
+test("pattern edits preserve language-specific structure and scanner state", () => {
+  for (const [before, after] of [
+    ["a#", "a##"],
+    ["*(a|b)", "*(a~b)"],
+    ["(#i)ab", "(#q.)"],
+    ["^foo/bar~baz", "foo~((^/bar))"],
+    [`\${(*)x/a#/_}`, `\${x/a#/_}`],
+  ]) {
+    for (const [prefix, suffix] of [
+      ["print ", "\nprint after\n"],
+      ["[[ x = ", " ]]\n"],
+      ["case x in ", ") :;; esac\n"],
+    ]) {
+      const original = prefix + before + suffix;
+      const edited = prefix + after + suffix;
+      const incremental = valid(original, [
+        {
+          byte: Buffer.byteLength(prefix),
+          deleteBytes: Buffer.byteLength(before),
+          insert: after,
+        },
+      ]);
+      assert.deepEqual(
+        sourceNodes(incremental, edited),
+        sourceNodes(valid(edited), edited),
+      );
+    }
+  }
+});

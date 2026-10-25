@@ -1,0 +1,292 @@
+==================
+Quoted source is not a single repeated ERE atom
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ "ab"+ ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (regex_source_expression
+                    (double_quoted
+                      (double_quote_text))
+                    (ere_dupl_symbol)))))))))))
+
+==================
+An explicit regex group owns repetition around a parameter expansion
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ (a${part})+ ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        expression: (extended_reg_exp
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character)))
+                            (regex_source_expression
+                              (parameter_expansion
+                                parameter: (variable_name)))))
+                        (ere_dupl_symbol)))))))))))))
+
+==================
+POSIX bracket classes retain their distinct payloads
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ [[:alpha:]][[=a=]][[.ch.]] ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (bracket_expression
+                            (matching_list
+                              (bracket_list
+                                (follow_list
+                                  (expression_term
+                                    (single_expression
+                                      (character_class
+                                        name: (class_name))))))))))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (bracket_expression
+                            (matching_list
+                              (bracket_list
+                                (follow_list
+                                  (expression_term
+                                    (single_expression
+                                      (equivalence_class
+                                        element: (collating_element_single))))))))))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (bracket_expression
+                            (matching_list
+                              (bracket_list
+                                (follow_list
+                                  (expression_term
+                                    (single_expression
+                                      (end_range
+                                        (collating_symbol
+                                          element: (collating_element_multi))))))))))))))))))))))
+
+==================
+A leading closing bracket can begin a negated character range
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ [^]-a] ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (bracket_expression
+                            (nonmatching_list
+                              (bracket_list
+                                (follow_list
+                                  (expression_term
+                                    (range_expression
+                                      (start_range
+                                        (end_range
+                                          (collating_element_single)))
+                                      (end_range
+                                        (collating_element_single)))))))))))))))))))))
+
+==================
+A trailing hyphen is separate from the preceding character range
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ [a-z-] ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (bracket_expression
+                            (matching_list
+                              (bracket_list
+                                (follow_list
+                                  (expression_term
+                                    (range_expression
+                                      (start_range
+                                        (end_range
+                                          (collating_element_single)))
+                                      (end_range
+                                        (collating_element_single)))))))))))))))))))))
+
+==================
+Interval bounds and the repetition modifier belong to the repeated group
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ (a|b){2,3}? ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        expression: (extended_reg_exp
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character))))
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character)))))
+                        (ere_dupl_symbol
+                          minimum: (duplication_count)
+                          maximum: (duplication_count)
+                          modifier: (repetition_modifier))))))))))))))
+
+==================
+A dynamic range endpoint does not create a static range
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ [a${x}-z] ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (bracket_expression
+                            (matching_list
+                              (bracket_list
+                                (follow_list
+                                  (expression_term
+                                    (single_expression
+                                      (end_range
+                                        (collating_element_single))))
+                                  (expression_term
+                                    (regex_source_expression
+                                      (parameter_expansion
+                                        parameter: (variable_name))))
+                                  (expression_term
+                                    (regex_source_expression
+                                      (regex_source_fragment)))
+                                  (expression_term
+                                    (single_expression
+                                      (end_range
+                                        (collating_element_single)))))))))))))))))))))
+
+==================
+Unicode ERE characters remain individual source leaves
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ (雪|é){2,3} ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        expression: (extended_reg_exp
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character))))
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character)))))
+                        (ere_dupl_symbol
+                          minimum: (duplication_count)
+                          maximum: (duplication_count))))))))))))))

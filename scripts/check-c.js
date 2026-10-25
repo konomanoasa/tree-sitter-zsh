@@ -17,7 +17,8 @@ import { grammars, packageName, root } from "./tree-sitter.js";
 const enumerators = {};
 const tokenCount = "TOKEN_COUNT";
 
-const scannerDiagnosticArguments = [];
+// clangd skips included helper bodies; full C compilation still checks their use.
+const scannerDiagnosticArguments = ["-Wno-unused-function"];
 
 const commandTimeoutMs = 60_000;
 const diagnosticTimeoutMs = 180_000;
@@ -30,14 +31,21 @@ const variants = grammars.map((grammar) => {
   const includeDirectory = join(root, grammar.path, "src");
   const source = join(includeDirectory, "scanner.c");
   const headers = grammar.externalFiles
-    .filter((file) => file.endsWith(".h") && file !== "src/tokens.h")
+    .filter(
+      (file) =>
+        file.endsWith(".h") &&
+        !file.endsWith("/tokens.h") &&
+        !file.endsWith("/tree_sitter/parser.h"),
+    )
     .map((file) => join(root, file));
   return {
     name: grammar.name,
     includeDirectory,
     source,
     headers,
-    contractArguments: [],
+    contractArguments: [
+      `-DZSH_EXTENDED_GLOB=${grammar.name === "zsh" ? 1 : 0}`,
+    ],
     reuseAllocator: [source, ...headers].some((file) =>
       readFileSync(file, "utf8").includes('"tree_sitter/alloc.h"'),
     ),

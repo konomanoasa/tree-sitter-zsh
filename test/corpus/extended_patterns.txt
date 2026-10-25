@@ -1,0 +1,87 @@
+==================
+Extended glob operators flags and qualifiers are active in the main language
+:language(zsh)
+==================
+print a# ^(a|b) (#i)a *(#q.) *(a~b)
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (extended_pattern operand: (literal) operator: (pattern_operator))) argument: (word (extended_pattern operator: (pattern_operator) operand: (pattern_sequence (pattern_group_source (pattern_alternatives (pattern_alternative (literal)) (pattern_alternation) (pattern_alternative (literal))))))) argument: (word (pattern_flags (pattern_flags_prefix) (glob_flag name: (glob_flag_name))) (literal)) argument: (word (pattern_star_source) (glob_qualifier (pattern_flags_prefix) (glob_flag name: (glob_flag_name)) (glob_qualifier_list (glob_flag name: (glob_flag_name))))) argument: (word (pattern_star_source) (pattern_group_source (pattern_alternatives (pattern_alternative (extended_pattern left: (pattern_sequence (literal)) operator: (pattern_operator) right: (pattern_sequence (literal)))))))))))))
+
+==================
+Default language keeps ordinary patterns and recognizes bare qualifier syntax
+:language(zsh_default)
+==================
+print a# ^(a|b) (#i)a *(#q.) *(a~b)
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (literal)) argument: (word (literal) (pattern_group_source (pattern_alternatives (pattern_alternative (literal)) (pattern_alternation) (pattern_alternative (literal))))) argument: (word (pattern_group_source (pattern_alternatives (pattern_alternative (literal)))) (literal)) argument: (word (pattern_star_source) (glob_qualifier (glob_qualifier_list (glob_text)))) argument: (word (pattern_star_source) (glob_qualifier (glob_qualifier_list (glob_flag name: (glob_flag_name)) (glob_text))))))))))
+
+==================
+Repetition owns only the last literal character
+:language(zsh)
+==================
+print 12#
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (literal) (extended_pattern operand: (literal) operator: (pattern_operator)))))))))
+
+==================
+Filename negation ends at a directory separator and exclusion extends across it
+:language(zsh)
+==================
+print ^foo/bar~^baz/qux
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (extended_pattern left: (pattern_sequence (extended_pattern operator: (pattern_operator) operand: (pattern_sequence (literal))) (literal) (literal)) operator: (pattern_operator) right: (pattern_sequence (extended_pattern operator: (pattern_operator) operand: (pattern_sequence (literal))))))))))))
+
+==================
+Exclusion is left associative
+:language(zsh)
+==================
+print a~b~c
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (extended_pattern left: (pattern_sequence (extended_pattern left: (pattern_sequence (literal)) operator: (pattern_operator) right: (pattern_sequence (literal)))) operator: (pattern_operator) right: (pattern_sequence (literal))))))))))
+
+==================
+A group in an excluded pattern treats slashes as ordinary characters
+:language(zsh)
+==================
+print foo~((^bar/baz))
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (extended_pattern left: (pattern_sequence (literal)) operator: (pattern_operator) right: (pattern_sequence (pattern_group_source (pattern_alternatives (pattern_alternative (pattern_group_source (pattern_alternatives (pattern_alternative (extended_pattern operator: (pattern_operator) operand: (pattern_sequence (literal))))))))))))))))))
+
+==================
+Quoted and expanded source does not become a single repeated pattern atom
+:language(zsh)
+==================
+print "ab"# ${part}#
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (double_quoted (double_quote_text)) (pattern_operator_source)) argument: (word (parameter_expansion parameter: (variable_name)) (pattern_operator_source))))))))
+
+==================
+Explicit parameter substitution flags enable extended glob locally in zsh
+:language(zsh)
+==================
+print ${(*)x/12#/_} ${x/12#/_}
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion (parameter_flags (parameter_flag (parameter_flag_name))) parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal) (extended_pattern operand: (literal) operator: (pattern_operator))) (parameter_replacement_separator) replacement: (parameter_word (literal))))) argument: (word (parameter_expansion parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal) (extended_pattern operand: (literal) operator: (pattern_operator))) (parameter_replacement_separator) replacement: (parameter_word (literal)))))))))))
+
+==================
+Explicit parameter substitution flags enable extended glob locally in zsh_default
+:language(zsh_default)
+==================
+print ${(*)x/12#/_} ${x/12#/_}
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion (parameter_flags (parameter_flag (parameter_flag_name))) parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal) (extended_pattern operand: (literal) operator: (pattern_operator))) (parameter_replacement_separator) replacement: (parameter_word (literal))))) argument: (word (parameter_expansion parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal)) (parameter_replacement_separator) replacement: (parameter_word (literal)))))))))))
+
+==================
+Brace alternatives retain separate repeated pattern operands
+:language(zsh)
+==================
+print {a#,b#}
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (brace_expansion (brace_alternative (extended_pattern operand: (literal) operator: (pattern_operator))) (brace_separator) (brace_alternative (extended_pattern operand: (literal) operator: (pattern_operator)))))))))))
+
+==================
+Repetition accepts wildcard bracket numeric range and grouped operands
+:language(zsh)
+==================
+print ?# [a-z]## <1-3># (ab|cd)#
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (extended_pattern operand: (pattern_question_source) operator: (pattern_operator))) argument: (word (extended_pattern operand: (pattern_bracket_source (pattern_character_range_source start: (pattern_bracket_text) (pattern_range_operator) end: (pattern_bracket_text))) operator: (pattern_operator))) argument: (word (extended_pattern operand: (pattern_numeric_range_source start: (pattern_number) (pattern_range_operator) end: (pattern_number)) operator: (pattern_operator))) argument: (word (extended_pattern operand: (pattern_group_source (pattern_alternatives (pattern_alternative (literal)) (pattern_alternation) (pattern_alternative (literal)))) operator: (pattern_operator)))))))))

@@ -1,0 +1,173 @@
+==================
+Arithmetic argument candidates preserve native precedence and argument commas
+:language(zsh)
+:language(zsh_default)
+==================
+((f(1+2&3,4)))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_function_source
+                  (arithmetic_function_name)
+                  (arithmetic_argument_source
+                    (arithmetic_candidate_sequence_expression
+                      (arithmetic_candidate_binary_expression
+                        (arithmetic_candidate_number)
+                        (arithmetic_candidate_operator)
+                        (arithmetic_candidate_binary_expression
+                          (arithmetic_candidate_number)
+                          (arithmetic_candidate_operator)
+                          (arithmetic_candidate_number)))
+                      (arithmetic_candidate_operator)
+                      (arithmetic_candidate_number))))))))))))
+
+==================
+Dynamic argument source retains one expansion without inventing expression association
+:language(zsh)
+:language(zsh_default)
+==================
+((f(1+$x)))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_function_source
+                  (arithmetic_function_name)
+                  (arithmetic_argument_source
+                    (arithmetic_candidate_number)
+                    (arithmetic_candidate_operator)
+                    (parameter_expansion
+                      (variable_name))))))))))))
+
+==================
+Explicit argument groups retain unresolved inner source
+:language(zsh)
+:language(zsh_default)
+==================
+((f(1+(2*$x))))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_function_source
+                  (arithmetic_function_name)
+                  (arithmetic_argument_source
+                    (arithmetic_candidate_number)
+                    (arithmetic_candidate_operator)
+                    (parenthesized_arithmetic_candidate_source
+                      (arithmetic_candidate_source_expression
+                        (arithmetic_candidate_number)
+                        (arithmetic_candidate_operator)
+                        (parameter_expansion
+                          (variable_name))))))))))))))
+
+==================
+An arithmetic expansion inside an argument candidate remains confirmed
+:language(zsh)
+:language(zsh_default)
+==================
+((f(1+$((2*3)))))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_function_source
+                  (arithmetic_function_name)
+                  (arithmetic_argument_source
+                    (arithmetic_candidate_binary_expression
+                      (arithmetic_candidate_number)
+                      (arithmetic_candidate_operator)
+                      (arithmetic_expansion
+                        (arithmetic_source
+                          (arithmetic_binary_expression
+                            (arithmetic_number)
+                            (arithmetic_operator)
+                            (arithmetic_number)))))))))))))))
+
+==================
+Nested calls inside argument candidates keep candidate names and shared argument source
+:language(zsh)
+:language(zsh_default)
+==================
+((f(g(1+2))))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_function_source
+                  (arithmetic_function_name)
+                  (arithmetic_argument_source
+                    (arithmetic_candidate_function_source
+                      (arithmetic_candidate_function_name)
+                      (arithmetic_argument_source
+                        (arithmetic_candidate_binary_expression
+                          (arithmetic_candidate_number)
+                          (arithmetic_candidate_operator)
+                          (arithmetic_candidate_number))))))))))))))
+
+==================
+Empty arithmetic calls do not synthesize argument source
+:language(zsh)
+:language(zsh_default)
+==================
+((f()))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_function_source
+                  (arithmetic_function_name))))))))))
+
+==================
+Incomplete arithmetic remains acceptable string argument source
+:language(zsh)
+:language(zsh_default)
+==================
+((f((1+))))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_function_source
+                  (arithmetic_function_name)
+                  (arithmetic_argument_source
+                    (parenthesized_arithmetic_candidate_source
+                      (arithmetic_candidate_source_expression
+                        (arithmetic_candidate_number)
+                        (arithmetic_candidate_operator)))))))))))))

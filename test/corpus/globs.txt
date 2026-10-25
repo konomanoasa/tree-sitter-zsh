@@ -1,5 +1,7 @@
 ==================
 Nested pattern parentheses and qualifier argument sources retain distinct ownership
+:language(zsh)
+:language(zsh_default)
 ==================
 print *(e(ls)) *(e{ls}) *(e[ls])
 ---
@@ -23,21 +25,21 @@ print *(e(ls)) *(e{ls}) *(e[ls])
                           (literal))))))))
             argument: (word
               (pattern_star_source)
-              (glob_qualifier_candidate
-                (glob_qualifier_list_candidate
-                  (glob_flag_candidate
+              (glob_qualifier
+                (glob_qualifier_list
+                  (glob_flag
                     name: (glob_flag_name)
-                    argument: (glob_argument_candidate
+                    argument: (glob_argument
                       (glob_argument_source
                         (brace_expansion
                           (literal))))))))
             argument: (word
               (pattern_star_source)
-              (glob_qualifier_candidate
-                (glob_qualifier_list_candidate
-                  (glob_flag_candidate
+              (glob_qualifier
+                (glob_qualifier_list
+                  (glob_flag
                     name: (glob_flag_name)
-                    argument: (glob_argument_candidate
+                    argument: (glob_argument
                       (glob_argument_delimiter)
                       (glob_argument_source
                         (glob_argument_text))
@@ -45,6 +47,7 @@ print *(e(ls)) *(e{ls}) *(e[ls])
 
 ==================
 Bare and explicit qualifier lists keep commas and whole-result modifiers outside each list
+:language(zsh)
 ==================
 print *(W,X:t) *(#qW,X:t)
 ---
@@ -54,35 +57,41 @@ print *(W,X:t) *(#qW,X:t)
       (pipeline
         (command
           (simple_command
-            name: (word (literal))
+            name: (word
+              (literal))
             argument: (word
               (pattern_star_source)
-              (glob_qualifier_candidate
-                (glob_qualifier_list_candidate
-                  (glob_flag_candidate name: (glob_flag_name)))
+              (glob_qualifier
+                (glob_qualifier_list
+                  (glob_flag
+                    name: (glob_flag_name)))
                 (glob_qualifier_separator)
-                (glob_qualifier_list_candidate
-                  (glob_flag_candidate name: (glob_flag_name)))
-                (glob_modifier_candidate
+                (glob_qualifier_list
+                  (glob_flag
+                    name: (glob_flag_name)))
+                (glob_modifier
                   (modifier_prefix)
                   name: (modifier_name))))
             argument: (word
               (pattern_star_source)
-              (pattern_candidate
-                (pattern_candidate_source
-                  (pattern_flags_prefix)
-                  (glob_flag_candidate name: (glob_flag_name))
-                  (glob_qualifier_list_candidate
-                    (glob_flag_candidate name: (glob_flag_name)))
-                  (glob_qualifier_separator)
-                  (glob_qualifier_list_candidate
-                    (glob_flag_candidate name: (glob_flag_name)))
-                  (glob_modifier_candidate
-                    (modifier_prefix)
-                    name: (modifier_name)))))))))))
+              (glob_qualifier
+                (pattern_flags_prefix)
+                (glob_flag
+                  name: (glob_flag_name))
+                (glob_qualifier_list
+                  (glob_flag
+                    name: (glob_flag_name)))
+                (glob_qualifier_separator)
+                (glob_qualifier_list
+                  (glob_flag
+                    name: (glob_flag_name)))
+                (glob_modifier
+                  (modifier_prefix)
+                  name: (modifier_name))))))))))
 
 ==================
-Globbing flags retain an inline argument without applying its option
+Globbing flags own their inline arguments
+:language(zsh)
 ==================
 print (#ia2)foo
 ---
@@ -92,20 +101,23 @@ print (#ia2)foo
       (pipeline
         (command
           (simple_command
-            name: (word (literal))
+            name: (word
+              (literal))
             argument: (word
-              (pattern_candidate
-                (pattern_candidate_source
-                  (pattern_flags_prefix)
-                  (glob_flag_candidate name: (glob_flag_name))
-                  (glob_flag_candidate
-                    name: (glob_flag_name)
-                    argument: (glob_argument_candidate
-                      (glob_argument_source (glob_argument_text))))))
+              (pattern_flags
+                (pattern_flags_prefix)
+                (glob_flag
+                  name: (glob_flag_name))
+                (glob_flag
+                  name: (glob_flag_name)
+                  argument: (glob_argument
+                    (glob_argument_source
+                      (glob_argument_text)))))
               (literal))))))))
 
 ==================
 Unresolved source after qualifier modifiers remains outside condition lists
+:language(zsh)
 ==================
 print *(:t!) *(#q:t!)
 ---
@@ -115,27 +127,30 @@ print *(:t!) *(#q:t!)
       (pipeline
         (command
           (simple_command
-            name: (word (literal))
+            name: (word
+              (literal))
             argument: (word
               (pattern_star_source)
-              (glob_qualifier_candidate
-                (glob_modifier_candidate
+              (glob_qualifier
+                (glob_modifier
                   (modifier_prefix)
                   name: (modifier_name))
-                (pattern_candidate_text)))
+                (glob_text)))
             argument: (word
               (pattern_star_source)
-              (pattern_candidate
-                (pattern_candidate_source
-                  (pattern_flags_prefix)
-                  (glob_flag_candidate name: (glob_flag_name))
-                  (glob_modifier_candidate
-                    (modifier_prefix)
-                    name: (modifier_name))
-                  (pattern_candidate_text))))))))))
+              (glob_qualifier
+                (pattern_flags_prefix)
+                (glob_flag
+                  name: (glob_flag_name))
+                (glob_modifier
+                  (modifier_prefix)
+                  name: (modifier_name))
+                (glob_text)))))))))
 
 ==================
 A qualifier argument preserves a quoted string without parsing its code
+:language(zsh)
+:language(zsh_default)
 ==================
 print *(e:'true':)
 ---
@@ -149,11 +164,11 @@ print *(e:'true':)
               (literal))
             argument: (word
               (pattern_star_source)
-              (glob_qualifier_candidate
-                (glob_qualifier_list_candidate
-                  (glob_flag_candidate
+              (glob_qualifier
+                (glob_qualifier_list
+                  (glob_flag
                     name: (glob_flag_name)
-                    argument: (glob_argument_candidate
+                    argument: (glob_argument
                       (glob_argument_delimiter)
                       (glob_argument_source
                         (single_quoted
@@ -161,7 +176,9 @@ print *(e:'true':)
                       (glob_argument_delimiter))))))))))))
 
 ==================
-A glob modifier candidate retains a source count
+A glob modifier retains a source count
+:language(zsh)
+:language(zsh_default)
 ==================
 print *(:h2)
 ---
@@ -175,14 +192,15 @@ print *(:h2)
               (literal))
             argument: (word
               (pattern_star_source)
-              (glob_qualifier_candidate
-                (glob_modifier_candidate
+              (glob_qualifier
+                (glob_modifier
                   (modifier_prefix)
                   name: (modifier_name)
                   argument: (modifier_count))))))))))
 
 ==================
-A numeric range stays inside a qualifier argument candidate
+A numeric range stays inside a qualifier argument
+:language(zsh)
 ==================
 print *(#qP:<1-2>:)
 ---
@@ -196,16 +214,15 @@ print *(#qP:<1-2>:)
               (literal))
             argument: (word
               (pattern_star_source)
-              (pattern_candidate
-                (pattern_candidate_source
-                  (pattern_flags_prefix)
-                  (glob_flag_candidate
-                    name: (glob_flag_name))
-                  (glob_qualifier_list_candidate
-                    (glob_flag_candidate
-                      name: (glob_flag_name)
-                      argument: (glob_argument_candidate
-                        (glob_argument_delimiter)
-                        (glob_argument_source
-                          (glob_argument_text))
-                        (glob_argument_delimiter)))))))))))))
+              (glob_qualifier
+                (pattern_flags_prefix)
+                (glob_flag
+                  name: (glob_flag_name))
+                (glob_qualifier_list
+                  (glob_flag
+                    name: (glob_flag_name)
+                    argument: (glob_argument
+                      (glob_argument_delimiter)
+                      (glob_argument_source
+                        (glob_argument_text))
+                      (glob_argument_delimiter))))))))))))

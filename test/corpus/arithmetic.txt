@@ -1,5 +1,7 @@
 ==================
-Arithmetic operators do not decide precedence
+Arithmetic multiplication binds before addition
+:language(zsh)
+:language(zsh_default)
 ==================
 ((a + 2 * 3))
 ---
@@ -11,14 +13,18 @@ Arithmetic operators do not decide precedence
           (complex_command
             (arithmetic_command
               (arithmetic_source
-                (arithmetic_variable)
-                (arithmetic_operator)
-                (arithmetic_number)
-                (arithmetic_operator)
-                (arithmetic_number)))))))))
+                expression: (arithmetic_binary_expression
+                  left: (arithmetic_variable)
+                  operator: (arithmetic_operator)
+                  right: (arithmetic_binary_expression
+                    left: (arithmetic_number)
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_number)))))))))))
 
 ==================
 Arithmetic grouping and function arguments keep their source
+:language(zsh)
+:language(zsh_default)
 ==================
 print $((f(1,2) + (3)))
 ---
@@ -32,19 +38,24 @@ print $((f(1,2) + (3)))
             argument: (word
               (arithmetic_expansion
                 (arithmetic_source
-                  (arithmetic_function_source
-                    name: (arithmetic_function_name)
-                    arguments: (arithmetic_argument_source
-                      (arithmetic_number)
-                      (arithmetic_operator)
-                      (arithmetic_number)))
-                  (arithmetic_operator)
-                  (parenthesized_arithmetic
-                    (arithmetic_source (arithmetic_number))))))))))))
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_function_source
+                      name: (arithmetic_function_name)
+                      arguments: (arithmetic_argument_source
+                        candidate: (arithmetic_candidate_sequence_expression
+                          left: (arithmetic_candidate_number)
+                          operator: (arithmetic_candidate_operator)
+                          right: (arithmetic_candidate_number))))
+                    operator: (arithmetic_operator)
+                    right: (parenthesized_arithmetic
+                      (arithmetic_source
+                        expression: (arithmetic_number)))))))))))))
 
 ==================
 An arithmetic for owns the separator between its header and short body
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 for ((;0;)); :
 ---
@@ -61,7 +72,7 @@ for ((;0;)); :
 0:5  - 0:6                    "("
 0:6  - 0:7                    ";"
 0:7  - 0:8                    condition: arithmetic_source
-0:7  - 0:8                      arithmetic_number `0`
+0:7  - 0:8                      expression: arithmetic_number `0`
 0:8  - 0:9                    ";"
 0:9  - 0:10                   ")"
 0:10 - 0:11                   ")"
@@ -76,6 +87,8 @@ for ((;0;)); :
 
 ==================
 Arithmetic for header layout precedes the whole body sublist and the next command
+:language(zsh)
+:language(zsh_default)
 ==================
 for ((;0;)); ; # HEADER
 : && :
@@ -91,7 +104,7 @@ print AFTER
               (for_keyword)
               header: (arithmetic_for_header
                 condition: (arithmetic_source
-                  (arithmetic_number)))
+                  expression: (arithmetic_number)))
               separator: (term
                 (comment
                   (comment_text)))
@@ -118,6 +131,8 @@ print AFTER
 
 ==================
 An arithmetic for newline can precede a brace body
+:language(zsh)
+:language(zsh_default)
 ==================
 for ((;0;))
 { :; }
@@ -132,7 +147,7 @@ for ((;0;))
               (for_keyword)
               header: (arithmetic_for_header
                 condition: (arithmetic_source
-                  (arithmetic_number)))
+                  expression: (arithmetic_number)))
               separator: (term)
               body: (sublist
                 (pipeline
@@ -149,6 +164,8 @@ for ((;0;))
 
 ==================
 Arithmetic for header separators may precede an omitted body
+:language(zsh)
+:language(zsh_default)
 ==================
 for ((;0;));
 ---
@@ -162,18 +179,22 @@ for ((;0;));
               (for_keyword)
               header: (arithmetic_for_header
                 condition: (arithmetic_source
-                  (arithmetic_number)))
+                  expression: (arithmetic_number)))
               separator: (term))))))))
 
 ==================
 A case terminator cannot be split into arithmetic for header separators
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for ((;0;));; :
 ---
 
 ==================
 Arithmetic for retains omitted expressions
+:language(zsh)
+:language(zsh_default)
 ==================
 for ((;1;)) do break; done
 ---
@@ -187,7 +208,7 @@ for ((;1;)) do break; done
               (for_keyword)
               header: (arithmetic_for_header
                 condition: (arithmetic_source
-                  (arithmetic_number)))
+                  expression: (arithmetic_number)))
               body: (do_group
                 (do_keyword)
                 body: (list
@@ -202,12 +223,15 @@ for ((;1;)) do break; done
 ==================
 Unterminated arithmetic keeps standard recovery
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $((1+
 ---
 
 ==================
 Character prefixes preserve explicit substitutions and groups
+:language(zsh)
 ==================
 print $((##\M-$(print A) + ##^${a} + ##(1)))
 ---
@@ -228,18 +252,23 @@ print $((##\M-$(print A) + ##^${a} + ##(1)))
                         (pipeline
                           (command
                             (simple_command
-                              name: (word (literal))
-                              argument: (word (literal))))))))
+                              name: (word
+                                (literal))
+                              argument: (word
+                                (literal))))))))
                   (arithmetic_operator)
                   (arithmetic_operator)
-                  (parameter_expansion parameter: (variable_name))
+                  (parameter_expansion
+                    parameter: (variable_name))
                   (arithmetic_operator)
                   (arithmetic_operator)
                   (parenthesized_arithmetic
-                    (arithmetic_source (arithmetic_number))))))))))))
+                    (arithmetic_source
+                      expression: (arithmetic_number))))))))))))
 
 ==================
 An incomplete character value cannot consume an arithmetic for separator
+:language(zsh)
 ==================
 for ((##;0;)) do :; done
 ---
@@ -255,7 +284,7 @@ for ((##;0;)) do :; done
                 initializer: (arithmetic_source
                   (arithmetic_operator))
                 condition: (arithmetic_source
-                  (arithmetic_number)))
+                  expression: (arithmetic_number)))
               body: (do_group
                 (do_keyword)
                 body: (list
@@ -269,6 +298,7 @@ for ((##;0;)) do :; done
 
 ==================
 Character values retain complete escapes and explicit parameter expansions
+:language(zsh)
 ==================
 print $((##\M-\C-x + ##\u0041 + ##$a))
 ---
@@ -287,14 +317,15 @@ print $((##\M-\C-x + ##\u0041 + ##$a))
                   (arithmetic_number)
                   (arithmetic_operator)
                   (arithmetic_operator)
-                  (parameter_expansion parameter: (variable_name)))))))))))
+                  (parameter_expansion
+                    parameter: (variable_name)))))))))))
 
 ==================
 Arithmetic character values own literal quote characters
+:language(zsh)
 ==================
 print $((##")) $[##']
 ---
-
 (program
   (list
     (sublist
@@ -306,14 +337,16 @@ print $((##")) $[##']
             argument: (word
               (arithmetic_expansion
                 (arithmetic_source
-                  (arithmetic_number))))
+                  expression: (arithmetic_number))))
             argument: (word
               (arithmetic_expansion
                 (arithmetic_source
-                  (arithmetic_number))))))))))
+                  expression: (arithmetic_number))))))))))
 
 ==================
 An unmatched arithmetic quote remains a source fragment
+:language(zsh)
+:language(zsh_default)
 ==================
 (("1))
 ---
@@ -330,6 +363,8 @@ An unmatched arithmetic quote remains a source fragment
 
 ==================
 An unmatched square bracket selects a subshell instead of arithmetic
+:language(zsh)
+:language(zsh_default)
 ==================
 print $((1]))
 ---
@@ -359,6 +394,8 @@ print $((1]))
 
 ==================
 Arithmetic parameter operands do not start brace expansion
+:language(zsh)
+:language(zsh_default)
 ==================
 print $((${x:-{}))
 ---
@@ -382,6 +419,8 @@ print $((${x:-{}))
 
 ==================
 Arithmetic source fragments cannot consume for header separators
+:language(zsh)
+:language(zsh_default)
 ==================
 for ((@;0;)) do :; done
 ---
@@ -397,7 +436,7 @@ for ((@;0;)) do :; done
                 initializer: (arithmetic_source
                   (arithmetic_source_fragment))
                 condition: (arithmetic_source
-                  (arithmetic_number)))
+                  expression: (arithmetic_number)))
               body: (do_group
                 (do_keyword)
                 body: (list
@@ -411,6 +450,8 @@ for ((@;0;)) do :; done
 
 ==================
 Crossed inner brackets preserve the outer arithmetic boundary
+:language(zsh)
+:language(zsh_default)
 ==================
 print $((([1)]))
 ---
@@ -435,6 +476,8 @@ print $((([1)]))
 ==================
 Arithmetic quote fragments cannot absorb the start of an inner bracket
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[1"["2]]x
 ---
@@ -457,7 +500,7 @@ print $[1"["2]]x
 0:10 - 0:11                       "["
 0:11 - 0:13                       source: subscript_source
 0:11 - 0:12                         subscript_text `\"`
-0:12 - 0:13                         subscript_number_candidate `2`
+0:12 - 0:13                         arithmetic_candidate_number `2`
 0:13 - 0:14                       "]"
 0:14 - 0:15                   "]"
 0:15 - 0:16                 literal `x`
@@ -465,6 +508,8 @@ print $[1"["2]]x
 ==================
 An inner bracket after an arithmetic quote cannot supply the expansion closing bracket
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[1"["2]
 ---
@@ -472,6 +517,8 @@ print $[1"["2]
 ==================
 Square arithmetic counts fragment brackets across parenthesized groups
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[(1[)]]x
 ---
@@ -501,6 +548,8 @@ print $[(1[)]]x
 ==================
 A crossed fragment bracket still requires a separate expansion closing bracket
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[(1[)]
 ---
@@ -508,6 +557,8 @@ print $[(1[)]
 ==================
 A fragment bracket can close inside a later arithmetic group
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[[(1])]
 ---
@@ -536,6 +587,8 @@ print $[[(1])]
 ==================
 A nested square expansion cannot close an outer fragment bracket
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[(1[) + $[2]]
 ---
@@ -543,6 +596,8 @@ print $[(1[) + $[2]]
 ==================
 A square expansion closing bracket cannot be a fragment inside an unclosed parenthesis
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[(1])]
 ---
@@ -550,6 +605,8 @@ print $[(1])]
 ==================
 Escaped opening brackets do not consume the square expansion closing bracket
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[1\[2]]
 ---
@@ -574,6 +631,8 @@ print $[1\[2]]
 
 ==================
 Square arithmetic escapes retain their effect inside groups and function arguments
+:language(zsh)
+:language(zsh_default)
 ==================
 print $[(1\(2)] $[f(1\[2)]
 ---
@@ -587,7 +646,7 @@ print $[(1\(2)] $[f(1\[2)]
             argument: (word
               (arithmetic_expansion
                 (arithmetic_source
-                  (parenthesized_arithmetic
+                  expression: (parenthesized_arithmetic
                     (arithmetic_source
                       (arithmetic_number)
                       (escaped_character)
@@ -595,15 +654,17 @@ print $[(1\(2)] $[f(1\[2)]
             argument: (word
               (arithmetic_expansion
                 (arithmetic_source
-                  (arithmetic_function_source
+                  expression: (arithmetic_function_source
                     name: (arithmetic_function_name)
                     arguments: (arithmetic_argument_source
-                      (arithmetic_number)
+                      (arithmetic_candidate_number)
                       (escaped_character)
-                      (arithmetic_number))))))))))))
+                      (arithmetic_candidate_number))))))))))))
 
 ==================
 Parenthesized arithmetic still counts opening brackets after a backslash
+:language(zsh)
+:language(zsh_default)
 ==================
 print $((1\[2]))
 ---
@@ -623,6 +684,8 @@ print $((1\[2]))
 
 ==================
 A group closing before the final parentheses makes a command substitution
+:language(zsh)
+:language(zsh_default)
 ==================
 print $((a)|(b))
 ---
@@ -662,6 +725,8 @@ print $((a)|(b))
 
 ==================
 Explicit groups in unresolved arithmetic function arguments remain candidates
+:language(zsh)
+:language(zsh_default)
 ==================
 ((f((1))))
 ---
@@ -673,9 +738,359 @@ Explicit groups in unresolved arithmetic function arguments remain candidates
           (complex_command
             (arithmetic_command
               (arithmetic_source
-                (arithmetic_function_source
+                expression: (arithmetic_function_source
                   name: (arithmetic_function_name)
                   arguments: (arithmetic_argument_source
-                    (parenthesized_arithmetic
-                      (arithmetic_argument_source
-                        (arithmetic_number)))))))))))))
+                    candidate: (parenthesized_arithmetic_candidate
+                      expression: (arithmetic_candidate_number))))))))))))
+
+==================
+Native bitwise conjunction binds before addition
+:language(zsh)
+:language(zsh_default)
+==================
+print $((1 + 2 & 3))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_number)
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_binary_expression
+                      left: (arithmetic_number)
+                      operator: (arithmetic_operator)
+                      right: (arithmetic_number))))))))))))
+
+==================
+Native shift and bitwise disjunction bind before power
+:language(zsh)
+:language(zsh_default)
+==================
+print $((2 ** 3 | 1 << 2))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_number)
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_binary_expression
+                      left: (arithmetic_number)
+                      operator: (arithmetic_operator)
+                      right: (arithmetic_binary_expression
+                        left: (arithmetic_number)
+                        operator: (arithmetic_operator)
+                        right: (arithmetic_number)))))))))))))
+
+==================
+Native logical disjunction and exclusive disjunction associate together
+:language(zsh)
+:language(zsh_default)
+==================
+print $((1 || 0 ^^ 1))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_binary_expression
+                      left: (arithmetic_number)
+                      operator: (arithmetic_operator)
+                      right: (arithmetic_number))
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_number)))))))))))
+
+==================
+Exponentiation associates to the right
+:language(zsh)
+:language(zsh_default)
+==================
+print $((2 ** 3 ** 2))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_number)
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_binary_expression
+                      left: (arithmetic_number)
+                      operator: (arithmetic_operator)
+                      right: (arithmetic_number))))))))))))
+
+==================
+Unary negation binds before exponentiation
+:language(zsh)
+:language(zsh_default)
+==================
+print $((-3 ** 2))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_unary_expression
+                      operator: (arithmetic_operator)
+                      operand: (arithmetic_number))
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_number)))))))))))
+
+==================
+Assignment condition and sequence retain their operands
+:language(zsh)
+:language(zsh_default)
+==================
+print $((a=b?c:d,e+=f))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_sequence_expression
+                    left: (arithmetic_assignment_expression
+                      left: (arithmetic_variable)
+                      operator: (arithmetic_operator)
+                      right: (arithmetic_conditional_expression
+                        condition: (arithmetic_variable)
+                        operator: (arithmetic_operator)
+                        consequence: (arithmetic_variable)
+                        operator: (arithmetic_operator)
+                        alternative: (arithmetic_variable)))
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_assignment_expression
+                      left: (arithmetic_variable)
+                      operator: (arithmetic_operator)
+                      right: (arithmetic_variable))))))))))))
+
+==================
+Prefix and postfix updates retain operator order
+:language(zsh)
+:language(zsh_default)
+==================
+print $((++a + b--))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_update_expression
+                      operator: (arithmetic_operator)
+                      operand: (arithmetic_variable))
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_update_expression
+                      operand: (arithmetic_variable)
+                      operator: (arithmetic_operator))))))))))))
+
+==================
+Arithmetic array references own their names and subscripts
+:language(zsh)
+:language(zsh_default)
+==================
+print $((a[1]+2))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_array_reference
+                      name: (arithmetic_variable)
+                      subscript: (array_subscript
+                        source: (subscript_source
+                          candidate: (arithmetic_candidate_number))))
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_number)))))))))))
+
+==================
+Float exponent underscores and input bases stay within number leaves
+:language(zsh)
+:language(zsh_default)
+==================
+print $((1_000 + .5_0e+2 + 16#ff + [2]101))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_binary_expression
+                      left: (arithmetic_binary_expression
+                        left: (arithmetic_number)
+                        operator: (arithmetic_operator)
+                        right: (arithmetic_number))
+                      operator: (arithmetic_operator)
+                      right: (arithmetic_number))
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_number)))))))))))
+
+==================
+An expanded operand leaves the arithmetic association unresolved
+:language(zsh)
+:language(zsh_default)
+==================
+print $((1 + $x * 3))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (parameter_expansion
+                    parameter: (variable_name))
+                  (arithmetic_operator)
+                  (arithmetic_number))))))))))
+
+==================
+An incomplete expression retains each source component
+:language(zsh)
+:language(zsh_default)
+==================
+print $((1+2+))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (arithmetic_number)
+                  (arithmetic_operator))))))))))
+
+==================
+A static inner group retains its expression beside dynamic source
+:language(zsh)
+:language(zsh_default)
+==================
+print $((1 + (2 * 3) + $x))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (parenthesized_arithmetic
+                    (arithmetic_source
+                      expression: (arithmetic_binary_expression
+                        left: (arithmetic_number)
+                        operator: (arithmetic_operator)
+                        right: (arithmetic_number))))
+                  (arithmetic_operator)
+                  (parameter_expansion
+                    parameter: (variable_name)))))))))))
+
+==================
+Output base directives leave expression precedence unchanged
+:language(zsh)
+:language(zsh_default)
+==================
+print $(([#16]1+2))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                  (arithmetic_output_base)
+                (arithmetic_source
+                  expression: (arithmetic_binary_expression
+                    left: (arithmetic_number)
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_number)))))))))))

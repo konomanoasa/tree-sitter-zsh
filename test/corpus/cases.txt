@@ -1,5 +1,7 @@
 ==================
 A case pattern retains an empty group without inventing an operand
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in a()) :;; esac
 ---
@@ -32,6 +34,8 @@ case x in a()) :;; esac
 
 ==================
 A case pattern retains alternation across brace source
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in {a|b}) :;; esac
 ---
@@ -68,6 +72,8 @@ case x in {a|b}) :;; esac
 
 ==================
 A brace case preserves comma source without determining brace expansion
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { {a,b}) ;; }
 ---
@@ -96,6 +102,8 @@ case x { {a,b}) ;; }
 ==================
 A case clause owns the semicolon after a complete item terminator
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) ;;; esac
 ---
@@ -122,6 +130,8 @@ case x in x) ;;; esac
 
 ==================
 Brace case items keep fallthrough and continue tokens before standalone separators
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { x) ;&; y) ;|; z) ;;; }
 ---
@@ -157,6 +167,8 @@ case x { x) ;&; y) ;|; z) ;;; }
 ==================
 Consecutive case breaks cannot supply an item without a pattern
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in a) ;;;; esac
 ---
@@ -164,12 +176,16 @@ case x in a) ;;;; esac
 ==================
 A case fallthrough after a case break cannot become standalone separators
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in a) ;; ;& esac
 ---
 
 ==================
 A case item separates standalone semicolons from its terminator
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) ; ;; esac
 ---
@@ -195,6 +211,8 @@ case x in x) ; ;; esac
 
 ==================
 Case items own their pattern body and explicit terminator
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in a|x) print yes;; esac
 ---
@@ -231,6 +249,8 @@ case x in a|x) print yes;; esac
 
 ==================
 Parenthesized case patterns retain internal spaces in one literal
+:language(zsh)
+:language(zsh_default)
 ==================
 case 'a b' in (a b) ;; esac
 ---
@@ -256,6 +276,8 @@ case 'a b' in (a b) ;; esac
 
 ==================
 Case terminators preserve distinct spellings without synthetic bodies
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { a) ;& b) ;| c) ;; }
 ---
@@ -291,12 +313,16 @@ case x { a) ;& b) ;| c) ;; }
 ==================
 Unparenthesized case patterns do not absorb a second bare word
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in a b) :;; esac
 ---
 
 ==================
 A final brace case body can end directly at the closing brace
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { x) print yes }
 ---
@@ -328,12 +354,16 @@ case x { x) print yes }
 ==================
 A final case body still needs its command boundary
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) print yes esac
 ---
 
 ==================
 A leading parenthesis belongs to the pattern when another case delimiter follows
+:language(zsh)
+:language(zsh_default)
 ==================
 case a in (a|b)) print yes;; esac
 ---
@@ -373,6 +403,8 @@ case a in (a|b)) print yes;; esac
 
 ==================
 A brace case accepts parentheses and command-like symbols as patterns
+:language(zsh)
+:language(zsh_default)
 ==================
 case a { (a)) ;; !) ;; [[ ) ;; }
 ---
@@ -410,6 +442,8 @@ case a { (a)) ;; !) ;; [[ ) ;; }
 
 ==================
 Case patterns retain process substitution source
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in <(print x)) :;; esac
 ---
@@ -450,6 +484,8 @@ case x in <(print x)) :;; esac
 
 ==================
 Comments may follow in and a case terminator where a pattern could start
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in # c
 a) :;; # d
@@ -487,6 +523,8 @@ esac
 
 ==================
 A right brace that is not a whole word starts a pattern
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in }a) :;; esac
 ---
@@ -518,6 +556,8 @@ case x in }a) :;; esac
 
 ==================
 A brace case header separator does not create an item
+:language(zsh)
+:language(zsh_default)
 ==================
 case x; { }
 ---
@@ -534,6 +574,8 @@ case x; { }
 
 ==================
 A case in header separator does not create an item
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in; esac
 ---
@@ -552,6 +594,8 @@ case x in; esac
 
 ==================
 Case header separators leave the pattern and body in their item
+:language(zsh)
+:language(zsh_default)
 ==================
 case x; ;
 in; ;
@@ -585,6 +629,8 @@ x) :;; esac
 
 ==================
 A brace case also permits separators after its opening brace
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { ; ;
 x) :;; }
@@ -616,6 +662,8 @@ x) :;; }
 ==================
 An empty in case owns its mixed closing brace
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in }
 ---
@@ -635,6 +683,8 @@ case x in }
 ==================
 An empty brace case owns its mixed esac keyword
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { esac
 ---
@@ -653,6 +703,8 @@ case x { esac
 
 ==================
 An in case closes with a brace after distinct item terminators
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) :;& y) :;| z) :;; }
 ---
@@ -709,6 +761,8 @@ case x in x) :;& y) :;| z) :;; }
 
 ==================
 A brace case closes with esac after a continue terminator
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { x) :;; y) :;& z) :;| esac
 ---
@@ -765,6 +819,8 @@ case x { x) :;; y) :;& z) :;| esac
 
 ==================
 Nested mixed case endings belong to their own clauses
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) case y { y) :;; esac;; }
 ---
@@ -811,6 +867,8 @@ case x in x) case y { y) :;; esac;; }
 
 ==================
 An in case can omit the final item terminator after a command separator
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) :; esac
 ---
@@ -842,6 +900,8 @@ case x in x) :; esac
 ==================
 A mixed } ending needs an item terminator after an empty body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) }
 ---
@@ -849,6 +909,8 @@ case x in x) }
 ==================
 A mixed } ending needs an item terminator after a separated simple body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) :; }
 ---
@@ -856,6 +918,8 @@ case x in x) :; }
 ==================
 A mixed } ending needs an item terminator after a compound body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) { :; } }
 ---
@@ -863,6 +927,8 @@ case x in x) { :; } }
 ==================
 A mixed esac ending needs an item terminator after an empty body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { x) esac
 ---
@@ -870,6 +936,8 @@ case x { x) esac
 ==================
 A mixed esac ending needs an item terminator after a separated simple body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { x) :; esac
 ---
@@ -877,6 +945,8 @@ case x { x) :; esac
 ==================
 A mixed esac ending needs an item terminator after a compound body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { x) { :; } esac
 ---
@@ -884,12 +954,16 @@ case x { x) { :; } esac
 ==================
 A bare esac closes a brace case rather than starting an item pattern
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { esac) :;; }
 ---
 
 ==================
 Protected esac spellings remain patterns before the mixed closing keyword
+:language(zsh)
+:language(zsh_default)
 ==================
 case x { (esac) ;; "esac") ;; esacx) ;; esac
 ---

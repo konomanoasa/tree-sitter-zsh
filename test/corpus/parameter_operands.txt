@@ -1,5 +1,7 @@
 ==================
 Whitespace and shell operator characters inside parameter braces remain operand source
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:-{ }x} ${x:-{;}x} ${x:-{|}x} ${x:-{&}x}
 ---
@@ -33,6 +35,8 @@ print ${x:-{ }x} ${x:-{;}x} ${x:-{|}x} ${x:-{&}x}
 
 ==================
 Quoted braces keep their literal role inside and around a parameter operand
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:-"{ }"x} "${x:-{ }x}"
 ---
@@ -59,6 +63,8 @@ print ${x:-"{ }"x} "${x:-{ }x}"
 ==================
 A brace followed by whitespace cannot supply the missing parameter closer
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:-{ }
 ---
@@ -66,12 +72,16 @@ print ${x:-{ }
 ==================
 An unfinished brace followed by whitespace still requires an outer parameter closer
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:-{ x}
 ---
 
 ==================
 Replacement owns its pattern and replacement
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x/foo/bar}
 ---
@@ -93,6 +103,8 @@ print ${x/foo/bar}
 
 ==================
 Substring owns the two source operands
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:1:2}
 ---
@@ -114,6 +126,8 @@ print ${x:1:2}
 
 ==================
 Modifier substitution retains each separator
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:s|a|b|}
 ---
@@ -138,6 +152,8 @@ print ${x:s|a|b|}
 
 ==================
 A literal operand prefix does not swallow a numeric pattern range
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:-abc<1-2>}
 ---
@@ -161,6 +177,8 @@ print ${x:-abc<1-2>}
 
 ==================
 An unmatched parenthesis in an operand stays text inside a command substitution
+:language(zsh)
+:language(zsh_default)
 ==================
 print $(x ${y:-(})
 ---
@@ -188,6 +206,8 @@ print $(x ${y:-(})
 
 ==================
 Empty substring operands retain only their explicit separators
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:} ${x::} ${x:0:} ${x::1}
 ---
@@ -225,6 +245,8 @@ print ${x:} ${x::} ${x:0:} ${x::1}
 
 ==================
 Unconditional assignment requires the equals sign after both colons
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x::=} ${x::=value}
 ---
@@ -247,6 +269,8 @@ print ${x::=} ${x::=value}
 
 ==================
 A substring owns its offset before a following modifier
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:1:h} ${x::h} ${x:1::h}
 ---
@@ -280,6 +304,8 @@ print ${x:1:h} ${x::h} ${x:1::h}
 
 ==================
 A substring length cannot absorb a following modifier or substitution
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:1:2:h} ${x:1:2:s/b/B/}
 ---
@@ -318,6 +344,8 @@ print ${x:1:2:h} ${x:1:2:s/b/B/}
 
 ==================
 Substring operands beginning with underscores are not modifier names
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:_offset:_length}
 ---
@@ -339,6 +367,8 @@ print ${x:_offset:_length}
 
 ==================
 An explicit expansion owns its colons within a substring length
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:0:${n:-2}:q}
 ---
@@ -365,6 +395,8 @@ print ${x:0:${n:-2}:q}
 
 ==================
 The documented global modifier follows substitution despite native rejection
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:s/a/A/:G}
 ---
@@ -391,12 +423,16 @@ print ${x:s/a/A/:G}
 ==================
 The x modifier is unavailable in a braced parameter
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:x}
 ---
 
 ==================
 A global suffix follows a closed gs substitution among other modifiers
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:h:gs,a,A,:G:u}
 ---
@@ -415,6 +451,8 @@ print ${x:h:gs,a,A,:G:u}
 
 ==================
 A colon G before the substitution closing delimiter remains replacement source
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:s/a/A:G}
 ---
@@ -430,6 +468,8 @@ print ${x:s/a/A:G}
 ==================
 A global modifier requires a preceding substitution
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:G}
 ---
@@ -437,6 +477,8 @@ print ${x:G}
 ==================
 An unrelated modifier does not introduce a global suffix
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:h:G}
 ---
@@ -444,6 +486,8 @@ print ${x:h:G}
 ==================
 An intervening modifier ends the global suffix position
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:s/a/A/:h:G}
 ---
@@ -451,6 +495,8 @@ print ${x:s/a/A/:h:G}
 ==================
 A global substitution suffix cannot repeat
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:s/a/A/:G:G}
 ---
@@ -458,6 +504,8 @@ print ${x:s/a/A/:G:G}
 ==================
 A global substitution suffix does not take modifier controls
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:s/a/A/:fG}
 ---
@@ -465,6 +513,8 @@ print ${x:s/a/A/:fG}
 ==================
 The p modifier is reserved for history expansion
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:p}
 ---
@@ -472,6 +522,8 @@ print ${x:p}
 ==================
 An undefined alphabetic modifier cannot become a substring offset
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:z}
 ---
@@ -479,6 +531,8 @@ print ${x:z}
 ==================
 A numeric suffix after length is not a third substring operand
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:1:2:3}
 ---
@@ -486,6 +540,8 @@ print ${x:1:2:3}
 ==================
 A modifier colon after length requires a modifier
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:1:2:}
 ---
@@ -493,6 +549,8 @@ print ${x:1:2:}
 ==================
 A modifier forbidden for parameters also fails after a substring
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:1:2:x}
 ---

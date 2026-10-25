@@ -1,5 +1,7 @@
 ==================
 A dynamic directory name retains an original process substitution
+:language(zsh)
+:language(zsh_default)
 ==================
 print ~[a<(:)]
 ---
@@ -25,6 +27,8 @@ print ~[a<(:)]
 
 ==================
 A file process spelling after a word prefix stays ordinary source
+:language(zsh)
+:language(zsh_default)
 ==================
 print pre=(if)
 ---
@@ -38,12 +42,14 @@ print pre=(if)
               (literal))
             argument: (word
               (literal)
-              (glob_qualifier_candidate
-                (glob_qualifier_list_candidate
-                  (pattern_candidate_text))))))))))
+              (glob_qualifier
+                (glob_qualifier_list
+                  (glob_text))))))))))
 
 ==================
 File redirections retain standalone process substitutions in all three forms
+:language(zsh)
+:language(zsh_default)
 ==================
 : < <(:) > >(:) < =(:)
 ---
@@ -84,6 +90,8 @@ File redirections retain standalone process substitutions in all three forms
 
 ==================
 A process substitution argument retains its trailing literal
+:language(zsh)
+:language(zsh_default)
 ==================
 : <(:)x
 ---
@@ -105,6 +113,8 @@ A process substitution argument retains its trailing literal
 
 ==================
 File redirections with leading source retain process substitution concatenation
+:language(zsh)
+:language(zsh_default)
 ==================
 : < pre<(:)x > "">(:)x
 ---
@@ -140,6 +150,8 @@ File redirections with leading source retain process substitution concatenation
 
 ==================
 Here string values retain process substitution concatenation
+:language(zsh)
+:language(zsh_default)
 ==================
 : <<< <(:)x
 ---
@@ -163,6 +175,8 @@ Here string values retain process substitution concatenation
 
 ==================
 Here document delimiters retain process substitution concatenation and their matching end
+:language(zsh)
+:language(zsh_default)
 ==================
 : << <(:)x
 BODY
@@ -193,6 +207,8 @@ BODY
 
 ==================
 A separated argument and an adjacent redirect follow a complete process substitution filename
+:language(zsh)
+:language(zsh_default)
 ==================
 : < <(:) x > >(:)<in
 ---
@@ -227,6 +243,8 @@ A separated argument and an adjacent redirect follow a complete process substitu
 ==================
 A direct input process substitution rejects a trailing literal
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 : < <(:)x
 ---
@@ -234,6 +252,8 @@ A direct input process substitution rejects a trailing literal
 ==================
 A direct output process substitution rejects even an empty quoted suffix
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 : > >(:)""
 ---
@@ -241,6 +261,8 @@ A direct output process substitution rejects even an empty quoted suffix
 ==================
 A direct process substitution rejects a suffix whose expansion could be empty
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 : < <(:)${x}
 ---
@@ -248,6 +270,8 @@ A direct process substitution rejects a suffix whose expansion could be empty
 ==================
 Adjacent process substitutions cannot split into separate redirect arguments
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 : < <(:)<(:)
 ---
@@ -255,6 +279,8 @@ Adjacent process substitutions cannot split into separate redirect arguments
 ==================
 A glob qualifier cannot follow a direct process substitution filename
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 : < <(:)(N)
 ---
@@ -262,6 +288,8 @@ A glob qualifier cannot follow a direct process substitution filename
 ==================
 A continuation cannot separate a process substitution filename from a suffix
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 : < <(:)\
 x
@@ -270,6 +298,8 @@ x
 ==================
 Append redirections require a complete process substitution filename
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 : >> <(:)x
 ---
@@ -277,6 +307,8 @@ Append redirections require a complete process substitution filename
 ==================
 Temporary file substitutions require a complete redirection filename
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 : > =(:)x
 ---
@@ -284,6 +316,8 @@ Temporary file substitutions require a complete redirection filename
 ==================
 A redirect inside a function definition rejects a process substitution suffix
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 f() { : < <(:)x; }
 ---

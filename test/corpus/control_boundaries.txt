@@ -1,5 +1,7 @@
 ==================
 A conditional command ends the body before an adjacent fi
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then [[ x ]] fi
 ---
@@ -32,6 +34,8 @@ if :; then [[ x ]] fi
 
 ==================
 Else and fi remain outside the preceding compound bodies
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then [[ x ]] else ((1)) fi
 ---
@@ -69,11 +73,13 @@ if :; then [[ x ]] else ((1)) fi
                         (complex_command
                           (arithmetic_command
                             (arithmetic_source
-                              (arithmetic_number)))))))))
+                              expression: (arithmetic_number)))))))))
               (fi_keyword))))))))
 
 ==================
 Elif starts the outer branch after a compound body
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then [[ x ]] elif :; then :; fi
 ---
@@ -123,6 +129,8 @@ if :; then [[ x ]] elif :; then :; fi
 
 ==================
 A subshell body ends before the loop done keyword
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in a; do ( : ) done
 ---
@@ -159,6 +167,8 @@ for x in a; do ( : ) done
 
 ==================
 A final compound case item can end directly before esac
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) [[ x ]] esac
 ---
@@ -190,6 +200,8 @@ case x in x) [[ x ]] esac
 
 ==================
 An ordinary foreach list ends before end after a conditional command
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a); [[ x ]] end
 ---
@@ -217,6 +229,8 @@ foreach x (a); [[ x ]] end
 
 ==================
 A case condition ends before then without a separator
+:language(zsh)
+:language(zsh_default)
 ==================
 if case x in esac then :; fi
 ---
@@ -252,6 +266,8 @@ if case x in esac then :; fi
 
 ==================
 A case condition ends before do without a separator
+:language(zsh)
+:language(zsh_default)
 ==================
 while case x in esac do :; done
 ---
@@ -287,6 +303,8 @@ while case x in esac do :; done
 
 ==================
 A short loop inherits its ordinary body boundary
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then repeat 1 [[ x ]] fi
 ---
@@ -327,6 +345,8 @@ if :; then repeat 1 [[ x ]] fi
 
 ==================
 A named function passes its ordinary body boundary through a short loop
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then repeat 1 f() [[ x ]] fi
 ---
@@ -372,6 +392,8 @@ if :; then repeat 1 f() [[ x ]] fi
 
 ==================
 An anonymous ordinary body can end before an outer keyword
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then () [[ x ]] fi
 ---
@@ -407,6 +429,8 @@ if :; then () [[ x ]] fi
 
 ==================
 Keyword anonymous arguments preserve their inherited boundary
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then function () [[ x ]] a >out fi
 ---
@@ -451,6 +475,8 @@ if :; then function () [[ x ]] a >out fi
 
 ==================
 A commandless assignment and redirect end before the outer keyword
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then v=x >out fi
 ---
@@ -489,6 +515,8 @@ if :; then v=x >out fi
 
 ==================
 Elif can belong to an outer if after an ordinary short if body
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then if [[ x ]] [[ x ]] elif :; then :; fi
 ---
@@ -554,6 +582,8 @@ if :; then if [[ x ]] [[ x ]] elif :; then :; fi
 ==================
 A simple command word does not create a keyword boundary
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then : fi
 ---
@@ -561,6 +591,8 @@ if :; then : fi
 ==================
 An anonymous direct brace body keeps following keywords as arguments
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then () { :; } fi
 ---
@@ -568,6 +600,8 @@ if :; then () { :; } fi
 ==================
 An anonymous direct subshell body keeps following keywords as arguments
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then () ( : ) fi
 ---
@@ -575,6 +609,8 @@ if :; then () ( : ) fi
 ==================
 An invocation argument ends inherited keyword recognition in parentheses form
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then () [[ x ]] a fi
 ---
@@ -582,6 +618,8 @@ if :; then () [[ x ]] a fi
 ==================
 An ordinary short if cannot pass an immediate else to the outer if
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then if [[ x ]] [[ x ]] else :; fi
 ---
@@ -589,6 +627,8 @@ if :; then if [[ x ]] [[ x ]] else :; fi
 ==================
 A redirection target cannot supply the outer closing keyword
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then [[ x ]] >fi
 ---
@@ -596,6 +636,8 @@ if :; then [[ x ]] >fi
 ==================
 A named direct brace body cannot grow into an always clause
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then f() { :; } always { :; } fi
 ---
@@ -603,6 +645,8 @@ if :; then f() { :; } always { :; } fi
 ==================
 A compound boundary does not separate a following ordinary command
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 { :; } print NEXT
 ---
@@ -610,6 +654,8 @@ A compound boundary does not separate a following ordinary command
 ==================
 A keyword after an anonymous ordinary body needs its enclosing owner
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 function -T -- () (:) fi
 ---

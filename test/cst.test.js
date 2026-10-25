@@ -45,7 +45,7 @@ test("unquoted NUL is retained inside words and lookahead boundaries", () => {
     },
     {
       source: "[[ x =~ a\0b ]]\n",
-      expected: /0:8 +- +0:11 +regex_text `a\\0b`/,
+      expected: /0:9 +- +0:10 +ordinary_character `\\0`/,
     },
     {
       source: "cat <<\0\nbody\n\0\nprint after\n",

@@ -15,7 +15,15 @@
     "src/*.json",
     "src/tree_sitter/*.h",
     "test/bindings.test.rs",
-    "tree-sitter.json"
+    "tree-sitter.json",
+    "common/*.js",
+    "common/*.h",
+    "common/*.json",
+    "zsh_default/grammar.js",
+    "zsh_default/src/*.c",
+    "zsh_default/src/*.h",
+    "zsh_default/src/*.json",
+    "zsh_default/src/tree_sitter/*.h"
   ],
   "publishConfig": {
     "access": "public"
@@ -26,11 +34,11 @@
     "check:queries": "npm run tree-sitter -- check-queries",
     "format": "biome format --write .",
     "generate": "npm run tree-sitter -- generate-all",
-    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 test/build.test.js test/cst.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js test/recovery.test.js",
+    "test": "npm run tree-sitter -- test-corpus --rebuild && npm run tree-sitter -- test-js test/build.test.js test/cst.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js test/recovery.test.js",
     "test:fuzz:corpus": "npm run tree-sitter -- fuzz-all --iterations 100 --edits 5",
-    "test:highlights": "node --test test/highlight.test.js",
-    "test:incremental": "node --test --test-concurrency=1 test/cst.test.js test/parser.test.js test/incremental.test.js",
-    "test:performance": "node --test test/performance.test.js",
+    "test:highlights": "npm run tree-sitter -- test-js test/highlight.test.js",
+    "test:incremental": "npm run tree-sitter -- test-js test/cst.test.js test/parser.test.js test/incremental.test.js",
+    "test:performance": "npm run tree-sitter -- test-js test/performance.test.js",
     "test:sanitize": "node scripts/check-c.js --sanitize",
     "test:scanner": "node scripts/check-c.js",
     "tree-sitter": "node scripts/tree-sitter.js"

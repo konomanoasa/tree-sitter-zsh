@@ -1,4 +1,4 @@
-#include "../src/scanner.c"
+#include "scanner.c"
 #include <assert.h>
 
 #ifdef TREE_SITTER_REUSE_ALLOCATOR
@@ -52,12 +52,12 @@ static void unrecognized_recovery_source_preserves_context(void) {
   assert(init_source(&state));
   assert(push(&state, WORD_BEGIN));
   char before[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-  unsigned length = tree_sitter_zsh_external_scanner_serialize(&state, before);
+  unsigned length = zsh_scanner_serialize(&state, before);
   bool valid[TOKEN_COUNT] = {0};
   valid[RECOVERY] = true;
-  assert(!tree_sitter_zsh_external_scanner_scan(&state, &input.lexer, valid));
+  assert(!zsh_scanner_scan(&state, &input.lexer, valid));
   char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-  assert(tree_sitter_zsh_external_scanner_serialize(&state, after) == length);
+  assert(zsh_scanner_serialize(&state, after) == length);
   assert(memcmp(before, after, length) == 0);
   clear(&state);
 }
@@ -106,24 +106,20 @@ static void recovery_tokens_preserve_boundaries_and_survive_restoration(void) {
     if (cases[i].context != TOKEN_COUNT) assert(push(&state, cases[i].context));
     bool valid[TOKEN_COUNT];
     memset(valid, true, sizeof(valid));
-    bool accepted =
-      tree_sitter_zsh_external_scanner_scan(&state, &input.lexer, valid);
+    bool accepted = zsh_scanner_scan(&state, &input.lexer, valid);
     assert(accepted == (cases[i].token != TOKEN_COUNT));
     if (accepted) {
       assert(input.lexer.result_symbol == cases[i].token);
       assert(input.marked == 0 && state.remaining == length);
       do {
         char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-        unsigned bytes =
-          tree_sitter_zsh_external_scanner_serialize(&state, saved);
+        unsigned bytes = zsh_scanner_serialize(&state, saved);
         assert(bytes > 0);
-        tree_sitter_zsh_external_scanner_deserialize(&state, saved, bytes);
+        zsh_scanner_deserialize(&state, saved, bytes);
         assert(!state.failed);
         input.position = input.marked;
         input.lexer.lookahead = input.source[input.position];
-        assert(
-          tree_sitter_zsh_external_scanner_scan(&state, &input.lexer, valid)
-        );
+        assert(zsh_scanner_scan(&state, &input.lexer, valid));
       } while (state.remaining);
       assert(input.marked == length);
       assert(state.count == cases[i].contexts_after);
@@ -177,18 +173,16 @@ heredoc_recovery_keeps_the_end_after_skipped_parameter_source(void) {
   size_t skipped = 0;
   while (recognized < sizeof(expected) / sizeof(*expected)) {
     char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-    unsigned length = tree_sitter_zsh_external_scanner_serialize(&state, saved);
+    unsigned length = zsh_scanner_serialize(&state, saved);
     assert(length > 0);
-    tree_sitter_zsh_external_scanner_deserialize(&state, saved, length);
+    zsh_scanner_deserialize(&state, saved, length);
     assert(!state.failed);
     input.position = input.marked;
     input.lexer.lookahead = source[input.position];
     size_t start = input.position;
-    if (!tree_sitter_zsh_external_scanner_scan(&state, &input.lexer, valid)) {
+    if (!zsh_scanner_scan(&state, &input.lexer, valid)) {
       char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-      assert(
-        tree_sitter_zsh_external_scanner_serialize(&state, after) == length
-      );
+      assert(zsh_scanner_serialize(&state, after) == length);
       assert(memcmp(saved, after, length) == 0);
       assert(start < 4);
       input.marked = start + 1;
@@ -232,30 +226,21 @@ static void condition_recovery_closes_only_after_both_source_brackets(void) {
     bool valid[TOKEN_COUNT] = {[RECOVERY] = true};
     for (size_t i = 0; i < sizeof(expected) / sizeof(*expected); ++i) {
       char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-      unsigned bytes =
-        tree_sitter_zsh_external_scanner_serialize(&state, saved);
+      unsigned bytes = zsh_scanner_serialize(&state, saved);
       assert(bytes > 0);
-      tree_sitter_zsh_external_scanner_deserialize(&state, saved, bytes);
+      zsh_scanner_deserialize(&state, saved, bytes);
       assert(!state.failed);
       if (i == 1) {
         bool wrong_character[TOKEN_COUNT] = {[CHARACTER_LEFT_BRACKET] = true};
-        assert(!tree_sitter_zsh_external_scanner_scan(
-          &state,
-          &input.lexer,
-          wrong_character
-        ));
+        assert(!zsh_scanner_scan(&state, &input.lexer, wrong_character));
         char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-        assert(
-          tree_sitter_zsh_external_scanner_serialize(&state, after) == bytes
-        );
+        assert(zsh_scanner_serialize(&state, after) == bytes);
         assert(memcmp(saved, after, bytes) == 0);
         input.marked = 0;
       }
       input.position = input.marked;
       input.lexer.lookahead = source[input.position];
-      assert(
-        tree_sitter_zsh_external_scanner_scan(&state, &input.lexer, valid)
-      );
+      assert(zsh_scanner_scan(&state, &input.lexer, valid));
       assert(input.lexer.result_symbol == expected[i]);
       assert(state.count == (i == 3 ? 0 : groups + 1));
     }
@@ -288,9 +273,9 @@ dollar_quote_waits_for_its_quote_before_disabling_continuations(void) {
   assert(commit(&state, DOLLAR_SQ_OPEN));
   assert(!state.source.stages[0].disabled);
   char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-  unsigned length = tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+  unsigned length = zsh_scanner_serialize(&state, encoded);
   assert(length > 0);
-  tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+  zsh_scanner_deserialize(&copy, encoded, length);
   assert(!copy.source.stages[0].disabled);
   assert(commit(&copy, DOLLAR_SQ_QUOTE));
   assert(copy.source.stages[0].disabled);
@@ -322,18 +307,18 @@ static void scanner_state_round_trip_preserves_pending_documents(void) {
   state.documents[0].delimiter[3] = 0xa3;
   char first[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   char second[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-  unsigned count = tree_sitter_zsh_external_scanner_serialize(&state, first);
+  unsigned count = zsh_scanner_serialize(&state, first);
   assert(count > 0);
   struct Scanner copy = {0};
-  tree_sitter_zsh_external_scanner_deserialize(&copy, first, count);
-  assert(tree_sitter_zsh_external_scanner_serialize(&copy, second) == count);
+  zsh_scanner_deserialize(&copy, first, count);
+  assert(zsh_scanner_serialize(&copy, second) == count);
   assert(memcmp(first, second, count) == 0);
   assert(copy.documents[0].delimiter[2] == 0xce);
   assert(copy.documents[0].delimiter[3] == 0xa3);
   assert(copy.contexts[2].quoting == SOURCE_DOUBLE_QUOTED);
   assert(copy.contexts[0].parentheses == 2);
   for (unsigned i = 1; i < count; ++i) {
-    tree_sitter_zsh_external_scanner_deserialize(&copy, first, i);
+    zsh_scanner_deserialize(&copy, first, i);
     assert(copy.count == 0 && copy.document_count == 0);
   }
   clear(&state);
@@ -366,10 +351,9 @@ static void substitution_closures_release_only_their_pending_documents(void) {
         state.documents[k].delimiter[0] = (uint8_t)('A' + k);
       }
       char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-      unsigned length =
-        tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+      unsigned length = zsh_scanner_serialize(&state, encoded);
       assert(length > 0);
-      tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+      zsh_scanner_deserialize(&copy, encoded, length);
       assert(commit(&copy, COMMAND_CLOSE));
       assert(copy.document_count == 2 && depth(&copy) == 1);
       assert(pending_document(&copy) == &copy.documents[1]);
@@ -505,14 +489,9 @@ static void decoded_delimiter_bytes_survive_state_restoration(void) {
       memcmp(state.documents[0].delimiter, cases[i].bytes, cases[i].length) == 0
     );
     char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-    unsigned encoded_length =
-      tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+    unsigned encoded_length = zsh_scanner_serialize(&state, encoded);
     assert(encoded_length > 0);
-    tree_sitter_zsh_external_scanner_deserialize(
-      &copy,
-      encoded,
-      encoded_length
-    );
+    zsh_scanner_deserialize(&copy, encoded, encoded_length);
     assert(!copy.failed && copy.document_count == 1);
     assert(copy.documents[0].quoted);
     assert(copy.documents[0].length == cases[i].length);
@@ -571,17 +550,17 @@ parameter_source_state_preserves_owners_and_pending_command_source(void) {
   assert(parameter_source_push(&state, COMMAND_OPEN, SOURCE_UNQUOTED));
   state.parameter_frames[1].remaining = 17;
   char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-  unsigned length = tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+  unsigned length = zsh_scanner_serialize(&state, encoded);
   assert(length > 0);
-  tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+  zsh_scanner_deserialize(&copy, encoded, length);
   assert(copy.contexts[0].source_depth == 1);
   assert(copy.contexts[2].delimiter_kind == PARAMETER_QUOTED_DOLLAR);
   assert(copy.parameter_count == 2 && copy.parameter_frames[1].remaining == 17);
   clear(&copy);
   state.contexts[0].source_depth = state.parameter_count + 2;
-  length = tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+  length = zsh_scanner_serialize(&state, encoded);
   assert(length > 0);
-  tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+  zsh_scanner_deserialize(&copy, encoded, length);
   assert(copy.failed && copy.count == 0 && copy.parameter_count == 0);
   clear(&copy);
   clear(&state);
@@ -601,8 +580,7 @@ static void scanner_state_overflow_never_truncates_the_context_stack(void) {
       );
       size_t count = parameter ? state.parameter_count : state.count;
       assert(count == previous_count + 1);
-      unsigned length =
-        tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+      unsigned length = zsh_scanner_serialize(&state, encoded);
       assert((parameter ? state.parameter_count : state.count) == count);
       if (!length) break;
       assert(length <= sizeof(encoded));
@@ -612,14 +590,14 @@ static void scanner_state_overflow_never_truncates_the_context_stack(void) {
     assert(previous_count > 1);
     if (parameter) state.parameter_count--;
     else assert(pop(&state));
-    assert(tree_sitter_zsh_external_scanner_serialize(&state, encoded) > 0);
+    assert(zsh_scanner_serialize(&state, encoded) > 0);
     clear(&state);
   }
 }
 
 static void modifier_operand_start_survives_state_restoration(void) {
   const enum Token openers[] =
-    {MODIFIER_BEGIN, CANDIDATE_MODIFIER_BEGIN, GLOB_MODIFIER_BEGIN};
+    {MODIFIER_BEGIN, UNBRACED_MODIFIER_BEGIN, GLOB_MODIFIER_BEGIN};
   for (size_t i = 0; i < sizeof(openers) / sizeof(*openers); ++i) {
     struct Scanner state = {0};
     assert(init_source(&state));
@@ -627,11 +605,10 @@ static void modifier_operand_start_survives_state_restoration(void) {
     assert(push(&state, openers[i]));
     assert(commit(&state, MODIFIER_SUBSTITUTION_SEPARATOR));
     char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-    unsigned length =
-      tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+    unsigned length = zsh_scanner_serialize(&state, encoded);
     assert(length > 0);
     struct Scanner copy = {0};
-    tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+    zsh_scanner_deserialize(&copy, encoded, length);
     assert(copy.count == 2);
     assert(copy.contexts[1].opener == openers[i]);
     assert(copy.contexts[1].initial == (openers[i] == MODIFIER_BEGIN));
@@ -651,7 +628,7 @@ static void removed_source_preserves_lexical_context_state(void) {
     PARAMETER_OPEN,
     CASE_PATTERN_BEGIN,
     PATTERN_BRACKET_OPEN,
-    PATTERN_CANDIDATE_OPEN,
+    PATTERN_FLAGS_OPEN,
     GLOB_QUALIFIER_OPEN,
     GLOB_ARGUMENT_BEGIN,
     SUBSCRIPT_OPEN,
@@ -662,13 +639,12 @@ static void removed_source_preserves_lexical_context_state(void) {
     assert(init_source(&state));
     assert(push(&state, openers[i]));
     char expected[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-    unsigned length =
-      tree_sitter_zsh_external_scanner_serialize(&state, expected);
+    unsigned length = zsh_scanner_serialize(&state, expected);
     assert(length > 0);
-    tree_sitter_zsh_external_scanner_deserialize(&copy, expected, length);
+    zsh_scanner_deserialize(&copy, expected, length);
     assert(commit(&copy, REMOVED_SOURCE));
     char actual[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-    assert(tree_sitter_zsh_external_scanner_serialize(&copy, actual) == length);
+    assert(zsh_scanner_serialize(&copy, actual) == length);
     assert(memcmp(actual, expected, length) == 0);
     clear(&state);
     clear(&copy);
@@ -685,10 +661,10 @@ glob_argument_state_keeps_its_source_delimiter_after_restoration(void) {
   assert(commit(&state, GLOB_ARGUMENT_BEGIN));
   assert(commit(&state, GLOB_ARGUMENT_OPEN));
   char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-  unsigned length = tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+  unsigned length = zsh_scanner_serialize(&state, encoded);
   assert(length > 0);
   struct Scanner copy = {0};
-  tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+  zsh_scanner_deserialize(&copy, encoded, length);
   assert(copy.count == 2);
   assert(copy.contexts[0].delimiter == 'q');
   assert(copy.contexts[0].arguments == GLOB_NO_ARGUMENT);
@@ -712,10 +688,10 @@ redirect_substitution_restores_keyword_position_after_round_trip(void) {
   assert(commit(&state, WORD_BEGIN));
   assert(state.word_only);
   char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-  unsigned length = tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+  unsigned length = zsh_scanner_serialize(&state, encoded);
   assert(length > 0);
   struct Scanner copy = {0};
-  tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+  zsh_scanner_deserialize(&copy, encoded, length);
   assert(copy.word_only);
   assert(commit(&copy, WORD_END));
   assert(commit(&copy, COMMAND_CLOSE));
@@ -879,22 +855,22 @@ static void failed_state_restoration_refuses_tokens_until_the_next_one(void) {
   assert(push(&state, WORD_BEGIN));
   assert(push(&state, DQ_OPEN));
   char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-  unsigned length = tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+  unsigned length = zsh_scanner_serialize(&state, encoded);
   assert(length > 1);
   struct Scanner copy = {0};
-  tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length - 1);
+  zsh_scanner_deserialize(&copy, encoded, length - 1);
   assert(copy.failed && copy.count == 0);
   bool valid[TOKEN_COUNT];
   memset(valid, true, sizeof(valid));
   valid[RECOVERY] = false;
-  assert(!tree_sitter_zsh_external_scanner_scan(&copy, &input.lexer, valid));
+  assert(!zsh_scanner_scan(&copy, &input.lexer, valid));
   memset(valid, false, sizeof(valid));
   valid[RECOVERY] = true;
-  assert(!tree_sitter_zsh_external_scanner_scan(&copy, &input.lexer, valid));
+  assert(!zsh_scanner_scan(&copy, &input.lexer, valid));
   assert(input.position == 0);
-  tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+  zsh_scanner_deserialize(&copy, encoded, length);
   assert(!copy.failed && copy.count == 2);
-  assert(tree_sitter_zsh_external_scanner_scan(&copy, &input.lexer, valid));
+  assert(zsh_scanner_scan(&copy, &input.lexer, valid));
   assert(input.lexer.result_symbol == DOUBLE_QUOTE_TEXT && input.marked == 0);
   clear(&state);
   clear(&copy);
@@ -917,10 +893,9 @@ timing_scope_survives_restoration_and_independent_command_sources(void) {
     assert(!timing_context(&state));
     assert(commit(&state, TIME_KEYWORD));
     char encoded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-    unsigned length =
-      tree_sitter_zsh_external_scanner_serialize(&state, encoded);
+    unsigned length = zsh_scanner_serialize(&state, encoded);
     assert(length > 0);
-    tree_sitter_zsh_external_scanner_deserialize(&copy, encoded, length);
+    zsh_scanner_deserialize(&copy, encoded, length);
     assert(timing_context(&copy));
     assert(commit(&copy, TIME_END));
     assert(!timing_context(&copy));

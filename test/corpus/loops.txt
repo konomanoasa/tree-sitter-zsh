@@ -1,5 +1,7 @@
 ==================
 A parenthesized for word list permits a do body
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (a b) do :; done
 ---
@@ -30,6 +32,8 @@ for x (a b) do :; done
 
 ==================
 Parenthesized for layout preserves keyword spellings as words
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (
 if; do # words
@@ -68,6 +72,8 @@ done
 
 ==================
 Separators in an empty parenthesized for word list do not create words
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (; ;
 ) :
@@ -91,6 +97,8 @@ for x (; ;
 
 ==================
 A comment and newline before in remain part of the for header
+:language(zsh)
+:language(zsh_default)
 ==================
 for x # variable
 in a; do :; done
@@ -124,6 +132,8 @@ in a; do :; done
 
 ==================
 Multiple for names remain names before a newline and in
+:language(zsh)
+:language(zsh_default)
 ==================
 for x y
 in a b; :
@@ -154,6 +164,8 @@ in a b; :
 
 ==================
 A comment and newline before in remain part of the select header
+:language(zsh)
+:language(zsh_default)
 ==================
 select x # variable
 in a b; do :; done
@@ -189,6 +201,8 @@ in a b; do :; done
 
 ==================
 A documented short select retains its sublist body after a newline
+:language(zsh)
+:language(zsh_default)
 ==================
 select x in a b
 :
@@ -219,6 +233,8 @@ select x in a b
 ==================
 A semicolon before in cannot continue a for header
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x; in a b; do :; done
 ---
@@ -226,6 +242,8 @@ for x; in a b; do :; done
 ==================
 A semicolon before in cannot continue a select header
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 select x; in a b; do :; done
 ---
@@ -233,6 +251,8 @@ select x; in a b; do :; done
 ==================
 A newline before parentheses does not introduce for words
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x
 (a b) :
@@ -241,6 +261,8 @@ for x
 ==================
 A parenthesized for with do still requires done
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (a) do :
 ---
@@ -248,12 +270,16 @@ for x (a) do :
 ==================
 A short select with in still requires its header terminator
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 select x in a b :
 ---
 
 ==================
 Semicolon-only while condition and body remain separate lists
+:language(zsh)
+:language(zsh_default)
 ==================
 while ; do; done
 ---
@@ -273,6 +299,8 @@ while ; do; done
 
 ==================
 A for loop retains a semicolon-only do body
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in a; do; done
 ---
@@ -297,6 +325,8 @@ for x in a; do; done
 
 ==================
 A repeat loop retains a semicolon-only do body
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 1 do; done
 ---
@@ -317,6 +347,8 @@ repeat 1 do; done
 
 ==================
 A short for loop retains its parenthesized words and sublist body
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (a b) print $x
 ---
@@ -346,6 +378,8 @@ for x (a b) print $x
 
 ==================
 Foreach uses native end syntax
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a)
 print $x
@@ -377,6 +411,8 @@ end
 
 ==================
 Short while uses a delimited condition and a sublist body
+:language(zsh)
+:language(zsh_default)
 ==================
 while ((0)) print never
 ---
@@ -395,7 +431,7 @@ while ((0)) print never
                       (complex_command
                         (arithmetic_command
                           (arithmetic_source
-                            (arithmetic_number))))))))
+                            expression: (arithmetic_number))))))))
               body: (sublist
                 (pipeline
                   (command
@@ -407,6 +443,8 @@ while ((0)) print never
 
 ==================
 Empty for parentheses denote an empty word list
+:language(zsh)
+:language(zsh_default)
 ==================
 for x () :
 ---
@@ -429,6 +467,8 @@ for x () :
 
 ==================
 A direct brace loop body leaves its following pipe outside the loop
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 0 { :; } | :
 ---
@@ -461,6 +501,8 @@ repeat 0 { :; } | :
 
 ==================
 A zero-count repeat retains its header without a synthetic body
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 0
 ---
@@ -477,6 +519,8 @@ repeat 0
 
 ==================
 A while condition at EOF retains only its source condition
+:language(zsh)
+:language(zsh_default)
 ==================
 while :
 ---
@@ -499,12 +543,16 @@ while :
 ==================
 A for word header still requires its ending before EOF
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in a b
 ---
 
 ==================
 A newline completes a for word header without requiring a body
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in a b
 
@@ -528,6 +576,8 @@ for x in a b
 
 ==================
 A brace after a while separator extends the condition of a bodyless loop
+:language(zsh)
+:language(zsh_default)
 ==================
 while :; { :; }
 ---
@@ -561,6 +611,8 @@ while :; { :; }
 
 ==================
 An empty for word header may end without a body
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in;
 ---
@@ -580,6 +632,8 @@ for x in;
 ==================
 A for header owns its final semicolon when the body is omitted
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in a;
 ---
@@ -602,12 +656,16 @@ for x in a;
 ==================
 Foreach requires its documented parenthesized words
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x in a; :; end
 ---
 
 ==================
 Foreach accepts a direct brace body
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a) { :; }
 ---
@@ -638,6 +696,8 @@ foreach x (a) { :; }
 
 ==================
 Foreach do body keeps the following redirect and pipe outside the body
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a); # header
 do :; done >out | cat
@@ -678,6 +738,8 @@ do :; done >out | cat
 
 ==================
 Foreach brace body keeps the following redirect and and-or list outside the body
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a) { :; } >out && :
 ---
@@ -718,6 +780,8 @@ foreach x (a) { :; } >out && :
 
 ==================
 The documented foreach list may begin with a brace group
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a) { :; }; end
 ---
@@ -750,6 +814,8 @@ foreach x (a) { :; }; end
 
 ==================
 The documented foreach list may begin with an always clause
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a) { :; } always { :; }; end
 ---
@@ -792,6 +858,8 @@ foreach x (a) { :; } always { :; }; end
 
 ==================
 Nested foreach brace and do bodies leave end to the outer foreach
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach outer (a)
   foreach inner (b) { :; }
@@ -857,6 +925,8 @@ end
 
 ==================
 Foreach accepts explicitly delimited empty bodies in all three forms
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a) { }
 foreach x (a) do done
@@ -907,6 +977,8 @@ foreach x (a) end
 ==================
 Foreach requires end after an ordinary command body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a) :
 ---
@@ -914,6 +986,8 @@ foreach x (a) :
 ==================
 Foreach requires end when its body starts with a redirection
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a) >out { :; }
 ---
@@ -921,12 +995,16 @@ foreach x (a) >out { :; }
 ==================
 Foreach requires an explicit body after header separators
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 foreach x (a);
 ---
 
 ==================
 Parenthesized for header separators leave the whole sublist in the body
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (a); ;
 : && :
@@ -959,6 +1037,8 @@ for x (a); ;
 
 ==================
 Repeat header separators precede its short body
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 3; :
 ---
@@ -982,6 +1062,8 @@ repeat 3; :
 
 ==================
 Repeat header separators also precede its do body
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 3; ;
 do :; done
@@ -1011,12 +1093,16 @@ do :; done
 ==================
 A short for without parentheses requires a header terminator
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x { :; }
 ---
 
 ==================
 A parenthesized for may omit its body after header separators
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (a);
 ---
@@ -1036,6 +1122,8 @@ for x (a);
 
 ==================
 A nonzero repeat may omit its body after header separators
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 3;
 ---
@@ -1053,6 +1141,8 @@ repeat 3;
 
 ==================
 A while test ends directly before do
+:language(zsh)
+:language(zsh_default)
 ==================
 while [[ x ]] do :; done
 ---
@@ -1085,6 +1175,8 @@ while [[ x ]] do :; done
 
 ==================
 An until arithmetic condition ends directly before do
+:language(zsh)
+:language(zsh_default)
 ==================
 until ((1)) do :; done
 ---
@@ -1103,7 +1195,7 @@ until ((1)) do :; done
                       (complex_command
                         (arithmetic_command
                           (arithmetic_source
-                            (arithmetic_number))))))))
+                            expression: (arithmetic_number))))))))
               body: (do_group
                 (do_keyword)
                 body: (list
@@ -1117,6 +1209,8 @@ until ((1)) do :; done
 
 ==================
 A brace after a separator remains in the condition before do
+:language(zsh)
+:language(zsh_default)
 ==================
 while [[ x ]]; { :; } do :; done
 :
@@ -1168,6 +1262,8 @@ while [[ x ]]; { :; } do :; done
 
 ==================
 A second brace supplies the body after a brace in the condition
+:language(zsh)
+:language(zsh_default)
 ==================
 until [[ x ]]; { :; } { :; }
 :
@@ -1221,6 +1317,8 @@ until [[ x ]]; { :; } { :; }
 
 ==================
 Explicit do and done preserve an empty body
+:language(zsh)
+:language(zsh_default)
 ==================
 while ((0)) do done
 ---
@@ -1239,13 +1337,15 @@ while ((0)) do done
                       (complex_command
                         (arithmetic_command
                           (arithmetic_source
-                            (arithmetic_number))))))))
+                            expression: (arithmetic_number))))))))
               body: (do_group
                 (do_keyword)
                 (done_keyword)))))))))
 
 ==================
 A while condition owns the brace after a conditional and separator
+:language(zsh)
+:language(zsh_default)
 ==================
 while [[ x ]]; { :; }
 ---
@@ -1280,6 +1380,8 @@ while [[ x ]]; { :; }
 
 ==================
 An until condition owns the brace after a conditional and separator
+:language(zsh)
+:language(zsh_default)
 ==================
 until [[ x ]]; { :; }
 ---
@@ -1314,6 +1416,8 @@ until [[ x ]]; { :; }
 
 ==================
 A substitution can end after a bodyless conditional loop
+:language(zsh)
+:language(zsh_default)
 ==================
 print "$(while [[ x ]]; { :; })"
 ---
@@ -1359,6 +1463,8 @@ print "$(while [[ x ]]; { :; })"
 ==================
 A final simple command still needs a separator before do
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 while [[ x ]]; true do :; done
 ---
@@ -1366,6 +1472,8 @@ while [[ x ]]; true do :; done
 ==================
 A for name at EOF has no synthetic body
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 for x
 ---
@@ -1382,6 +1490,8 @@ for x
 ==================
 A real EOF comment completes a for word header
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in a # end
 ---
@@ -1403,6 +1513,8 @@ for x in a # end
 
 ==================
 An empty parenthesized for header may end at EOF
+:language(zsh)
+:language(zsh_default)
 ==================
 for x ()
 ---
@@ -1419,6 +1531,8 @@ for x ()
 
 ==================
 An outer then and fi close bodyless loops in separate branches
+:language(zsh)
+:language(zsh_default)
 ==================
 if for x then repeat 2 fi
 ---
@@ -1453,6 +1567,8 @@ if for x then repeat 2 fi
 
 ==================
 A do group can end after a bodyless nested repeat
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (a) do repeat 2 done
 ---
@@ -1483,6 +1599,8 @@ for x (a) do repeat 2 done
 
 ==================
 A logical operator after an omitted loop body stays outside the loop
+:language(zsh)
+:language(zsh_default)
 ==================
 for x && :
 ---
@@ -1504,6 +1622,8 @@ for x && :
 
 ==================
 A pipe after an omitted loop body stays outside the loop
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 2 | :
 ---
@@ -1525,6 +1645,8 @@ repeat 2 | :
 ==================
 An asynchronous separator remains outside a bodyless loop by contract
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 2 &
 ---
@@ -1542,6 +1664,8 @@ repeat 2 &
 
 ==================
 A redirection after the loop header is a real short body
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 2 >out
 ---
@@ -1566,6 +1690,8 @@ repeat 2 >out
 
 ==================
 A prefix redirection stays on a bodyless loop
+:language(zsh)
+:language(zsh_default)
 ==================
 >out repeat 2
 ---
@@ -1587,6 +1713,8 @@ A prefix redirection stays on a bodyless loop
 ==================
 A missing for name is not body omission
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for
 ---
@@ -1595,6 +1723,8 @@ for
 ==================
 A missing repeat count is not body omission
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat
 ---
@@ -1603,6 +1733,8 @@ repeat
 ==================
 An unfinished parenthesized for header is not body omission
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (a
 ---
@@ -1611,6 +1743,8 @@ for x (a
 ==================
 A started repeat do group still requires done
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 0 do
 ---
@@ -1619,6 +1753,8 @@ repeat 0 do
 ==================
 A started for brace body still requires its closing brace
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x (a) {
 ---
@@ -1627,6 +1763,8 @@ for x (a) {
 ==================
 A started repeat subshell body still requires its closing parenthesis
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 repeat 2 (
 ---
@@ -1635,6 +1773,8 @@ repeat 2 (
 ==================
 A redirection short body still needs the documented plain for terminator
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x >out
 ---
@@ -1643,6 +1783,8 @@ for x >out
 ==================
 An attached hash does not complete a for word header
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in a#end
 ---
@@ -1651,6 +1793,8 @@ for x in a#end
 ==================
 A quoted hash does not complete a for word header
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x in a '#end'
 ---
@@ -1658,6 +1802,8 @@ for x in a '#end'
 
 ==================
 An explicit do body takes precedence over ending an outer condition
+:language(zsh)
+:language(zsh_default)
 ==================
 if repeat 2 do done; then fi
 ---
@@ -1688,6 +1834,8 @@ if repeat 2 do done; then fi
 ==================
 An until loop without condition or body retains only its keyword
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 until
 ---
@@ -1703,6 +1851,8 @@ until
 ==================
 An EOF comment remains outside the bodyless while condition
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 while false # tail
 ---
@@ -1726,6 +1876,8 @@ while false # tail
 
 ==================
 Newlines and comments continue a while condition without making a body
+:language(zsh)
+:language(zsh_default)
 ==================
 while false # condition
 false
@@ -1758,6 +1910,8 @@ false
 ==================
 A bodyless until condition owns its separated semicolons
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 until true; ;
 ---
@@ -1781,6 +1935,8 @@ until true; ;
 
 ==================
 An asynchronous separator remains inside a bodyless while condition
+:language(zsh)
+:language(zsh_default)
 ==================
 while false & false
 ---
@@ -1808,6 +1964,8 @@ while false & false
 
 ==================
 A final logical operator remains in a bodyless until condition
+:language(zsh)
+:language(zsh_default)
 ==================
 until true ||
 ---
@@ -1830,6 +1988,8 @@ until true ||
 
 ==================
 Outer then and fi delimit separate bodyless condition loops
+:language(zsh)
+:language(zsh_default)
 ==================
 if while false; then until true; fi
 ---
@@ -1875,6 +2035,8 @@ if while false; then until true; fi
 
 ==================
 Case termination follows a bodyless while condition
+:language(zsh)
+:language(zsh_default)
 ==================
 case x in x) while false;; esac
 ---
@@ -1913,6 +2075,8 @@ case x in x) while false;; esac
 
 ==================
 Only redirects after a real loop body belong outside the condition
+:language(zsh)
+:language(zsh_default)
 ==================
 >before while false >condition; do :; done >after
 ---
@@ -1957,6 +2121,8 @@ Only redirects after a real loop body belong outside the condition
 ==================
 An explicitly opened while do group still requires done
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 while false; do
 ---
@@ -1965,6 +2131,8 @@ while false; do
 ==================
 An explicitly opened until brace body still requires its closing brace
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 until [[ x ]] {
 ---
@@ -1973,6 +2141,8 @@ until [[ x ]] {
 ==================
 An explicitly opened while subshell body still requires its closing parenthesis
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 while ((0)) (
 ---
@@ -1981,6 +2151,8 @@ while ((0)) (
 ==================
 A while condition pipe still requires its next command
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 while false |
 ---
@@ -1989,6 +2161,8 @@ while false |
 ==================
 A bodyless loop cannot absorb a case terminator outside a case
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 until true;;
 ---
@@ -1996,6 +2170,8 @@ until true;;
 
 ==================
 A newline comment after a condition logical operator remains in its sublist
+:language(zsh)
+:language(zsh_default)
 ==================
 while false && # tail
 

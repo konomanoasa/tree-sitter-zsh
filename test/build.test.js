@@ -16,7 +16,7 @@ test("package and grammar metadata agree", () => {
     assert.equal(config.metadata[key], pkg[key]);
   assert.deepEqual(
     config.grammars.map(({ name }) => name),
-    ["zsh"],
+    ["zsh", "zsh_default"],
   );
 });
 
@@ -37,13 +37,22 @@ test("npm distribution contains the parser scanner queries and binding sources",
   const files = new Set(archive.files.map(({ path }) => path));
   for (const path of [
     "grammar.js",
+    "common/grammar.js",
+    "common/scanner.h",
+    "zsh_default/grammar.js",
+    "zsh_default/src/parser.c",
+    "zsh_default/src/scanner.c",
+    "zsh_default/src/tokens.h",
+    "zsh_default/src/node-types.json",
+    "zsh_default/src/tree_sitter/parser.h",
+    "zsh_default/src/tree_sitter/alloc.h",
     "tree-sitter.json",
     "src/parser.c",
     "src/scanner.c",
     "src/tokens.h",
-    "src/tokens.json",
-    "src/source.h",
-    "src/input.h",
+    "common/tokens.json",
+    "common/source.h",
+    "common/input.h",
     "src/node-types.json",
     "src/tree_sitter/parser.h",
     "src/tree_sitter/alloc.h",

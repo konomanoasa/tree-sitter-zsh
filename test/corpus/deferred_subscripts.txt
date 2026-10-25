@@ -1,0 +1,379 @@
+==================
+Subscript arithmetic candidates use native bitwise precedence
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[1+2&3]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (arithmetic_candidate_binary_expression
+                      (arithmetic_candidate_number)
+                      (arithmetic_candidate_operator)
+                      (arithmetic_candidate_binary_expression
+                        (arithmetic_candidate_number)
+                        (arithmetic_candidate_operator)
+                        (arithmetic_candidate_number)))))))))))))
+
+==================
+A range owns one comma and retains an arithmetic sequence inside its end group
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[1,0+(2,3)]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (subscript_range_candidate
+                      (subscript_source
+                        (arithmetic_candidate_number))
+                      (subscript_comma)
+                      (subscript_source
+                        (arithmetic_candidate_binary_expression
+                          (arithmetic_candidate_number)
+                          (arithmetic_candidate_operator)
+                          (parenthesized_arithmetic_candidate
+                            (arithmetic_candidate_sequence_expression
+                              (arithmetic_candidate_number)
+                              (arithmetic_candidate_operator)
+                              (arithmetic_candidate_number))))))))))))))))
+
+==================
+All element candidates remain distinct from literal flagged operators
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[*]} ${a[@]} ${a[(e)*]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (subscript_all_elements_candidate)))))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (subscript_all_elements_candidate)))))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (subscript_flags
+                      (subscript_flag
+                        (subscript_flag_name)))
+                    (arithmetic_candidate_operator)))))))))))
+
+==================
+Candidate references and calls retain their own operand boundaries
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[x[2]+f(3)]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (arithmetic_candidate_binary_expression
+                      (arithmetic_candidate_array_reference
+                        (arithmetic_candidate_variable)
+                        (array_subscript
+                          (subscript_source
+                            (arithmetic_candidate_number))))
+                      (arithmetic_candidate_operator)
+                      (arithmetic_candidate_function_source
+                        (arithmetic_candidate_function_name)
+                        (arithmetic_argument_source
+                          (arithmetic_candidate_number))))))))))))))
+
+==================
+Dynamic subscript source retains one expansion and explicit candidate groups
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[1+$x]} ${a[1+(2*$x)]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (arithmetic_candidate_number)
+                    (arithmetic_candidate_operator)
+                    (parameter_expansion
+                      (variable_name))))))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (arithmetic_candidate_number)
+                    (arithmetic_candidate_operator)
+                    (parenthesized_arithmetic_candidate_source
+                      (arithmetic_candidate_source_expression
+                        (arithmetic_candidate_number)
+                        (arithmetic_candidate_operator)
+                        (parameter_expansion
+                          (variable_name))))))))))))))
+
+==================
+Reverse subscript candidates retain wildcard brackets and character ranges
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[(r)foo*[a-z]]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (subscript_flags
+                      (subscript_flag
+                        (subscript_flag_name)))
+                    (subscript_pattern_candidate
+                      (pattern_candidate_text)
+                      (pattern_candidate_star_source)
+                      (pattern_candidate_bracket_source
+                        (pattern_candidate_character_range_source
+                          (pattern_candidate_bracket_text)
+                          (pattern_candidate_range_operator)
+                          (pattern_candidate_bracket_text))))))))))))))
+
+==================
+Reverse subscript groups retain alternatives without choosing the parameter type
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[(r)(ab|cd)]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (subscript_flags
+                      (subscript_flag
+                        (subscript_flag_name)))
+                    (subscript_pattern_candidate
+                      (pattern_candidate_group_source
+                        (pattern_candidate_alternatives
+                          (pattern_candidate_alternative
+                            (pattern_candidate_text))
+                          (pattern_candidate_alternation)
+                          (pattern_candidate_alternative
+                            (pattern_candidate_text)))))))))))))))
+
+==================
+Literal reverse matching retains source groups without arithmetic candidates
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[(re)foo*(bar)]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (subscript_flags
+                      (subscript_flag
+                        (subscript_flag_name))
+                      (subscript_flag
+                        (subscript_flag_name)))
+                    (subscript_text)
+                    (subscript_group
+                      (subscript_source
+                        (subscript_text)))))))))))))
+
+==================
+Each reverse range endpoint owns its flags and pattern candidate
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[(r)foo*,(R)bar?]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (subscript_range_candidate
+                      (subscript_source
+                        (subscript_flags
+                          (subscript_flag
+                            (subscript_flag_name)))
+                        (subscript_pattern_candidate
+                          (pattern_candidate_text)
+                          (pattern_candidate_star_source)))
+                      (subscript_comma)
+                      (subscript_source
+                        (subscript_flags
+                          (subscript_flag
+                            (subscript_flag_name)))
+                        (subscript_pattern_candidate
+                          (pattern_candidate_text)
+                          (pattern_candidate_question_source))))))))))))))
+
+==================
+Incomplete arithmetic and multiple commas retain subscript source
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[1+]} ${a[1,,3]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word
+              (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (arithmetic_candidate_number)
+                    (arithmetic_candidate_operator)))))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source
+                    (arithmetic_candidate_number)
+                    (subscript_comma)
+                    (subscript_comma)
+                    (arithmetic_candidate_number)))))))))))
+
+==================
+Whitespace prevents an all element spelling without rejecting the subscript
+:language(zsh)
+:language(zsh_default)
+==================
+print ${a[ *]} ${a[* ]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (word (literal))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source (arithmetic_candidate_operator)))))
+            (word
+              (parameter_expansion
+                (variable_name)
+                (array_subscript
+                  (subscript_source (arithmetic_candidate_operator)))))))))))
+
+==================
+A reverse assignment subscript retains a literal closing brace
+:language(zsh)
+:language(zsh_default)
+==================
+a[(r)x}]=value
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              (variable_name)
+              (array_subscript
+                (subscript_source
+                  (subscript_flags
+                    (subscript_flag (subscript_flag_name)))
+                  (subscript_pattern_candidate (pattern_candidate_text))))
+              (assignment_operator)
+              (assignment_value (literal)))))))))

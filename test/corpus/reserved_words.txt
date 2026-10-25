@@ -1,5 +1,7 @@
 ==================
 Nocorrect after a builtin precommand modifier is an ordinary command word
+:language(zsh)
+:language(zsh_default)
 ==================
 noglob nocorrect :
 ---
@@ -16,6 +18,8 @@ noglob nocorrect :
 ==================
 A misplaced fi cannot be an unquoted command name
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 fi
 ---
@@ -23,6 +27,8 @@ fi
 ==================
 A prefix redirect preserves the following reserved word position
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 > /dev/null fi
 ---
@@ -30,6 +36,8 @@ A prefix redirect preserves the following reserved word position
 ==================
 Nocorrect preserves reserved word recognition after its prefix
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect fi
 ---
@@ -37,6 +45,8 @@ nocorrect fi
 ==================
 A long loop condition cannot turn then into the long if delimiter
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if for x in a; do :; done then :; fi
 ---
@@ -44,6 +54,8 @@ if for x in a; do :; done then :; fi
 ==================
 A second unquoted pipeline negation cannot become a command name
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 ! ! :
 ---
@@ -51,12 +63,16 @@ A second unquoted pipeline negation cannot become a command name
 ==================
 Nocorrect cannot precede a conditional command
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect [[ x ]]
 ---
 
 ==================
 A reserved spelling followed by a literal brace remains one command word
+:language(zsh)
+:language(zsh_default)
 ==================
 if}x arg
 ---
@@ -75,6 +91,8 @@ if}x arg
 ==================
 a misplaced reserved word enters standard recovery: "then\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 then
 ---
@@ -82,6 +100,8 @@ then
 ==================
 a misplaced reserved word enters standard recovery: "else\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 else
 ---
@@ -89,6 +109,8 @@ else
 ==================
 a misplaced reserved word enters standard recovery: "elif\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 elif
 ---
@@ -96,6 +118,8 @@ elif
 ==================
 a misplaced reserved word enters standard recovery: "done\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 done
 ---
@@ -103,6 +127,8 @@ done
 ==================
 a misplaced reserved word enters standard recovery: "do\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 do
 ---
@@ -110,6 +136,8 @@ do
 ==================
 a misplaced reserved word enters standard recovery: "fi() { :; }\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 fi() { :; }
 ---
@@ -117,6 +145,8 @@ fi() { :; }
 ==================
 a misplaced reserved word enters standard recovery: "! fi\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 ! fi
 ---
@@ -124,6 +154,8 @@ a misplaced reserved word enters standard recovery: "! fi\n"
 ==================
 a misplaced reserved word enters standard recovery: "time fi\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 time fi
 ---
@@ -131,6 +163,8 @@ time fi
 ==================
 a misplaced reserved word enters standard recovery: "x=1 fi\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 x=1 fi
 ---
@@ -138,6 +172,8 @@ x=1 fi
 ==================
 a misplaced reserved word enters standard recovery: "x=$(print x) fi\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 x=$(print x) fi
 ---
@@ -145,6 +181,8 @@ x=$(print x) fi
 ==================
 a misplaced reserved word enters standard recovery: "print $(fi)\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $(fi)
 ---
@@ -152,6 +190,8 @@ print $(fi)
 ==================
 a misplaced reserved word enters standard recovery: "for x fi in a b; do :; done\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 for x fi in a b; do :; done
 ---
@@ -159,6 +199,8 @@ for x fi in a b; do :; done
 ==================
 a misplaced reserved word enters standard recovery: "nocorrect if ((1)) print yes\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect if ((1)) print yes
 ---
@@ -166,6 +208,8 @@ nocorrect if ((1)) print yes
 ==================
 a misplaced reserved word enters standard recovery: "nocorrect ! :\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect ! :
 ---
@@ -173,6 +217,8 @@ nocorrect ! :
 ==================
 a misplaced reserved word enters standard recovery: "nocorrect (print yes)\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect (print yes)
 ---
@@ -180,6 +226,8 @@ nocorrect (print yes)
 ==================
 a misplaced reserved word enters standard recovery: "if for x in a; do :; done { :; }\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if for x in a; do :; done { :; }
 ---
@@ -187,6 +235,8 @@ if for x in a; do :; done { :; }
 ==================
 a misplaced reserved word enters standard recovery: "if for x in a; do :; done then print yes; fi\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if for x in a; do :; done then print yes; fi
 ---
@@ -194,6 +244,8 @@ if for x in a; do :; done then print yes; fi
 ==================
 a misplaced reserved word enters standard recovery: "if repeat 0 { :; } then print yes; fi\n"
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if repeat 0 { :; } then print yes; fi
 ---
@@ -201,6 +253,8 @@ if repeat 0 { :; } then print yes; fi
 ==================
 A misplaced esac cannot be an unquoted command name
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 esac
 ---
@@ -208,6 +262,8 @@ esac
 ==================
 A misplaced end cannot be an unquoted command name
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 end
 ---

@@ -1,5 +1,7 @@
 ==================
 Explicit array elements retain their key and empty values
+:language(zsh)
+:language(zsh_default)
 ==================
 a=([1]=x [2]=)
 ---
@@ -15,16 +17,18 @@ a=([1]=x [2]=)
               value: (array_assignment
                 (array_element_assignment
                   key: (array_element_key
-                    source: (array_key_source (array_key_text)))
+                    source: (array_key_source candidate: (arithmetic_candidate_number)))
                   (assignment_operator)
                   value: (assignment_value (literal)))
                 (array_element_assignment
                   key: (array_element_key
-                    source: (array_key_source (array_key_text)))
+                    source: (array_key_source candidate: (arithmetic_candidate_number)))
                   (assignment_operator))))))))))
 
 ==================
 Element keys preserve literal brackets and do not introduce subscript flags
+:language(zsh)
+:language(zsh_default)
 ==================
 a=([a[b]=x [(r)x]=y)
 ---
@@ -40,20 +44,25 @@ a=([a[b]=x [(r)x]=y)
               value: (array_assignment
                 (array_element_assignment
                   key: (array_element_key
-                    source: (array_key_source (array_key_text)))
+                    source: (array_key_source
+                      (arithmetic_candidate_variable)
+                      (array_key_text)
+                      (arithmetic_candidate_variable)))
                   (assignment_operator)
                   value: (assignment_value (literal)))
                 (array_element_assignment
                   key: (array_element_key
                     source: (array_key_source
-                      (array_key_group
-                        (array_key_source (array_key_text)))
-                      (array_key_text)))
+                      (parenthesized_arithmetic_candidate
+                        expression: (arithmetic_candidate_variable))
+                      (arithmetic_candidate_variable)))
                   (assignment_operator)
                   value: (assignment_value (literal)))))))))))
 
 ==================
 Quoted closing brackets remain within an assignment subscript
+:language(zsh)
+:language(zsh_default)
 ==================
 a[']']=x
 ---
@@ -73,6 +82,8 @@ a[']']=x
 
 ==================
 Positional assignment and unbraced positional word suffix have distinct roles
+:language(zsh)
+:language(zsh_default)
 ==================
 12=x print $2[3,5]
 ---
@@ -93,6 +104,8 @@ Positional assignment and unbraced positional word suffix have distinct roles
 
 ==================
 A partial subscript candidate does not borrow the key delimiter
+:language(zsh)
+:language(zsh_default)
 ==================
 a=([$x[1]=y)
 ---
@@ -116,3 +129,107 @@ a=([$x[1]=y)
                             source: (subscript_source (subscript_text)))))))
                   (assignment_operator)
                   value: (assignment_value (literal)))))))))))
+
+==================
+Explicit keys retain arithmetic precedence as a candidate
+:language(zsh)
+:language(zsh_default)
+==================
+a=([1+2*3]=x)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              (variable_name)
+              (assignment_operator)
+              (array_assignment
+                (array_element_assignment
+                  (array_element_key
+                    (array_key_source
+                      (arithmetic_candidate_binary_expression
+                        (arithmetic_candidate_number)
+                        (arithmetic_candidate_operator)
+                        (arithmetic_candidate_binary_expression
+                          (arithmetic_candidate_number)
+                          (arithmetic_candidate_operator)
+                          (arithmetic_candidate_number)))))
+                  (assignment_operator)
+                  (assignment_value
+                    (literal)))))))))))
+
+==================
+Key candidates retain expressions inside groups beside dynamic source
+:language(zsh)
+:language(zsh_default)
+==================
+a=([1+(2*3)]=x [1+(2*$x)]=y)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              (variable_name)
+              (assignment_operator)
+              (array_assignment
+                (array_element_assignment
+                  (array_element_key
+                    (array_key_source
+                      (arithmetic_candidate_binary_expression
+                        (arithmetic_candidate_number)
+                        (arithmetic_candidate_operator)
+                        (parenthesized_arithmetic_candidate
+                          (arithmetic_candidate_binary_expression
+                            (arithmetic_candidate_number)
+                            (arithmetic_candidate_operator)
+                            (arithmetic_candidate_number))))))
+                  (assignment_operator)
+                  (assignment_value
+                    (literal)))
+                (array_element_assignment
+                  (array_element_key
+                    (array_key_source
+                      (arithmetic_candidate_number)
+                      (arithmetic_candidate_operator)
+                      (parenthesized_arithmetic_candidate_source
+                        (arithmetic_candidate_source_expression
+                          (arithmetic_candidate_number)
+                          (arithmetic_candidate_operator)
+                          (parameter_expansion
+                            (variable_name))))))
+                  (assignment_operator)
+                  (assignment_value
+                    (literal)))))))))))
+
+==================
+An inner key bracket cannot acquire the outer closing bracket
+:language(zsh)
+:language(zsh_default)
+==================
+a=([word[2]=x)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              (variable_name)
+              (assignment_operator)
+              (array_assignment
+                (array_element_assignment
+                  (array_element_key
+                    (array_key_source
+                      (arithmetic_candidate_variable)
+                      (array_key_text)
+                      (arithmetic_candidate_number)))
+                  (assignment_operator)
+                  (assignment_value
+                    (literal)))))))))))

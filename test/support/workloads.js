@@ -48,6 +48,46 @@ export const scalingWorkloads = [
     source: (n) => `print ${"$((".repeat(n)}1${"))".repeat(n)}\n`,
   },
   {
+    name: "static arithmetic expressions",
+    units: 256,
+    source: (n) => `print $((1${" + 2 * 3".repeat(n)}))\n`,
+  },
+  {
+    name: "subscript arithmetic candidates",
+    units: 256,
+    source: (n) => `print \${a[1${" + 2 * 3".repeat(n)}]}\n`,
+  },
+  {
+    name: "array key arithmetic candidates",
+    units: 256,
+    source: (n) => `a=([1${"+2*3".repeat(n)}]=value)\n`,
+  },
+  {
+    name: "arithmetic function argument candidates",
+    units: 256,
+    source: (n) => `((f(1${" + 2 * 3".repeat(n)})))\n`,
+  },
+  {
+    name: "subscript pattern candidates",
+    units: 256,
+    source: (n) => `print \${a[(r)foo${"~a#".repeat(n)}]}\n`,
+  },
+  {
+    name: "arithmetic expressions with a dynamic tail",
+    units: 256,
+    source: (n) => `print $((1${" + 2 * 3".repeat(n)} + $x))\n`,
+  },
+  {
+    name: "extended pattern exclusions",
+    units: 256,
+    source: (n) => `print *${"~a#".repeat(n)}\n`,
+  },
+  {
+    name: "explicit glob qualifier chains",
+    units: 256,
+    source: (n) => `print *${"(#qN)".repeat(n)}\n`,
+  },
+  {
     name: "nested loop bodies",
     units: 128,
     source: (n) => `${"while ((0)) { ".repeat(n)}:${"; }".repeat(n)}\n`,

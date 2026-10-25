@@ -1,5 +1,7 @@
 ==================
 Leading parenthesized unary operands retain word candidates despite native rejection
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n (x) ]]
 ---
@@ -13,13 +15,15 @@ Leading parenthesized unary operands retain word candidates despite native rejec
               condition: (conditional_unary_expression
                 (conditional_operator)
                 operand: (word
-                  (glob_qualifier_candidate
-                    (glob_qualifier_list_candidate
-                      (glob_flag_candidate
-                        name: (glob_flag_name)))))))))))))
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal)))))))))))))
 
 ==================
 String ordering comparisons retain leading parenthesized word operands
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x < (x) ]]
 [[ x > (x) ]]
@@ -36,10 +40,10 @@ String ordering comparisons retain leading parenthesized word operands
                   (literal))
                 (conditional_operator)
                 right: (word
-                  (glob_qualifier_candidate
-                    (glob_qualifier_list_candidate
-                      (glob_flag_candidate
-                        name: (glob_flag_name)))))))))))
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal)))))))))))
     (sublist
       (pipeline
         (command
@@ -50,13 +54,15 @@ String ordering comparisons retain leading parenthesized word operands
                   (literal))
                 (conditional_operator)
                 right: (word
-                  (glob_qualifier_candidate
-                    (glob_qualifier_list_candidate
-                      (glob_flag_candidate
-                        name: (glob_flag_name)))))))))))))
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal)))))))))))))
 
 ==================
 A suffixed parenthesized condition operand retains its pattern group inside the word
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n (x)y ]]
 ---
@@ -78,6 +84,8 @@ A suffixed parenthesized condition operand retains its pattern group inside the 
 
 ==================
 Quoted and escaped condition parentheses preserve their own source
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n "(x)" ]]
 [[ -n \(x\) ]]
@@ -108,6 +116,8 @@ Quoted and escaped condition parentheses preserve their own source
 
 ==================
 Empty quotes and literal prefixes remain before condition operand candidates
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n ""(x) ]]
 [[ x < x(y) ]]
@@ -123,10 +133,10 @@ Empty quotes and literal prefixes remain before condition operand candidates
                 (conditional_operator)
                 operand: (word
                   (double_quoted)
-                  (glob_qualifier_candidate
-                    (glob_qualifier_list_candidate
-                      (glob_flag_candidate
-                        name: (glob_flag_name)))))))))))
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal)))))))))))
     (sublist
       (pipeline
         (command
@@ -138,12 +148,15 @@ Empty quotes and literal prefixes remain before condition operand candidates
                 (conditional_operator)
                 right: (word
                   (literal)
-                  (glob_qualifier_candidate
-                    (glob_qualifier_list_candidate
-                      (pattern_candidate_text))))))))))))
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal)))))))))))))
 
 ==================
 Expression groups and comparison patterns keep distinct parenthesis ownership
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ (x) ]]
 [[ x = (x) ]]
@@ -168,14 +181,16 @@ Expression groups and comparison patterns keep distinct parenthesis ownership
                   (literal))
                 (conditional_operator)
                 right: (conditional_pattern
-                  (glob_qualifier_candidate
-                    (glob_qualifier_list_candidate
-                      (glob_flag_candidate
-                        name: (glob_flag_name)))))))))))))
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal)))))))))))))
 
 ==================
 An empty conditional command requires an expression
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ ]]
 ---
@@ -183,6 +198,8 @@ An empty conditional command requires an expression
 ==================
 Newlines cannot replace a conditional expression
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[
 ]]
@@ -191,6 +208,8 @@ Newlines cannot replace a conditional expression
 ==================
 A comment cannot replace a conditional expression
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ # no expression
 ]]
@@ -198,6 +217,8 @@ A comment cannot replace a conditional expression
 
 ==================
 An empty quoted word after a comment remains a conditional expression
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ # empty string
 "" ]]
@@ -216,6 +237,8 @@ An empty quoted word after a comment remains a conditional expression
 
 ==================
 Standalone negation ends before condition and branch keywords without a separator
+:language(zsh)
+:language(zsh_default)
 ==================
 if ! then ! else ! fi
 ---
@@ -244,6 +267,8 @@ if ! then ! else ! fi
 
 ==================
 Standalone coproc ends before condition and branch keywords without a separator
+:language(zsh)
+:language(zsh_default)
 ==================
 if coproc then coproc else coproc fi
 ---
@@ -276,6 +301,8 @@ if coproc then coproc else coproc fi
 ==================
 Conditional negation still requires its expression
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ ! ]]
 ---
@@ -283,6 +310,8 @@ Conditional negation still requires its expression
 ==================
 An attached control keyword cannot follow a conditional close
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if [[ x ]]then :; fi
 ---
@@ -290,6 +319,8 @@ if [[ x ]]then :; fi
 ==================
 An attached hash remains conditional word text instead of starting a comment
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x ]]#comment
 ---
@@ -297,6 +328,8 @@ An attached hash remains conditional word text instead of starting a comment
 ==================
 A removed continuation cannot separate a conditional close from a keyword
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if [[ x ]]\
 then :; fi
@@ -304,6 +337,8 @@ then :; fi
 
 ==================
 Closing bracket prefixes remain source in string unary pattern and regex operands
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ ]]x ]]
 [[ -n ]]x ]]
@@ -349,11 +384,22 @@ Closing bracket prefixes remain source in string unary pattern and regex operand
                   (literal))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text)))))))))))
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character))))))))))))))
 
 ==================
 Pattern groups and numeric ranges continue operands after closing bracket prefixes
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n ]](x) ]]
 [[ -n ]]<1-2> ]]
@@ -369,10 +415,10 @@ Pattern groups and numeric ranges continue operands after closing bracket prefix
                 (conditional_operator)
                 operand: (word
                   (literal)
-                  (glob_qualifier_candidate
-                    (glob_qualifier_list_candidate
-                      (glob_flag_candidate
-                        name: (glob_flag_name)))))))))))
+                  (pattern_group_source
+                    (pattern_alternatives
+                      (pattern_alternative
+                        (literal)))))))))))
     (sublist
       (pipeline
         (command
@@ -389,6 +435,8 @@ Pattern groups and numeric ranges continue operands after closing bracket prefix
 
 ==================
 Shell operators and enclosing closers can immediately follow a conditional close
+:language(zsh)
+:language(zsh_default)
 ==================
 ([[ x ]])
 { [[ x ]]}
@@ -450,6 +498,8 @@ Shell operators and enclosing closers can immediately follow a conditional close
 
 ==================
 An enclosing brace ends a bodyless if without supplying body nodes
+:language(zsh)
+:language(zsh_default)
 ==================
 { if :; }
 ---
@@ -478,6 +528,8 @@ An enclosing brace ends a bodyless if without supplying body nodes
 
 ==================
 Explicit then and fi preserve an empty if body
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then fi
 ---
@@ -502,6 +554,8 @@ if :; then fi
 
 ==================
 Conditional comments preserve grouped logic and operand fields
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ # head
 ! # negation
@@ -563,6 +617,8 @@ x ]]
 
 ==================
 String comparison comments remain outside the operand words
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x # left
 < # right
@@ -588,6 +644,8 @@ y ]]
 
 ==================
 Comments preserve and precedence inside or and a trailing condition boundary
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x # or left
 || x # and left
@@ -622,6 +680,8 @@ Comments preserve and precedence inside or and a trailing condition boundary
 
 ==================
 Comments do not turn binary operand spellings into unary operators
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n # left
 == # right
@@ -647,6 +707,8 @@ Comments do not turn binary operand spellings into unary operators
 
 ==================
 A comment before a regex operand does not become regex source
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ # regex
 x # end
@@ -666,13 +728,18 @@ x # end
                 (comment
                   (comment_text))
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text))))
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))))))
               (comment
                 (comment_text)))))))))
 
 ==================
 Condition comments hide closing brackets and incomplete shell syntax
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x # ]] ) " $(
 ]]
@@ -691,6 +758,8 @@ Condition comments hide closing brackets and incomplete shell syntax
 
 ==================
 A backslash in a condition comment does not continue the comment
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ # raw \
 x ]]
@@ -710,6 +779,8 @@ x ]]
 ==================
 A word-initial hash cannot be a bare regex operand
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ # ]]
 ---
@@ -717,12 +788,16 @@ A word-initial hash cannot be a bare regex operand
 ==================
 Closing brackets inside a comment cannot complete the condition
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x # ]]
 ---
 
 ==================
 Semicolon-only if branches retain their condition and body lists
+:language(zsh)
+:language(zsh_default)
 ==================
 if ; then; elif ; then; else; fi
 ---
@@ -751,6 +826,8 @@ if ; then; elif ; then; else; fi
 ==================
 A simple command condition requires a separator before then
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if true then print yes; fi
 ---
@@ -758,6 +835,8 @@ if true then print yes; fi
 ==================
 A body requires a separator before fi
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if true; then print yes fi
 ---
@@ -765,11 +844,15 @@ if true; then print yes fi
 ==================
 A while condition requires a separator before do
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 while true do print yes; done
 ---
 ==================
 Conditional logic owns its operands
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n $x && $x == yes ]]
 ---
@@ -797,6 +880,8 @@ Conditional logic owns its operands
 
 ==================
 Process substitutions are condition operands rather than comparison operators
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ >(x) && -n <(y) ]]
 ---
@@ -832,6 +917,8 @@ Process substitutions are condition operands rather than comparison operators
 
 ==================
 A numeric range after a unary operator is an operand rather than a comparison
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n <1-2> ]]
 ---
@@ -851,7 +938,9 @@ A numeric range after a unary operator is an operand rather than a comparison
                     end: (pattern_number)))))))))))
 
 ==================
-Regex groups remain regex text
+Regex groups retain POSIX branches and expressions
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ $x =~ (a|b) ]]
 ---
@@ -868,11 +957,23 @@ Regex groups remain regex text
                     parameter: (variable_name)))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text)))))))))))
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        expression: (extended_reg_exp
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character))))
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character)))))))))))))))))
 
 ==================
 Invalid regex internals remain shell source
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ $x =~ [ ]]
 ---
@@ -889,18 +990,22 @@ Invalid regex internals remain shell source
                     parameter: (variable_name)))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text)))))))))))
+                  expression: (regex_source_expression
+                    (regex_source_fragment)))))))))))
 
 ==================
 Unmatched shell parentheses in a regex operand require recovery
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ $x =~ ( ]]
 ---
 
 ==================
-Direct regex intervals remain source before a following condition
+Direct regex intervals retain counts before a following condition
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ aaa =~ a{3} && 123 =~ ^[0-9]{2,4}$ ]]
 print after
@@ -918,16 +1023,39 @@ print after
                     (literal))
                   (conditional_operator)
                   right: (regex_operand
-                    source: (regex_source
-                      (regex_text))))
+                    expression: (extended_reg_exp
+                      (ere_branch
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character))
+                          (ere_dupl_symbol
+                            minimum: (duplication_count)))))))
                 (conditional_operator)
                 right: (conditional_binary_expression
                   left: (word
                     (literal))
                   (conditional_operator)
                   right: (regex_operand
-                    source: (regex_source
-                      (regex_text))))))))))
+                    expression: (extended_reg_exp
+                      (ere_branch
+                        (ere_expression)
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (bracket_expression
+                              (matching_list
+                                (bracket_list
+                                  (follow_list
+                                    (expression_term
+                                      (range_expression
+                                        (start_range
+                                          (end_range
+                                            (collating_element_single)))
+                                        (end_range
+                                          (collating_element_single)))))))))
+                          (ere_dupl_symbol
+                            minimum: (duplication_count)
+                            maximum: (duplication_count)))
+                        (ere_expression)))))))))))
     (sublist
       (pipeline
         (command
@@ -939,6 +1067,8 @@ print after
 
 ==================
 A regex brace pair survives an intervening parameter expansion
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ aaa =~ a{${count}} ]]
 ---
@@ -954,21 +1084,29 @@ A regex brace pair survives an intervening parameter expansion
                   (literal))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text)
-                    (parameter_expansion
-                      parameter: (variable_name))
-                    (regex_text)))))))))))
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character))
+                        (ere_dupl_symbol
+                          minimum: (regex_source_expression
+                            (parameter_expansion
+                              parameter: (variable_name))))))))))))))))
 
 ==================
 A regex parenthesis cannot protect a shell semicolon
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ aaa =~ (a;b) ]]
 ---
 
 ==================
 A unary operator spelling can be the left operand of a binary comparison
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n = -n ]]
 ---
@@ -988,6 +1126,8 @@ A unary operator spelling can be the left operand of a binary comparison
 
 ==================
 An operator prefix attached to quoted source remains one condition word
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n"$x" ]]
 ---
@@ -1006,6 +1146,8 @@ An operator prefix attached to quoted source remains one condition word
 
 ==================
 A standalone long condition spelling remains a word
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -custom ]]
 ---
@@ -1022,6 +1164,8 @@ A standalone long condition spelling remains a word
 ==================
 A pattern comparison operator cannot split a longer word
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x ==y ]]
 ---
@@ -1029,12 +1173,16 @@ A pattern comparison operator cannot split a longer word
 ==================
 A regex comparison operator cannot split a longer word
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~a ]]
 ---
 
 ==================
 A prefix condition retains all arguments without resolving a module condition
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -custom a b c ]]
 ---
@@ -1056,6 +1204,8 @@ A prefix condition retains all arguments without resolving a module condition
 
 ==================
 A condition name retains quoted source without evaluating parameter expansion
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n"$x" value ]]
 ---
@@ -1074,18 +1224,24 @@ A condition name retains quoted source without evaluating parameter expansion
 ==================
 A single-letter unary condition cannot serve as a binary operator
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ -n -x x ]]
 ---
 ==================
 An unmatched closing brace after a regex interval is a shell boundary
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ ()a{3}} ]]
 ---
 
 ==================
 Empty regex parentheses and unclosed opening braces remain operand source
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ ()a{ ]]
 ---
@@ -1101,11 +1257,19 @@ Empty regex parentheses and unclosed opening braces remain operand source
                   (literal))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text)))))))))))
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression)
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (regex_source_expression
+                        (regex_source_fragment)))))))))))))
 
 ==================
-Regex numeric-range spellings stay text before a following logical condition
+Regex numeric-range spellings retain ERE characters before a following condition
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ <1-2>(x<-3><4->)<-><2-1> && y ]]
 ---
@@ -1122,14 +1286,85 @@ Regex numeric-range spellings stay text before a following logical condition
                     (literal))
                   (conditional_operator)
                   right: (regex_operand
-                    source: (regex_source
-                      (regex_text))))
+                    expression: (extended_reg_exp
+                      (ere_branch
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          expression: (extended_reg_exp
+                            (ere_branch
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character)))
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character)))
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character)))
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character)))
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character)))
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character)))
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character)))
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character)))
+                              (ere_expression
+                                (one_char_or_coll_elem_ere
+                                  (ordinary_character))))))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))
+                        (ere_expression
+                          (one_char_or_coll_elem_ere
+                            (ordinary_character)))))))
                 (conditional_operator)
                 right: (word
                   (literal))))))))))
 
 ==================
 All process substitution forms retain their command bodies in a regex operand
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ =(:)<(:)>(:) ]]
 ---
@@ -1145,7 +1380,7 @@ All process substitution forms retain their command bodies in a regex operand
                   (literal))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
+                  expression: (regex_source_expression
                     (process_substitution
                       body: (list
                         (sublist
@@ -1173,6 +1408,8 @@ All process substitution forms retain their command bodies in a regex operand
 
 ==================
 Regex braces and parentheses survive an intervening process substitution
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ a{(<(:))}tail ]]
 ---
@@ -1188,20 +1425,43 @@ Regex braces and parentheses survive an intervening process substitution
                   (literal))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text)
-                    (process_substitution
-                      body: (list
-                        (sublist
-                          (pipeline
-                            (command
-                              (simple_command
-                                name: (word
-                                  (literal))))))))
-                    (regex_text)))))))))))
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (regex_source_expression
+                        (regex_source_fragment)
+                        (ere_expression
+                          expression: (regex_source_expression
+                            (process_substitution
+                              body: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (literal)))))))))))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character))))))))))))))
 
 ==================
-A noninitial equals and parentheses remain regex text
+A noninitial equals retains ERE groups instead of process substitution
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ x=(:)(=(:)) ]]
 ---
@@ -1217,11 +1477,37 @@ A noninitial equals and parentheses remain regex text
                   (literal))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text)))))))))))
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (ere_expression
+                        expression: (extended_reg_exp
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character))))))
+                      (ere_expression
+                        expression: (extended_reg_exp
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character)))
+                            (ere_expression
+                              expression: (extended_reg_exp
+                                (ere_branch
+                                  (ere_expression
+                                    (one_char_or_coll_elem_ere
+                                      (ordinary_character))))))))))))))))))))
 
 ==================
 A regex parenthesis protects an unmatched closing brace
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ (}) ]]
 ---
@@ -1237,12 +1523,20 @@ A regex parenthesis protects an unmatched closing brace
                   (literal))
                 (conditional_operator)
                 right: (regex_operand
-                  source: (regex_source
-                    (regex_text)))))))))))
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (ere_expression
+                        expression: (extended_reg_exp
+                          (ere_branch
+                            (ere_expression
+                              (one_char_or_coll_elem_ere
+                                (ordinary_character)))))))))))))))))
 
 ==================
 A bare closing brace cannot supply a string condition despite native acceptance
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ } ]]
 ---
@@ -1250,6 +1544,8 @@ A bare closing brace cannot supply a string condition despite native acceptance
 ==================
 A bare closing brace cannot begin a regex operand
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ } ]]
 ---
@@ -1257,6 +1553,8 @@ A bare closing brace cannot begin a regex operand
 ==================
 A quoted opening brace cannot protect an outer regex closing brace
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ a"{"} ]]
 ---
@@ -1264,6 +1562,8 @@ A quoted opening brace cannot protect an outer regex closing brace
 ==================
 An ordinary less-than cannot continue a regex operand
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ a<b ]]
 ---
@@ -1271,12 +1571,16 @@ An ordinary less-than cannot continue a regex operand
 ==================
 A nonnumeric angle-bracket pair cannot begin a regex operand
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 [[ x =~ <a> ]]
 ---
 
 ==================
 A conditional command ends directly before then
+:language(zsh)
+:language(zsh_default)
 ==================
 if [[ x ]] then :; fi
 ---
@@ -1309,6 +1613,8 @@ if [[ x ]] then :; fi
 
 ==================
 A brace condition ends directly before then
+:language(zsh)
+:language(zsh_default)
 ==================
 if { :; } then :; fi
 ---
@@ -1346,6 +1652,8 @@ if { :; } then :; fi
 
 ==================
 A timed brace condition ends directly before then
+:language(zsh)
+:language(zsh_default)
 ==================
 if time { :; } then :; fi
 ---
@@ -1388,6 +1696,8 @@ if time { :; } then :; fi
 
 ==================
 A bodyless if at EOF retains only its source keyword
+:language(zsh)
+:language(zsh_default)
 ==================
 if
 ---
@@ -1403,6 +1713,8 @@ if
 
 ==================
 A separated brace remains in the omitted if condition
+:language(zsh)
+:language(zsh_default)
 ==================
 if [[ x ]]; { :; }
 ---
@@ -1438,6 +1750,8 @@ if [[ x ]]; { :; }
 
 ==================
 A final elif may omit its condition and body
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then :; elif
 ---
@@ -1470,6 +1784,8 @@ if :; then :; elif
 
 ==================
 A final elif condition remains inside its original if
+:language(zsh)
+:language(zsh_default)
 ==================
 if false; then :; elif :;
 ---
@@ -1509,6 +1825,8 @@ if false; then :; elif :;
 
 ==================
 An outer elif follows an inner if with an omitted body
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then if false; elif :; then :; fi
 ---
@@ -1565,6 +1883,8 @@ if :; then if false; elif :; then :; fi
 
 ==================
 A brace branch can continue with a then branch
+:language(zsh)
+:language(zsh_default)
 ==================
 if [[ x ]] { :; } elif :; then :; fi
 ---
@@ -1614,6 +1934,8 @@ if [[ x ]] { :; } elif :; then :; fi
 
 ==================
 A then branch can continue with a brace branch before fi
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then :; elif [[ x ]] { :; } fi
 ---
@@ -1663,6 +1985,8 @@ if :; then :; elif [[ x ]] { :; } fi
 
 ==================
 A then branch can end with a short sublist elif
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then :; elif [[ x ]] :
 ---
@@ -1709,6 +2033,8 @@ if :; then :; elif [[ x ]] :
 
 ==================
 An omitted if body leaves following redirects in the condition
+:language(zsh)
+:language(zsh_default)
 ==================
 >before if false >condition;
 ---
@@ -1740,6 +2066,8 @@ An omitted if body leaves following redirects in the condition
 ==================
 An outer else cannot follow an uncompleted inner short if
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then if false; else :; fi
 ---
@@ -1748,6 +2076,8 @@ if :; then if false; else :; fi
 ==================
 An explicit then still requires its closing fi
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 { if :; then :; }
 ---
@@ -1756,6 +2086,8 @@ An explicit then still requires its closing fi
 ==================
 A missing elif body cannot manufacture a matching fi
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then :; elif :; fi
 ---
@@ -1764,12 +2096,16 @@ if :; then :; elif :; fi
 ==================
 A condition pipe still requires its next command
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 { if : | }
 ---
 
 ==================
 A short brace if retains an outer list separator
+:language(zsh)
+:language(zsh_default)
 ==================
 if ((1)) { :; }; :
 ---
@@ -1789,7 +2125,7 @@ if ((1)) { :; }; :
                         (complex_command
                           (arithmetic_command
                             (arithmetic_source
-                              (arithmetic_number))))))))
+                              expression: (arithmetic_number))))))))
                 body: (brace_group
                   body: (list
                     (sublist
@@ -1807,6 +2143,8 @@ if ((1)) { :; }; :
 
 ==================
 A backslash in a trailing comment does not remove a short if terminator
+:language(zsh)
+:language(zsh_default)
 ==================
 if ((1)) { :; } # comment\
 
@@ -1827,7 +2165,7 @@ if ((1)) { :; } # comment\
                         (complex_command
                           (arithmetic_command
                             (arithmetic_source
-                              (arithmetic_number))))))))
+                              expression: (arithmetic_number))))))))
                 body: (brace_group
                   body: (list
                     (sublist

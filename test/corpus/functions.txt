@@ -1,5 +1,7 @@
 ==================
 Multiple names share a function body
+:language(zsh)
+:language(zsh_default)
 ==================
 f g() { print x; }
 ---
@@ -29,6 +31,8 @@ f g() { print x; }
 
 ==================
 Modifier spellings remain function names before empty parentheses
+:language(zsh)
+:language(zsh_default)
 ==================
 exec -a() { :; }
 ---
@@ -56,6 +60,8 @@ exec -a() { :; }
 
 ==================
 Modifier spellings after the first name are plain function names
+:language(zsh)
+:language(zsh_default)
 ==================
 print command -v () { :; }
 ---
@@ -85,6 +91,8 @@ print command -v () { :; }
 
 ==================
 An anonymous function owns keyword spellings as invocation arguments
+:language(zsh)
+:language(zsh_default)
 ==================
 () { :; } fi
 ---
@@ -108,6 +116,8 @@ An anonymous function owns keyword spellings as invocation arguments
 
 ==================
 A named keyword function retains only its header when its body is omitted
+:language(zsh)
+:language(zsh_default)
 ==================
 function f
 ---
@@ -124,6 +134,8 @@ function f
 
 ==================
 An anonymous subshell body retains its invocation arguments
+:language(zsh)
+:language(zsh_default)
 ==================
 () (:) arg
 ---
@@ -149,6 +161,8 @@ An anonymous subshell body retains its invocation arguments
 
 ==================
 An anonymous simple body owns all of its command words and redirections
+:language(zsh)
+:language(zsh_default)
 ==================
 () print BODY >out arg
 ---
@@ -174,6 +188,8 @@ An anonymous simple body owns all of its command words and redirections
 
 ==================
 An anonymous if body ends before its invocation arguments
+:language(zsh)
+:language(zsh_default)
 ==================
 () if :; then :; fi arg
 ---
@@ -210,6 +226,8 @@ An anonymous if body ends before its invocation arguments
 
 ==================
 A standalone anonymous function ends before an outer and operator
+:language(zsh)
+:language(zsh_default)
 ==================
 () : && :
 ---
@@ -233,6 +251,8 @@ A standalone anonymous function ends before an outer and operator
 
 ==================
 A keyword anonymous function owns its short sublist body
+:language(zsh)
+:language(zsh_default)
 ==================
 function () : && :
 ---
@@ -259,6 +279,8 @@ function () : && :
 
 ==================
 Anonymous keyword options and empty parentheses do not create a function name
+:language(zsh)
+:language(zsh_default)
 ==================
 function -T -- () { :; } fi
 ---
@@ -285,6 +307,8 @@ function -T -- () { :; } fi
 
 ==================
 The option terminator permits a function name spelled like a tracing option
+:language(zsh)
+:language(zsh_default)
 ==================
 function -- -T () { :; }
 ---
@@ -310,6 +334,8 @@ function -- -T () { :; }
 
 ==================
 An anonymous keyword header permits comments and terminators before its body
+:language(zsh)
+:language(zsh_default)
 ==================
 function # header
 ; { :; } arg
@@ -338,6 +364,8 @@ function # header
 
 ==================
 A keyword anonymous function retains a pipe in its short body
+:language(zsh)
+:language(zsh_default)
 ==================
 function; : | :
 ---
@@ -363,6 +391,8 @@ function; : | :
 
 ==================
 A standalone anonymous function retains an outer pipe
+:language(zsh)
+:language(zsh_default)
 ==================
 () : | :
 ---
@@ -384,6 +414,8 @@ A standalone anonymous function retains an outer pipe
 
 ==================
 An anonymous keyword header retains its options and parentheses without a body
+:language(zsh)
+:language(zsh_default)
 ==================
 function -T -- ()
 ---
@@ -401,12 +433,16 @@ function -T -- ()
 ==================
 Anonymous empty parentheses require a body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 ()
 ---
 
 ==================
 A parentheses function owns redirections interspersed with its names
+:language(zsh)
+:language(zsh_default)
 ==================
 f >out g() { :; }
 ---
@@ -438,6 +474,8 @@ f >out g() { :; }
 
 ==================
 A redirection target before parentheses does not become a function name
+:language(zsh)
+:language(zsh_default)
 ==================
 f >g () :
 ---
@@ -461,6 +499,8 @@ f >g () :
 
 ==================
 Header redirections retain their descriptors and order across function names
+:language(zsh)
+:language(zsh_default)
 ==================
 f 2>&1 g {fd}>out () :
 ---
@@ -493,6 +533,8 @@ f 2>&1 g {fd}>out () :
 
 ==================
 A here document between function names retains its declaring newline sequence
+:language(zsh)
+:language(zsh_default)
 ==================
 f <<E g () { cat; }
 DATA
@@ -534,6 +576,8 @@ E
 
 ==================
 A here string between function names belongs to the definition
+:language(zsh)
+:language(zsh_default)
 ==================
 f <<<DATA g () cat
 ---
@@ -559,6 +603,8 @@ f <<<DATA g () cat
 
 ==================
 A keyword function keeps a redirected inner function in its short body
+:language(zsh)
+:language(zsh_default)
 ==================
 function f >out g () { :; }
 ---
@@ -596,6 +642,8 @@ function f >out g () { :; }
 
 ==================
 A separator before parentheses ends the redirected simple command
+:language(zsh)
+:language(zsh_default)
 ==================
 f >out g; () { :; }
 ---
@@ -629,6 +677,8 @@ f >out g; () { :; }
 
 ==================
 A precommand spelling remains a function name across a header redirection
+:language(zsh)
+:language(zsh_default)
 ==================
 exec -a >out g () :
 ---
@@ -657,6 +707,8 @@ exec -a >out g () :
 ==================
 A redirected name list without parentheses cannot introduce a brace body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 f >out g { :; }
 ---
@@ -664,12 +716,16 @@ f >out g { :; }
 ==================
 A redirected parentheses header still requires a body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 f >out g ()
 ---
 
 ==================
 Nocorrect modifies a named function without becoming a name
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect f () { :; }
 ---
@@ -697,6 +753,8 @@ nocorrect f () { :; }
 
 ==================
 Nocorrect before empty parentheses preserves an anonymous function
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect () { :; }
 ---
@@ -720,6 +778,8 @@ nocorrect () { :; }
 
 ==================
 Repeated nocorrect modifiers preserve anonymous invocation arguments
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect nocorrect () { :; } arg
 ---
@@ -747,6 +807,8 @@ nocorrect nocorrect () { :; } arg
 
 ==================
 Nocorrect modifiers interleave with redirections before a function name
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect >out nocorrect g () { :; }
 ---
@@ -780,6 +842,8 @@ nocorrect >out nocorrect g () { :; }
 
 ==================
 Quoted nocorrect remains a function name
+:language(zsh)
+:language(zsh_default)
 ==================
 "nocorrect" () { :; }
 ---
@@ -807,12 +871,16 @@ Quoted nocorrect remains a function name
 ==================
 Nocorrect cannot prefix a keyword function definition
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect function f { :; }
 ---
 
 ==================
 A colon without a preceding terminator remains a second function name
+:language(zsh)
+:language(zsh_default)
 ==================
 function f :
 print BODY
@@ -841,6 +909,8 @@ print BODY
 
 ==================
 A keyword function does not synthesize an empty body at EOF
+:language(zsh)
+:language(zsh_default)
 ==================
 function f :
 ---
@@ -859,6 +929,8 @@ function f :
 
 ==================
 A redirection ends the keyword function names before a simple body
+:language(zsh)
+:language(zsh_default)
 ==================
 function f g >out print BODY
 ---
@@ -889,6 +961,8 @@ function f g >out print BODY
 
 ==================
 A redirection alone is a keyword function body without an invented name
+:language(zsh)
+:language(zsh_default)
 ==================
 function f >out
 ---
@@ -913,6 +987,8 @@ function f >out
 
 ==================
 A numeric descriptor begins the keyword function body
+:language(zsh)
+:language(zsh_default)
 ==================
 function f 2>out :
 ---
@@ -940,6 +1016,8 @@ function f 2>out :
 
 ==================
 A variable descriptor spelling remains a name in a keyword function header
+:language(zsh)
+:language(zsh_default)
 ==================
 function f {fd}>out :
 ---
@@ -969,6 +1047,8 @@ function f {fd}>out :
 
 ==================
 A variable descriptor after the body command belongs to that simple command
+:language(zsh)
+:language(zsh_default)
 ==================
 function f; : {fd}>out
 ---
@@ -998,6 +1078,8 @@ function f; : {fd}>out
 
 ==================
 A descriptor spelling at the start of the keyword function body forms a brace group
+:language(zsh)
+:language(zsh_default)
 ==================
 function f; {fd}>out
 ---
@@ -1028,12 +1110,16 @@ function f; {fd}>out
 ==================
 A keyword function brace body cannot precede another unseparated command
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 function f; {fd}>out :
 ---
 
 ==================
 An anonymous keyword body can begin with a redirection
+:language(zsh)
+:language(zsh_default)
 ==================
 function >out print BODY
 ---
@@ -1060,6 +1146,8 @@ function >out print BODY
 
 ==================
 A here document alone is a keyword body and retains its newline sequence
+:language(zsh)
+:language(zsh_default)
 ==================
 function f <<E
 body
@@ -1095,12 +1183,16 @@ E
 ==================
 A keyword body cannot end at an incomplete redirection
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 function f >
 ---
 
 ==================
 A plus word remains a name in a bodyless keyword function
+:language(zsh)
+:language(zsh_default)
 ==================
 function f +;
 ---
@@ -1120,6 +1212,8 @@ function f +;
 
 ==================
 An outer pipeline follows a bodyless keyword function
+:language(zsh)
+:language(zsh_default)
 ==================
 function f| { :; }
 ---
@@ -1146,6 +1240,8 @@ function f| { :; }
 
 ==================
 Anonymous invocation redirections retain their order before between and after arguments
+:language(zsh)
+:language(zsh_default)
 ==================
 () { :; } <input a 2>err b >out
 ---
@@ -1184,6 +1280,8 @@ Anonymous invocation redirections retain their order before between and after ar
 
 ==================
 Variable descriptor spellings remain invocation arguments across redirections
+:language(zsh)
+:language(zsh_default)
 ==================
 () { :; } {first}>out a >other {second}>err b
 ---
@@ -1227,6 +1325,8 @@ Variable descriptor spellings remain invocation arguments across redirections
 
 ==================
 A here string between anonymous arguments belongs to the invocation
+:language(zsh)
+:language(zsh_default)
 ==================
 () { :; } a <<<DATA b
 ---
@@ -1256,6 +1356,8 @@ A here string between anonymous arguments belongs to the invocation
 
 ==================
 A here document between anonymous arguments retains its outer newline sequence
+:language(zsh)
+:language(zsh_default)
 ==================
 () { :; } a <<E b
 DATA
@@ -1295,6 +1397,8 @@ E
 
 ==================
 Keyword anonymous arguments end before trailing invocation redirections
+:language(zsh)
+:language(zsh_default)
 ==================
 function { :; } a {fd}>out 2>err
 ---
@@ -1331,6 +1435,8 @@ function { :; } a {fd}>out 2>err
 
 ==================
 A keyword anonymous invocation can redirect without supplying arguments
+:language(zsh)
+:language(zsh_default)
 ==================
 function () { :; } >out
 ---
@@ -1358,6 +1464,8 @@ function () { :; } >out
 ==================
 A keyword anonymous invocation cannot start arguments after a redirection
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 function { :; } >out a
 ---
@@ -1365,6 +1473,8 @@ function { :; } >out a
 ==================
 Empty parentheses do not allow keyword invocation arguments to resume after a redirection
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 function () { :; } a >out b
 ---
@@ -1372,6 +1482,8 @@ function () { :; } a >out b
 ==================
 A keyword invocation cannot bypass its argument boundary with a variable descriptor spelling
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 function () { :; } a >out {fd}>err
 ---
@@ -1379,12 +1491,16 @@ function () { :; } a >out {fd}>err
 ==================
 An anonymous invocation redirection requires its target
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 () { :; } a >
 ---
 
 ==================
 A bare function keyword omits both name and body
+:language(zsh)
+:language(zsh_default)
 ==================
 function
 ---
@@ -1399,6 +1515,8 @@ function
 
 ==================
 A keyword function keeps every undelimited word as a name
+:language(zsh)
+:language(zsh_default)
 ==================
 function f g h
 ---
@@ -1420,6 +1538,8 @@ function f g h
 ==================
 Parentheses and separated semicolons belong to the bodyless keyword header
 :cst
+:language(zsh)
+:language(zsh_default)
 ==================
 function f () ; ;
 ---
@@ -1441,6 +1561,8 @@ function f () ; ;
 
 ==================
 An enclosing fi follows the completed bodyless function header
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then function f; fi
 ---
@@ -1475,6 +1597,8 @@ if :; then function f; fi
 
 ==================
 A bodyless nested function remains the actual outer function body
+:language(zsh)
+:language(zsh_default)
 ==================
 function f; function g
 ---
@@ -1500,6 +1624,8 @@ function f; function g
 
 ==================
 A logical operator remains outside a bodyless function
+:language(zsh)
+:language(zsh_default)
 ==================
 function f && :
 ---
@@ -1522,6 +1648,8 @@ function f && :
 
 ==================
 An asynchronous separator follows a bodyless keyword function
+:language(zsh)
+:language(zsh_default)
 ==================
 function f & :
 ---
@@ -1545,6 +1673,8 @@ function f & :
 ==================
 A named parentheses function still requires a command body
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 f()
 ---
@@ -1553,6 +1683,8 @@ f()
 ==================
 A keyword function with an explicit subshell body needs its closer
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 function f () ( :
 ---
@@ -1561,12 +1693,16 @@ function f () ( :
 ==================
 A pipe after a bodyless function still requires its right command
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 function f |
 ---
 
 ==================
 A keyword function owns its short sublist body
+:language(zsh)
+:language(zsh_default)
 ==================
 function f; : && :
 ---
@@ -1596,6 +1732,8 @@ function f; : && :
 
 ==================
 A parentheses function ends its short body after one command
+:language(zsh)
+:language(zsh_default)
 ==================
 f() : && :
 ---
@@ -1621,6 +1759,8 @@ f() : && :
 
 ==================
 A keyword function with a brace body leaves following sublist operators outside
+:language(zsh)
+:language(zsh_default)
 ==================
 function f { :; } && :
 ---
@@ -1651,6 +1791,8 @@ function f { :; } && :
 
 ==================
 A leading redirection keeps the brace command and pipe inside the keyword body
+:language(zsh)
+:language(zsh_default)
 ==================
 function f >out { :; } | cat
 ---
@@ -1687,6 +1829,8 @@ function f >out { :; } | cat
 
 ==================
 A direct keyword brace body leaves the pipe outside the function
+:language(zsh)
+:language(zsh_default)
 ==================
 function f { :; } | cat
 ---
@@ -1715,6 +1859,8 @@ function f { :; } | cat
 
 ==================
 Parentheses retain a redirected brace command and and-operator in a short body
+:language(zsh)
+:language(zsh_default)
 ==================
 function f() >out { :; } && :
 ---
@@ -1753,6 +1899,8 @@ function f() >out { :; } && :
 
 ==================
 An anonymous subshell keeps immediate redirections until invocation arguments begin
+:language(zsh)
+:language(zsh_default)
 ==================
 () (:) >body a >outer b
 ---
@@ -1788,6 +1936,8 @@ An anonymous subshell keeps immediate redirections until invocation arguments be
 
 ==================
 A keyword anonymous if body keeps immediate redirections before invocation arguments
+:language(zsh)
+:language(zsh_default)
 ==================
 function () if :; then :; fi >body a >outer
 ---
@@ -1835,6 +1985,8 @@ function () if :; then :; fi >body a >outer
 
 ==================
 A redirection before an anonymous brace body keeps it a short command body
+:language(zsh)
+:language(zsh_default)
 ==================
 () >body { :; } a >outer b
 ---

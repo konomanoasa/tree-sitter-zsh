@@ -6,14 +6,37 @@
       "title": "Zsh",
       "scope": "source.zsh",
       "path": ".",
-      "file-types": ["zsh"],
+      "file-types": [
+        "zsh"
+      ],
       "injection-regex": "^zsh$",
       "highlights": "queries/highlights.scm",
       "external-files": [
-        "src/source.h",
-        "src/input.h",
+        "common/scanner.h",
+        "common/source.h",
+        "common/input.h",
         "src/tokens.h",
-        "src/tokens.json"
+        "common/tokens.json"
+      ]
+    },
+    {
+      "name": "zsh_default",
+      "title": "Zsh (default options)",
+      "scope": "source.zsh_default",
+      "path": "zsh_default",
+      "file-types": [
+        "zsh_default"
+      ],
+      "injection-regex": "^zsh_default$",
+      "highlights": "queries/highlights.scm",
+      "external-files": [
+        "common/scanner.h",
+        "common/source.h",
+        "common/input.h",
+        "common/tokens.json",
+        "zsh_default/src/tokens.h",
+        "src/parser.c",
+        "src/tree_sitter/parser.h"
       ]
     }
   ],

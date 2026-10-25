@@ -1,5 +1,7 @@
 ==================
 Modifier controls own delimited source arguments before the controlled modifier
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:W[,]u}
 ---
@@ -25,6 +27,8 @@ print ${x:W[,]u}
 
 ==================
 Unbraced modifier operands retain neutral text and groups
+:language(zsh)
+:language(zsh_default)
 ==================
 print $x:s/(a|b)/*/
 ---
@@ -43,19 +47,21 @@ print $x:s/(a|b)/*/
                     (modifier_prefix)
                     name: (modifier_name)
                     (modifier_separator)
-                    pattern: (parameter_candidate_source
-                      (parameter_candidate_group
-                        (parameter_candidate_source
-                          (parameter_candidate_text)
-                          (parameter_candidate_text)
-                          (parameter_candidate_text))))
+                    pattern: (parameter_modifier_source
+                      (parameter_modifier_group
+                        (parameter_modifier_source
+                          (parameter_modifier_text)
+                          (parameter_modifier_text)
+                          (parameter_modifier_text))))
                     (modifier_separator)
-                    replacement: (parameter_candidate_source
-                      (parameter_candidate_text))
+                    replacement: (parameter_modifier_source
+                      (parameter_modifier_text))
                     (modifier_separator)))))))))))
 
 ==================
 A modifier operand boundary preserves the closing parenthesis and following word
+:language(zsh)
+:language(zsh_default)
 ==================
 print $x:s/a(/)y/ next
 ---
@@ -74,18 +80,20 @@ print $x:s/a(/)y/ next
                     (modifier_prefix)
                     name: (modifier_name)
                     (modifier_separator)
-                    pattern: (parameter_candidate_source
-                      (parameter_candidate_text)
-                      (parameter_candidate_group))
+                    pattern: (parameter_modifier_source
+                      (parameter_modifier_text)
+                      (parameter_modifier_group))
                     (modifier_separator)
-                    replacement: (parameter_candidate_source
-                      (parameter_candidate_text)
-                      (parameter_candidate_text))
+                    replacement: (parameter_modifier_source
+                      (parameter_modifier_text)
+                      (parameter_modifier_text))
                     (modifier_separator)))))
             argument: (word (literal))))))))
 
 ==================
 A parenthesis after the final modifier separator belongs to the surrounding word
+:language(zsh)
+:language(zsh_default)
 ==================
 print $x:s/a(/y/)tail
 ---
@@ -104,18 +112,20 @@ print $x:s/a(/y/)tail
                     (modifier_prefix)
                     name: (modifier_name)
                     (modifier_separator)
-                    pattern: (parameter_candidate_source
-                      (parameter_candidate_text)
-                      (parameter_candidate_group))
+                    pattern: (parameter_modifier_source
+                      (parameter_modifier_text)
+                      (parameter_modifier_group))
                     (modifier_separator)
-                    replacement: (parameter_candidate_source
-                      (parameter_candidate_text))
+                    replacement: (parameter_modifier_source
+                      (parameter_modifier_text))
                     (modifier_separator))))
               (literal)
               (literal))))))))
 
 ==================
 Nested candidate parentheses retain both closing characters across a modifier separator
+:language(zsh)
+:language(zsh_default)
 ==================
 print $x:s/a((/))y/
 ---
@@ -134,20 +144,21 @@ print $x:s/a((/))y/
                     (modifier_prefix)
                     name: (modifier_name)
                     (modifier_separator)
-                    pattern: (parameter_candidate_source
-                      (parameter_candidate_text)
-                      (parameter_candidate_group
-                        (parameter_candidate_source
-                          (parameter_candidate_group))))
+                    pattern: (parameter_modifier_source
+                      (parameter_modifier_text)
+                      (parameter_modifier_group
+                        (parameter_modifier_source
+                          (parameter_modifier_group))))
                     (modifier_separator)
-                    replacement: (parameter_candidate_source
-                      (parameter_candidate_text)
-                      (parameter_candidate_text)
-                      (parameter_candidate_text))
+                    replacement: (parameter_modifier_source
+                      (parameter_modifier_text)
+                      (parameter_modifier_text)
+                      (parameter_modifier_text))
                     (modifier_separator)))))))))))
 
 ==================
 A modifier separator takes priority over a pattern flag prefix
+:language(zsh)
 ==================
 print $x:s#a(#)y#
 ---
@@ -166,24 +177,28 @@ print $x:s#a(#)y#
                     (modifier_prefix)
                     name: (modifier_name)
                     (modifier_separator)
-                    pattern: (parameter_candidate_source
-                      (parameter_candidate_text)
-                      (parameter_candidate_group))
+                    pattern: (parameter_modifier_source
+                      (parameter_modifier_text)
+                      (parameter_modifier_group))
                     (modifier_separator)
-                    replacement: (parameter_candidate_source
-                      (parameter_candidate_text)
-                      (parameter_candidate_text))
+                    replacement: (parameter_modifier_source
+                      (parameter_modifier_text)
+                      (parameter_modifier_text))
                     (modifier_separator)))))))))))
 
 ==================
 A quoted opening parenthesis cannot protect a modifier closing parenthesis
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $x:s/a"("/)y/
 ---
 
 ==================
 Parentheses used as modifier delimiters preserve the following word boundary
+:language(zsh)
+:language(zsh_default)
 ==================
 print $x:s(a(b(:s)b)c) next
 ---
@@ -202,27 +217,29 @@ print $x:s(a(b(:s)b)c) next
                     (modifier_prefix)
                     name: (modifier_name)
                     (modifier_separator)
-                    pattern: (parameter_candidate_source
-                      (parameter_candidate_text))
+                    pattern: (parameter_modifier_source
+                      (parameter_modifier_text))
                     (modifier_separator)
-                    replacement: (parameter_candidate_source
-                      (parameter_candidate_text))
+                    replacement: (parameter_modifier_source
+                      (parameter_modifier_text))
                     (modifier_separator))
                   (parameter_modifier
                     (modifier_prefix)
                     name: (modifier_name)
                     (modifier_separator)
-                    pattern: (parameter_candidate_source
-                      (parameter_candidate_text))
+                    pattern: (parameter_modifier_source
+                      (parameter_modifier_text))
                     (modifier_separator)
-                    replacement: (parameter_candidate_source
-                      (parameter_candidate_text))
+                    replacement: (parameter_modifier_source
+                      (parameter_modifier_text))
                     (modifier_separator)))))
             argument: (word (literal))))))))
 
 ==================
 An adjacent empty parenthesis pair still ends an unbraced modifier word
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $x:s(a(b()))
 ---
@@ -230,12 +247,16 @@ print $x:s(a(b()))
 ==================
 A modifier cannot consume an extra outer closing parenthesis
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 print $x:s/a(/)y/)
 ---
 
 ==================
 A quoted modifier operand keeps a literal unmatched parenthesis within its quote
+:language(zsh)
+:language(zsh_default)
 ==================
 print "$x:s/a/(b"
 ---
@@ -255,14 +276,25 @@ print "$x:s/a/(b"
                       (modifier_prefix)
                       name: (modifier_name)
                       (modifier_separator)
-                      pattern: (parameter_candidate_source (parameter_candidate_text))
+                      pattern: (parameter_modifier_source (parameter_modifier_text))
                       (modifier_separator)
-                      replacement: (parameter_candidate_source (parameter_candidate_text)))))))))))))
+                      replacement: (parameter_modifier_source (parameter_modifier_text)))))))))))))
 
 ==================
-Unbraced incomplete modifiers retain only source that is present
+An unbraced substitution requires its pattern separator
+:error
+:language(zsh)
+:language(zsh_default)
 ==================
-print $x:f $x:F:3 $x:s/abc
+print $x:s/abc
+---
+
+==================
+Unrecognized unbraced modifiers remain word source
+:language(zsh)
+:language(zsh_default)
+==================
+print $x:p $x:f $x:F:3
 ---
 (program
   (list
@@ -271,36 +303,14 @@ print $x:f $x:F:3 $x:s/abc
         (command
           (simple_command
             name: (word (literal))
-            argument: (word
-              (parameter_expansion
-                parameter: (variable_name)
-                (parameter_suffix_source
-                  (parameter_modifier
-                    (modifier_prefix)
-                    (modifier_control name: (modifier_name))))))
-            argument: (word
-              (parameter_expansion
-                parameter: (variable_name)
-                (parameter_suffix_source
-                  (parameter_modifier
-                    (modifier_prefix)
-                    (modifier_control
-                      name: (modifier_name)
-                      argument: (flag_argument
-                        (flag_argument_delimiter)
-                        (flag_argument_source (flag_argument_text))))))))
-            argument: (word
-              (parameter_expansion
-                parameter: (variable_name)
-                (parameter_suffix_source
-                  (parameter_modifier
-                    (modifier_prefix)
-                    name: (modifier_name)
-                    (modifier_separator)
-                    pattern: (parameter_candidate_source (parameter_candidate_text))))))))))))
+            argument: (word (parameter_expansion parameter: (variable_name)) (literal))
+            argument: (word (parameter_expansion parameter: (variable_name)) (literal))
+            argument: (word (parameter_expansion parameter: (variable_name)) (literal))))))))
 
 ==================
 A modifier candidate cannot consume the bracket of a dynamic directory name
+:language(zsh)
+:language(zsh_default)
 ==================
 print ~[$name:s/a/b]
 ---
@@ -323,6 +333,6 @@ print ~[$name:s/a/b]
                           (modifier_prefix)
                           name: (modifier_name)
                           (modifier_separator)
-                          pattern: (parameter_candidate_source (parameter_candidate_text))
+                          pattern: (parameter_modifier_source (parameter_modifier_text))
                           (modifier_separator)
-                          replacement: (parameter_candidate_source (parameter_candidate_text)))))))))))))))
+                          replacement: (parameter_modifier_source (parameter_modifier_text)))))))))))))))

@@ -1,5 +1,7 @@
 ==================
 Filename expansions retain source without resolving names
+:language(zsh)
+:language(zsh_default)
 ==================
 print ~user/file =cat
 ---
@@ -18,6 +20,8 @@ print ~user/file =cat
 
 ==================
 Assignment colons start further filename expansions
+:language(zsh)
+:language(zsh_default)
 ==================
 p=~/bin:=cat
 ---
@@ -36,7 +40,9 @@ p=~/bin:=cat
                 (equals_expansion (literal))))))))))
 
 ==================
-Modifier operands distinguish a leading tilde from a middle pattern candidate
+Modifier operands distinguish a leading tilde from literal text in the middle
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:s/a/~/} ${x:s/a/pre~post/}
 ---
@@ -68,13 +74,13 @@ print ${x:s/a/~/} ${x:s/a/pre~post/}
                   pattern: (parameter_word (literal))
                   (modifier_separator)
                   replacement: (parameter_word
-                    (literal)
-                    (pattern_candidate (pattern_candidate_operator))
                     (literal))
                   (modifier_separator))))))))))
 
 ==================
 A dynamic directory name owns explicit parameter expansion and leaves the suffix outside
+:language(zsh)
+:language(zsh_default)
 ==================
 print ~[a$name]/file
 ---
@@ -96,6 +102,8 @@ print ~[a$name]/file
 
 ==================
 The first unquoted closing bracket ends a dynamic directory name
+:language(zsh)
+:language(zsh_default)
 ==================
 print ~[a[b]/file ~["a]b"]/file
 ---
@@ -121,6 +129,8 @@ print ~[a[b]/file ~["a]b"]/file
               (literal))))))))
 ==================
 A parameter operand protects spaces in a dynamic directory name
+:language(zsh)
+:language(zsh_default)
 ==================
 print ${x:-~[a b]}
 ---

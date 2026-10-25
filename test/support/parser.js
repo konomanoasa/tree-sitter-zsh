@@ -2,27 +2,43 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before } from "node:test";
-import { createTreeSitter } from "../../scripts/tree-sitter.js";
+import { createTreeSitter, grammars, root } from "../../scripts/tree-sitter.js";
 import { assertSourceEnd } from "./cst.js";
+import { language } from "./language.js";
 
 let runner;
-let library;
+const libraries = new Map();
 let sequence = 0;
 before(() => {
   runner = createTreeSitter();
-  library = join(
-    runner.directory,
-    process.platform === "win32" ? "zsh.dll" : "zsh.so",
-  );
-  const result = runner.run(["build", "--output", library]);
-  assert.equal(result.status, 0, result.stderr);
+  for (const grammar of grammars) {
+    const library = join(
+      runner.directory,
+      `${grammar.name}.${process.platform === "win32" ? "dll" : "so"}`,
+    );
+    const result = runner.run([
+      "build",
+      join(root, grammar.path),
+      "--output",
+      library,
+    ]);
+    assert.equal(result.status, 0, result.stderr);
+    libraries.set(grammar.name, library);
+  }
 });
 after(() => runner?.close());
 
-export function parse(source, edits = []) {
+export function parse(source, edits = [], name = language.name) {
   const path = join(runner.directory, `${sequence++}.zsh`);
   writeFileSync(path, source);
-  const args = ["parse", "--lib-path", library, "--lang-name", "zsh", "--cst"];
+  const args = [
+    "parse",
+    "--lib-path",
+    libraries.get(name),
+    "--lang-name",
+    name,
+    "--cst",
+  ];
   if (edits.length)
     args.push(
       "--edits",
@@ -39,8 +55,8 @@ export function parse(source, edits = []) {
   };
 }
 
-export function valid(source, edits = []) {
-  const result = parse(source, edits);
+export function valid(source, edits = [], name = language.name) {
+  const result = parse(source, edits, name);
   assert.equal(result.status, 0, result.output + result.stderr);
   assert.equal(result.hasError, false, result.output + result.stderr);
   let bytes = Buffer.from(source);
@@ -58,15 +74,19 @@ export function valid(source, edits = []) {
   return result.output;
 }
 
-export function parseSummary(source, expectedValid = true) {
+export function parseSummary(
+  source,
+  expectedValid = true,
+  name = language.name,
+) {
   const path = join(runner.directory, `${sequence++}.zsh`);
   writeFileSync(path, source);
   const result = runner.run([
     "parse",
     "--lib-path",
-    library,
+    libraries.get(name),
     "--lang-name",
-    "zsh",
+    name,
     "--quiet",
     "--json-summary",
     path,

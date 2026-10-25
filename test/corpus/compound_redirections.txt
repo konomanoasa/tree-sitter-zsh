@@ -1,5 +1,7 @@
 ==================
 A descriptor spelling at command start is a brace group with an ordinary redirection
+:language(zsh)
+:language(zsh_default)
 ==================
 {fd}>out
 ---
@@ -24,6 +26,8 @@ A descriptor spelling at command start is a brace group with an ordinary redirec
 
 ==================
 Argument positions permit variable descriptors for files strings and documents
+:language(zsh)
+:language(zsh_default)
 ==================
 : {input}<in {output}>out {string}<<<text {document}<<E
 body
@@ -60,6 +64,8 @@ E
 
 ==================
 Exec permits a variable descriptor without a following command name
+:language(zsh)
+:language(zsh_default)
 ==================
 exec {fd}>out
 ---
@@ -79,6 +85,8 @@ exec {fd}>out
 ==================
 Assignments do not establish an argument position for variable descriptors
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 x=y {fd}>out
 ---
@@ -86,6 +94,8 @@ x=y {fd}>out
 ==================
 Nocorrect alone does not establish an argument position for variable descriptors
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 nocorrect {fd}>out
 ---
@@ -93,6 +103,8 @@ nocorrect {fd}>out
 ==================
 A leading brace group redirection cannot become a command prefix
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 {fd}>out :
 ---
@@ -100,12 +112,16 @@ A leading brace group redirection cannot become a command prefix
 ==================
 A variable descriptor cannot follow a compound command before its enclosing keyword
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 if :; then f() { :; } {fd}>out fi
 ---
 
 ==================
 A brace command owns redirections before and after its body
+:language(zsh)
+:language(zsh_default)
 ==================
 >before { :; } >after
 ---
@@ -134,6 +150,8 @@ A brace command owns redirections before and after its body
 
 ==================
 An always clause directly owns redirections before and after the whole clause
+:language(zsh)
+:language(zsh_default)
 ==================
 >before { :; } always { :; } >after
 ---
@@ -173,6 +191,8 @@ An always clause directly owns redirections before and after the whole clause
 ==================
 A redirection cannot separate the try body from always
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 { :; } >middle always { :; }
 ---
@@ -180,12 +200,16 @@ A redirection cannot separate the try body from always
 ==================
 A redirection cannot separate always from its handler
 :error
+:language(zsh)
+:language(zsh_default)
 ==================
 { :; } always >middle { :; }
 ---
 
 ==================
 Parenthesized filenames follow complete redirection operators without spaces
+:language(zsh)
+:language(zsh_default)
 ==================
 cat &>(:) >|(:) <<<(:)
 ---
@@ -200,24 +224,26 @@ cat &>(:) >|(:) <<<(:)
             (io_file
               (redirect_operator)
               filename: (word
-                (glob_qualifier_candidate
-                  (glob_qualifier_list_candidate
-                    (pattern_candidate_text)))))
+                (glob_qualifier
+                  (glob_qualifier_list
+                    (glob_text)))))
             (io_file
               (redirect_operator)
               filename: (word
-                (glob_qualifier_candidate
-                  (glob_qualifier_list_candidate
-                    (pattern_candidate_text)))))
+                (glob_qualifier
+                  (glob_qualifier_list
+                    (glob_text)))))
             (here_string
               (here_string_operator)
               value: (word
-                (glob_qualifier_candidate
-                  (glob_qualifier_list_candidate
-                    (pattern_candidate_text)))))))))))
+                (glob_qualifier
+                  (glob_qualifier_list
+                    (glob_text)))))))))))
 
 ==================
 A leading function redirection belongs to its definition
+:language(zsh)
+:language(zsh_default)
 ==================
 >out f() :
 ---
@@ -241,6 +267,8 @@ A leading function redirection belongs to its definition
 
 ==================
 A redirection before time belongs to the timing command
+:language(zsh)
+:language(zsh_default)
 ==================
 > /dev/null time print yes
 ---
@@ -266,6 +294,8 @@ A redirection before time belongs to the timing command
 
 ==================
 A split append operator retains its filename despite native rejection
+:language(zsh)
+:language(zsh_default)
 ==================
 : >\
 > /dev/null
