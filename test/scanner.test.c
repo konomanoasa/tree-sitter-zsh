@@ -132,6 +132,78 @@ static void recovery_tokens_preserve_boundaries_and_survive_restoration(void) {
   }
 }
 
+static void
+heredoc_recovery_keeps_the_end_after_skipped_parameter_source(void) {
+  const int32_t source[] = {'!', 'b', 'a', 'd', '}', '\n', 'E', '\n', 'x'};
+  const enum Token expected[] = {
+    PARAMETER_CLOSE,
+    CHARACTER_RIGHT_BRACE,
+    HERE_DOCUMENT_TEXT,
+    PIECE,
+    HERE_END_BEGIN,
+    HERE_DOCUMENT_END_TEXT,
+    PIECE,
+    NEWLINE,
+    PIECE,
+    HERE_END_FINISH,
+    DOCUMENT_FINISH,
+  };
+  struct RecoveryInput input = {
+    .lexer =
+      {
+        .lookahead = source[0],
+        .advance = recovery_advance,
+        .mark_end = recovery_mark_end,
+        .eof = recovery_eof,
+      },
+    .source = source,
+    .length = sizeof(source) / sizeof(*source),
+  };
+  struct Scanner state = {0};
+  assert(init_source(&state));
+  state.documents = ts_calloc(1, sizeof(*state.documents));
+  assert(state.documents);
+  state.document_count = state.document_capacity = 1;
+  state.documents[0] = (struct Document){.length = 1, .active = true};
+  state.documents[0].delimiter = ts_malloc(1);
+  assert(state.documents[0].delimiter);
+  state.documents[0].delimiter[0] = 'E';
+  assert(push(&state, DOCUMENT_BEGIN));
+  assert(push(&state, PARAMETER_OPEN));
+  for (size_t i = 0; i < state.source.stage_count; ++i)
+    state.source.stages[i].at_line_start = false;
+  bool valid[TOKEN_COUNT] = {[RECOVERY] = true};
+  size_t recognized = 0;
+  size_t skipped = 0;
+  while (recognized < sizeof(expected) / sizeof(*expected)) {
+    char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+    unsigned length = tree_sitter_zsh_external_scanner_serialize(&state, saved);
+    assert(length > 0);
+    tree_sitter_zsh_external_scanner_deserialize(&state, saved, length);
+    assert(!state.failed);
+    input.position = input.marked;
+    input.lexer.lookahead = source[input.position];
+    size_t start = input.position;
+    if (!tree_sitter_zsh_external_scanner_scan(&state, &input.lexer, valid)) {
+      char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+      assert(
+        tree_sitter_zsh_external_scanner_serialize(&state, after) == length
+      );
+      assert(memcmp(saved, after, length) == 0);
+      assert(start < 4);
+      input.marked = start + 1;
+      skipped++;
+      continue;
+    }
+    assert(input.lexer.result_symbol == expected[recognized++]);
+  }
+  assert(skipped == 4);
+  assert(input.marked == 8);
+  assert(state.count == 0);
+  assert(state.documents[0].finished);
+  clear(&state);
+}
+
 static void condition_recovery_closes_only_after_both_source_brackets(void) {
   const int32_t source[] = {']', ']'};
   const enum Token expected[] = {
@@ -867,6 +939,7 @@ int main(void) {
   timing_scope_survives_restoration_and_independent_command_sources();
   unrecognized_recovery_source_preserves_context();
   recovery_tokens_preserve_boundaries_and_survive_restoration();
+  heredoc_recovery_keeps_the_end_after_skipped_parameter_source();
   condition_recovery_closes_only_after_both_source_brackets();
   source_continuation_retains_physical_origin();
   logical_lookahead_restores_each_continuation_stage();

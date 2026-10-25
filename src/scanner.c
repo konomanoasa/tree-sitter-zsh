@@ -56,17 +56,20 @@ struct ParameterSourceFrame {
   size_t remaining;
 };
 
+enum { DOCUMENT_STAGE_COUNT = 5 };
+
 struct Document {
   uint8_t *delimiter;
   size_t length;
   size_t depth;
-  size_t remaining;
+  size_t delimiter_remaining;
   bool quoted;
   bool strip_tabs;
   bool active;
   bool finished;
   bool found;
   bool ending;
+  bool end_line;
   bool declaring;
 };
 
@@ -548,9 +551,13 @@ document_stages(struct SourceStage *stages, const struct Document *d) {
   stages[1].disabled = !d->strip_tabs;
   stages[2] = source_stage(SOURCE_REMOVE_CONTINUATIONS);
   stages[2].disabled = d->quoted;
+  stages[3] = source_stage(SOURCE_STRIP_LEADING_TABS);
+  stages[3].disabled = true;
+  stages[4] = source_stage(SOURCE_REMOVE_CONTINUATIONS);
+  stages[4].disabled = true;
 }
 
-static struct Document *active_document(struct Scanner *s);
+static struct Document *active_document(const struct Scanner *s);
 
 static bool push_stages(struct Scanner *s, enum Token token, bool quoted) {
   size_t count = s->source.stage_count;
@@ -559,7 +566,9 @@ static bool push_stages(struct Scanner *s, enum Token token, bool quoted) {
     return true;
   }
   if (!substitution_context(token) && token != DOCUMENT_BEGIN) return true;
-  size_t added = token == COMMAND_OPEN ? 1 : 2;
+  size_t added = token == COMMAND_OPEN ? 1
+    : token == DOCUMENT_BEGIN          ? DOCUMENT_STAGE_COUNT - 1
+                                       : 2;
   struct SourceStage *stages =
     ts_realloc(s->source.stages, (count + added) * sizeof(*stages));
   if (!stages) return false;
@@ -674,7 +683,7 @@ static size_t depth(const struct Scanner *s) {
     if (substitution_context(s->contexts[i].opener)) count++;
   return count;
 }
-static struct Document *active_document(struct Scanner *s) {
+static struct Document *active_document(const struct Scanner *s) {
   for (size_t i = s->document_count; i > 0; --i)
     if (s->documents[i - 1].active && !s->documents[i - 1].finished)
       return &s->documents[i - 1];
@@ -1025,13 +1034,17 @@ static bool commit(struct Scanner *s, enum Token token) {
     s->source.stages[s->source.stage_count - 1].disabled = true;
   struct Document *d;
   switch (token) {
+    case NEWLINE:
+      d = active_document(s);
+      if (d && d->ending) d->end_line = true;
+      break;
     case DELIMITER_BEGIN:
       if (!s->document_count) return false;
       s->documents[s->document_count - 1].declaring = true;
       return true;
     case DELIMITER_END:
       d = declaring_document(s);
-      if (!d || d->remaining) return false;
+      if (!d || d->delimiter_remaining) return false;
       d->declaring = false;
       return true;
     case HERE_SEQUENCE_END:
@@ -1045,6 +1058,8 @@ static bool commit(struct Scanner *s, enum Token token) {
     case HERE_END_BEGIN:
       d = active_document(s);
       if (!d) return false;
+      while (s->count && s->contexts[s->count - 1].opener != DOCUMENT_BEGIN)
+        if (!pop(s)) return false;
       d->ending = true;
       return true;
     case HERE_END_FINISH:
@@ -1180,7 +1195,7 @@ static bool encode(const struct Scanner *s, uint8_t *buffer, size_t *length) {
     const struct Document *d = &s->documents[i];
     PUT(d->length);
     PUT(d->depth);
-    PUT(d->remaining);
+    PUT(d->delimiter_remaining);
     PUT(
       d->quoted |
       (d->strip_tabs << 1) |
@@ -1188,7 +1203,8 @@ static bool encode(const struct Scanner *s, uint8_t *buffer, size_t *length) {
       (d->finished << 3) |
       (d->found << 4) |
       (d->ending << 5) |
-      (d->declaring << 6)
+      (d->declaring << 6) |
+      (d->end_line << 7)
     );
     for (size_t j = 0; j < d->length; ++j) PUT((uint32_t)d->delimiter[j]);
   }
@@ -1308,9 +1324,9 @@ static bool decode(struct Scanner *s, const uint8_t *buffer, size_t length) {
     size_t flags;
     GET(d->length);
     GET(d->depth);
-    GET(d->remaining);
+    GET(d->delimiter_remaining);
     GET(flags);
-    if (d->length > length - offset || flags > 127) return false;
+    if (d->length > length - offset || flags > 255) return false;
     d->quoted = flags & 1;
     d->strip_tabs = flags & 2;
     d->active = flags & 4;
@@ -1318,6 +1334,7 @@ static bool decode(struct Scanner *s, const uint8_t *buffer, size_t length) {
     d->found = flags & 16;
     d->ending = flags & 32;
     d->declaring = flags & 64;
+    d->end_line = flags & 128;
     if (d->length) {
       d->delimiter = ts_calloc(d->length, sizeof(*d->delimiter));
       if (!d->delimiter) return false;
@@ -1433,9 +1450,9 @@ static bool emit(struct Scanner *s, TSLexer *lexer, const bool *valid) {
   lexer->mark_end(lexer);
   for (size_t i = 0; i < s->document_count; ++i) {
     struct Document *d = &s->documents[i];
-    if ((d->active && !d->finished && !d->ending) || d->declaring) {
-      if (consumed > d->remaining) return false;
-      d->remaining -= consumed;
+    if (d->declaring) {
+      if (consumed > d->delimiter_remaining) return false;
+      d->delimiter_remaining -= consumed;
     }
   }
   s->remaining -= consumed;
@@ -2286,16 +2303,6 @@ static bool has_descriptor(struct LogicalLexer *in) {
   return result;
 }
 
-static enum SourceResult document_boundary(void *payload, size_t position) {
-  struct Scanner *s = payload;
-  for (size_t i = 0; i < s->document_count; ++i) {
-    struct Document *d = &s->documents[i];
-    if (d->active && !d->finished && !d->ending && position >= d->remaining)
-      return SOURCE_END;
-  }
-  return SOURCE_CHARACTER;
-}
-
 static size_t utf8_encode(uint32_t value, uint8_t bytes[4]) {
   if (value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff)) return 0;
   size_t length = value < 0x80 ? 1
@@ -2610,7 +2617,7 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
     ts_free(d.delimiter);
     return false;
   }
-  d.remaining = logical_raw_position(in);
+  d.delimiter_remaining = logical_raw_position(in);
   if (d.strip_tabs) {
     size_t tabs = 0;
     while (tabs < d.length && d.delimiter[tabs] == '\t') tabs++;
@@ -2634,42 +2641,99 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
   return true;
 }
 
-static bool measure_document(struct LogicalLexer *in, struct Document *d) {
-  struct SourceStage stages[3] = {
-    in->cursor.initial[in->cursor.stage_count - 1]
-  };
-  document_stages(stages, d);
-  struct LogicalLexer body;
-  if (!logical_fork(&body, in, 0, in->cursor.stage_count - 1, stages, 3))
-    return false;
-  size_t line_start = 0;
-  size_t length = 0;
-  bool matches = true;
-  for (;;) {
-    if (body.result != SOURCE_CHARACTER || logical_backquote_end(&body)) {
-      d->found = matches && length == d->length && body.consumed > line_start;
-      d->remaining = d->found ? line_start : logical_raw_position(&body);
-      break;
-    }
-    int32_t c = current(&body);
-    if (c == '\n') {
-      if (matches && length == d->length) {
-        d->found = true;
-        d->remaining = line_start;
-        break;
-      }
-      advance(&body);
-      line_start = body.consumed;
-      length = 0;
-      matches = true;
-    } else {
-      matches = matches && delimiter_matches(d, c, &length);
-      advance(&body);
-    }
+struct DocumentBoundary {
+  struct LogicalLexer view;
+  const struct Document *document;
+  bool line_start;
+  bool found;
+  size_t end;
+};
+
+struct DocumentInput {
+  struct DocumentBoundary *boundaries;
+  size_t count;
+};
+
+static void document_input_clear(struct DocumentInput *input) {
+  for (size_t i = 0; i < input->count; ++i)
+    logical_clear(&input->boundaries[i].view);
+  ts_free(input->boundaries);
+}
+
+static bool document_input_init(
+  struct DocumentInput *input,
+  struct NativeInput *native,
+  struct Scanner *s
+) {
+  *input = (struct DocumentInput){0};
+  if (!active_document(s)) return true;
+  input->boundaries = ts_calloc(s->document_count, sizeof(*input->boundaries));
+  if (!input->boundaries) return false;
+  size_t context = 0;
+  for (size_t i = 0; i < s->document_count; ++i) {
+    const struct Document *d = &s->documents[i];
+    if (!d->active || d->finished) continue;
+    while (context < s->count && s->contexts[context].opener != DOCUMENT_BEGIN)
+      context++;
+    if (context == s->count) return false;
+    struct SourceSnapshot snapshot = s->source;
+    snapshot.stage_count =
+      s->contexts[context++].stages + DOCUMENT_STAGE_COUNT - 2;
+    if (snapshot.stage_count > s->source.stage_count) return false;
+    if (d->ending) continue;
+    struct DocumentBoundary *bound = &input->boundaries[input->count++];
+    bound->document = d;
+    bound->line_start = snapshot.stages[snapshot.stage_count - 1].at_line_start;
+    if (!logical_init_at(&bound->view, native, &snapshot, 0, false))
+      return false;
   }
-  bool success = body.result != SOURCE_FAILURE;
-  logical_clear(&body);
-  return success;
+  return true;
+}
+
+static void document_boundary_advance(struct DocumentBoundary *bound) {
+  bound->line_start = current(&bound->view) == '\n';
+  advance(&bound->view);
+}
+
+static enum SourceResult document_boundary(void *payload, size_t position) {
+  struct DocumentInput *input = payload;
+  for (size_t i = 0; i < input->count; ++i) {
+    struct DocumentBoundary *bound = &input->boundaries[i];
+    struct LogicalLexer *view = &bound->view;
+    while (!bound->found && position >= view->consumed) {
+      if (view->result == SOURCE_FAILURE) return SOURCE_FAILURE;
+      if (bound->line_start) {
+        size_t start = view->consumed;
+        size_t length = 0;
+        bool matches = true;
+        while (
+          view->result == SOURCE_CHARACTER &&
+          !logical_backquote_end(view) &&
+          current(view) != '\n' &&
+          matches
+        ) {
+          matches = delimiter_matches(bound->document, current(view), &length);
+          document_boundary_advance(bound);
+        }
+        if (view->result == SOURCE_FAILURE) return SOURCE_FAILURE;
+        if (
+          matches &&
+          length == bound->document->length &&
+          (current(view) == '\n' || view->consumed > start)
+        ) {
+          bound->found = true;
+          bound->end = start;
+          break;
+        }
+        if (position < view->consumed) break;
+      }
+      if (view->result != SOURCE_CHARACTER || logical_backquote_end(view))
+        break;
+      document_boundary_advance(bound);
+    }
+    if (bound->found && position >= bound->end) return SOURCE_END;
+  }
+  return SOURCE_CHARACTER;
 }
 
 enum BoundaryKind {
@@ -2952,9 +3016,10 @@ boundary_documents(struct BoundaryProbe *probe, struct LogicalLexer *in) {
     if (d->finished || d->depth != boundary_depth(probe)) continue;
     size_t count = in->cursor.stage_count;
     struct SourceStage original = in->cursor.stages[count - 1];
-    struct SourceStage stages[3] = {original};
+    struct SourceStage stages[DOCUMENT_STAGE_COUNT] = {original};
     document_stages(stages, d);
-    if (!logical_replace_view(in, count - 1, stages, 3)) return false;
+    if (!logical_replace_view(in, count - 1, stages, DOCUMENT_STAGE_COUNT))
+      return false;
     size_t length = 0;
     bool matched = true;
     while (in->result == SOURCE_CHARACTER && !logical_backquote_end(in)) {
@@ -3939,7 +4004,7 @@ static enum Token scan_documents(struct Scan *scan) {
   }
   if (valid[DELIMITER_END]) {
     struct Document *d = declaring_document(s);
-    if (d && d->remaining == 0) return DELIMITER_END;
+    if (d && d->delimiter_remaining == 0) return DELIMITER_END;
   }
   if (
     valid[DELIMITER_BEGIN] &&
@@ -3961,21 +4026,36 @@ static enum Token scan_documents(struct Scan *scan) {
     return HERE_SEQUENCE_END;
   if (valid[DOCUMENT_BEGIN]) {
     struct Document *d = pending_document(s);
-    if (d && measure_document(in, d)) {
+    if (d) {
       in->consumed = 0;
       d->active = true;
       return DOCUMENT_BEGIN;
     }
   }
   struct Document *doc = active_document(s);
-  if (!doc || doc->remaining) return TOKEN_COUNT;
+  if (!doc) return TOKEN_COUNT;
+  if (!doc->ending) {
+    struct DocumentInput *documents = in->native->boundary_payload;
+    for (size_t i = 0; i < documents->count; ++i) {
+      const struct DocumentBoundary *bound = &documents->boundaries[i];
+      if (bound->document == doc && bound->found && bound->end == 0)
+        doc->found = true;
+    }
+    if (
+      !doc->found &&
+      in->result == SOURCE_CHARACTER &&
+      !logical_backquote_end(in)
+    )
+      return TOKEN_COUNT;
+  }
   if (valid[HERE_END_BEGIN] && doc->found && !doc->ending)
     return HERE_END_BEGIN;
   if (valid[DOCUMENT_FINISH] && !doc->found) return DOCUMENT_FINISH;
   if (!doc->ending) return TOKEN_COUNT;
   if (
     valid[HERE_END_FINISH] &&
-    (in->result != SOURCE_CHARACTER ||
+    (doc->end_line ||
+      in->result != SOURCE_CHARACTER ||
       logical_backquote_end(in) ||
       (doc->length == 0 && c != '\n'))
   )
@@ -6043,11 +6123,23 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
   };
   memcpy(valid, source_symbols, sizeof(source_symbols));
   for (size_t i = 0; i < s->document_count; ++i)
-    if (s->documents[i].active || s->documents[i].declaring) return;
+    if (s->documents[i].declaring) return;
   enum Token context =
     s->count ? s->contexts[s->count - 1].opener : TOKEN_COUNT;
+  const struct Document *doc = active_document(s);
+  valid[HERE_END_BEGIN] = doc != NULL;
+  valid[HERE_END_FINISH] = doc && doc->ending;
+  valid[DOCUMENT_FINISH] = doc != NULL;
+  valid[HERE_SEQUENCE_END] = context == HERE_SEQUENCE_BEGIN;
   bool quoted =
     context == SQ_OPEN || context == DQ_OPEN || context == DOLLAR_SQ_OPEN;
+  if (context == DOCUMENT_BEGIN) {
+    valid[HERE_DOCUMENT_TEXT] = true;
+    valid[QUOTED_HERE_DOCUMENT_TEXT] = true;
+    valid[HERE_DOCUMENT_ESCAPE] = true;
+    valid[HERE_DOCUMENT_END_TEXT] = true;
+    valid[NEWLINE] = doc && doc->ending;
+  }
   if (!word_part_context(context) && !quoted && context != DOCUMENT_BEGIN) {
     for (
       size_t i = 0; i < sizeof(command_symbols) / sizeof(*command_symbols); ++i
@@ -6068,6 +6160,7 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
   valid[DOLLAR_SINGLE_QUOTE_TEXT] = context == DOLLAR_SQ_OPEN;
   valid[DOLLAR_SINGLE_QUOTE_ESCAPE] = context == DOLLAR_SQ_OPEN;
   valid[PARAMETER_CLOSE] = context == PARAMETER_OPEN;
+  valid[SUBSCRIPT_TEXT] = doc && subscript_context(context);
   valid[CONDITION_CLOSE_FIRST] =
     context == CONDITION_BEGIN || context == CONDITION_GROUP_OPEN;
   valid[CONDITION_CLOSE] = valid[CONDITION_CLOSE_FIRST];
@@ -6094,33 +6187,38 @@ bool tree_sitter_zsh_external_scanner_scan(
   if (s->remaining) result = emit(s, lexer, valid);
   else {
     lexer->mark_end(lexer);
-    struct NativeInput native =
-      {.lexer = lexer, .boundary = document_boundary, .boundary_payload = s};
+    struct NativeInput native = {.lexer = lexer};
+    struct DocumentInput documents;
     struct LogicalLexer input;
-    if (logical_init(&input, &native, &s->source)) {
-      size_t prefix = logical_raw_position(&input);
-      size_t character =
-        input.result == SOURCE_CHARACTER && input.character.origin.character > 0
-        ? (size_t)input.character.origin.character
-        : 0;
-      enum Token token;
-      if (prefix && valid[REMOVED_SOURCE]) {
-        input.consumed = prefix;
-        token = REMOVED_SOURCE;
-      } else token = classify(s, &input, valid);
-      if (token < TOKEN_COUNT && valid[token]) {
-        lexer->result_symbol = token;
-        if (token == TRAILING_COMMENT_TEXT) token = COMMENT_TEXT;
-        s->emission = token;
-        s->remaining = input.consumed;
-        s->physical = physical(token);
-        s->character = s->physical ? character : 0;
-        result = token == COMMENT_TEXT ? push(s, token)
-          : s->remaining               ? true
-                                       : commit(s, token);
+    if (document_input_init(&documents, &native, s)) {
+      native.boundary = document_boundary;
+      native.boundary_payload = &documents;
+      if (logical_init(&input, &native, &s->source)) {
+        size_t prefix = logical_raw_position(&input);
+        size_t character = input.result == SOURCE_CHARACTER &&
+            input.character.origin.character > 0
+          ? (size_t)input.character.origin.character
+          : 0;
+        enum Token token;
+        if (prefix && valid[REMOVED_SOURCE]) {
+          input.consumed = prefix;
+          token = REMOVED_SOURCE;
+        } else token = classify(s, &input, valid);
+        if (token < TOKEN_COUNT && valid[token]) {
+          lexer->result_symbol = token;
+          if (token == TRAILING_COMMENT_TEXT) token = COMMENT_TEXT;
+          s->emission = token;
+          s->remaining = input.consumed;
+          s->physical = physical(token);
+          s->character = s->physical ? character : 0;
+          result = token == COMMENT_TEXT ? push(s, token)
+            : s->remaining               ? true
+                                         : commit(s, token);
+        }
+        logical_clear(&input);
       }
-      logical_clear(&input);
     }
+    document_input_clear(&documents);
     native_input_clear(&native);
   }
   uint8_t next[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];

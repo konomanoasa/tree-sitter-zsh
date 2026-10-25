@@ -130,6 +130,104 @@ for (const { name, body, owner } of [
   });
 }
 
+for (const { name, body, ends, hasError = true } of [
+  {
+    name: "a damaged parameter",
+    body: `cat <<E\n\${x!bad}\nE\n`,
+    ends: ["E"],
+  },
+  {
+    name: "an unclosed subscript",
+    body: `cat <<E\n\${x[1}\nE\n`,
+    ends: ["E"],
+  },
+  {
+    name: "an unclosed quoted parameter operand",
+    body: `cat <<E\n\${x:-"}\nE\n`,
+    ends: ["E"],
+  },
+  {
+    name: "a body with stripped tabs",
+    body: `cat <<-E\n\t\${x!bad}\n\tE\n`,
+    ends: ["E"],
+  },
+  {
+    name: "a following quoted document",
+    body: `cat <<E <<'F'\n\${x!bad}\nE\n\${x!bad}\nF\n`,
+    ends: ["E", "F"],
+  },
+  {
+    name: "a document inside a quoted substitution",
+    body: `echo "$(cat <<E\n\${x!bad}\nE\n)"\n`,
+    ends: ["E"],
+  },
+  {
+    name: "a document inside a process substitution",
+    body: `cat <(cat <<E\n\${x!bad}\nE\n)\n`,
+    ends: ["E"],
+  },
+  {
+    name: "a document ending at a backquote",
+    body: `echo \`cat <<E\n\${x!bad}\nE\`\n`,
+    ends: ["E"],
+  },
+  {
+    name: "nested documents",
+    body: `cat <<OUTER\n$(cat <<E\n\${x!bad}\nE\n)\nOUTER\n`,
+    ends: ["E", "OUTER"],
+  },
+  {
+    name: "an outer end before an inner document end",
+    body: `cat <<OUTER\n$(cat <<E\n\${x!bad}\nOUTER\n`,
+    ends: ["OUTER"],
+  },
+  {
+    name: "delimiter prefixes and continued body lines",
+    body: `cat <<E\n\${x!bad}\nnotE\nE suffix\nx\\\nE\nE\n`,
+    ends: ["E"],
+  },
+  {
+    name: "a continued delimiter",
+    body: `cat <<END\n\${x!bad}\nEN\\\nD\n`,
+    ends: ["EN\\\nD"],
+  },
+  {
+    name: "literal parameter spelling in a quoted document",
+    body: `cat <<'E'\n\${x!bad}\nE\n`,
+    ends: ["E"],
+    hasError: false,
+  },
+]) {
+  test(`heredoc boundaries preserve end lines and following commands after ${name}`, () => {
+    const source = `echo BEFORE\n${body}echo AFTER\necho FINAL\n`;
+    const parsed = parse(source);
+    assert.equal(parsed.hasError, hasError, parsed.output);
+    const nodes = sourceNodes(parsed.output, source);
+    assert.equal(nodes[0].type, "program", parsed.output);
+    assertOutsideErrors(nodes, ["BEFORE", "AFTER", "FINAL"]);
+    assert.deepEqual(
+      nodes
+        .filter((node) => node.type === "here_document_end_text")
+        .map((node) => node.text),
+      ends,
+      parsed.output,
+    );
+    const after = source.indexOf("echo AFTER");
+    assert.ok(
+      nodes.every(
+        (node) =>
+          ![
+            "here_document_sequence",
+            "here_document",
+            "here_document_body",
+          ].includes(node.type) || node.end <= after,
+      ),
+      parsed.output,
+    );
+    assert.deepEqual(sourceNodes(parse(source).output, source), nodes);
+  });
+}
+
 for (const { name, prefix, depth, tail } of [
   { name: "for headers", prefix: "for x in a; do\n", depth: 2, tail: ")\n" },
   {
@@ -224,6 +322,27 @@ for (const { name, before, removed, inserted, after } of [
     removed: "!bad",
     inserted: ":-ok",
     after: `echo BEFORE\necho "\${x:-ok}"\necho AFTER\n`,
+  },
+  {
+    name: "a parameter inside a tab-stripped heredoc",
+    before: `echo BEFORE\ncat <<-E\n\t\${x!bad}\n\tE\necho AFTER\n`,
+    removed: "!bad",
+    inserted: ":-ok",
+    after: `echo BEFORE\ncat <<-E\n\t\${x:-ok}\n\tE\necho AFTER\n`,
+  },
+  {
+    name: "a subscript inside a heredoc",
+    before: `echo BEFORE\ncat <<E\n\${x[1}\nE\necho AFTER\n`,
+    removed: "[1}",
+    inserted: "[1]}",
+    after: `echo BEFORE\ncat <<E\n\${x[1]}\nE\necho AFTER\n`,
+  },
+  {
+    name: "a parameter inside a nested heredoc",
+    before: `echo BEFORE\ncat <<OUTER\n$(cat <<E\n\${x!bad}\nE\n)\nOUTER\necho AFTER\n`,
+    removed: "!bad",
+    inserted: ":-ok",
+    after: `echo BEFORE\ncat <<OUTER\n$(cat <<E\n\${x:-ok}\nE\n)\nOUTER\necho AFTER\n`,
   },
 ]) {
   test(`repairing ${name} restores the same public CST as fresh parsing`, () => {
