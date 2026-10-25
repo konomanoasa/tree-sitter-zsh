@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/@konomanoasa/tree-sitter-zsh)](https://www.npmjs.com/package/@konomanoasa/tree-sitter-zsh)
 
 [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for
-Zsh 5.9.2.
+Z Shell 5.9.2.
 
 ## Installation
 
