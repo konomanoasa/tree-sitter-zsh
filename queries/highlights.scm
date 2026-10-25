@@ -172,8 +172,7 @@
     "|"
   ] @operator)
 
-(list
-  "&" @operator)
+"&" @operator
 
 ";" @punctuation.delimiter
 
