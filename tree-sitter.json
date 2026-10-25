@@ -3,12 +3,10 @@
   "grammars": [
     {
       "name": "zsh",
-      "title": "Zsh",
+      "title": "zsh",
       "scope": "source.zsh",
       "path": ".",
-      "file-types": [
-        "zsh"
-      ],
+      "file-types": ["zsh"],
       "injection-regex": "^zsh$",
       "highlights": "queries/highlights.scm",
       "external-files": [
@@ -21,12 +19,10 @@
     },
     {
       "name": "zsh_default",
-      "title": "Zsh (default options)",
+      "title": "zsh (default options)",
       "scope": "source.zsh_default",
       "path": "zsh_default",
-      "file-types": [
-        "zsh_default"
-      ],
+      "file-types": ["zsh_default"],
       "injection-regex": "^zsh_default$",
       "highlights": "queries/highlights.scm",
       "external-files": [
@@ -43,7 +39,7 @@
   "metadata": {
     "version": "0.2.0",
     "license": "MIT",
-    "description": "Tree-sitter grammar for Zsh.",
+    "description": "Tree-sitter grammars for zsh.",
     "links": {
       "repository": "https://github.com/konomanoasa/tree-sitter-zsh"
     }

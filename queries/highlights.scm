@@ -278,11 +278,6 @@
       "{"
       "}"
     ] @punctuation.bracket)
-  (parameter_expansion
-    [
-      "{"
-      "}"
-    ] @punctuation.bracket)
   (parameter_flags
     [
       "("
@@ -294,176 +289,25 @@
   "(" @punctuation.bracket
   ")" @punctuation.bracket)
 
-(arithmetic_source
-  (arithmetic_number) @number)
+(arithmetic_number) @number
 
-(arithmetic_sequence_expression
-  (arithmetic_number) @number)
+(arithmetic_variable) @variable
 
-(arithmetic_assignment_expression
-  (arithmetic_number) @number)
+(arithmetic_operator) @operator
 
-(arithmetic_conditional_expression
-  (arithmetic_number) @number)
+(parenthesized_arithmetic
+  [
+    "("
+    ")"
+  ] @punctuation.bracket)
 
-(arithmetic_binary_expression
-  (arithmetic_number) @number)
+(arithmetic_function_name) @function.call
 
-(arithmetic_unary_expression
-  (arithmetic_number) @number)
-
-(arithmetic_source
-  (arithmetic_variable) @variable)
-
-(arithmetic_sequence_expression
-  (arithmetic_variable) @variable)
-
-(arithmetic_assignment_expression
-  (arithmetic_variable) @variable)
-
-(arithmetic_conditional_expression
-  (arithmetic_variable) @variable)
-
-(arithmetic_binary_expression
-  (arithmetic_variable) @variable)
-
-(arithmetic_unary_expression
-  (arithmetic_variable) @variable)
-
-(arithmetic_update_expression
-  (arithmetic_variable) @variable)
-
-(arithmetic_array_reference
-  (arithmetic_variable) @variable)
-
-(arithmetic_source
-  (arithmetic_operator) @operator)
-
-(arithmetic_sequence_expression
-  (arithmetic_operator) @operator)
-
-(arithmetic_assignment_expression
-  (arithmetic_operator) @operator)
-
-(arithmetic_conditional_expression
-  (arithmetic_operator) @operator)
-
-(arithmetic_binary_expression
-  (arithmetic_operator) @operator)
-
-(arithmetic_unary_expression
-  (arithmetic_operator) @operator)
-
-(arithmetic_update_expression
-  (arithmetic_operator) @operator)
-
-(arithmetic_source
-  (parenthesized_arithmetic
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_sequence_expression
-  (parenthesized_arithmetic
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_assignment_expression
-  (parenthesized_arithmetic
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_conditional_expression
-  (parenthesized_arithmetic
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_binary_expression
-  (parenthesized_arithmetic
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_unary_expression
-  (parenthesized_arithmetic
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_source
-  (arithmetic_function_source
-    name: (arithmetic_function_name) @function.call))
-
-(arithmetic_sequence_expression
-  (arithmetic_function_source
-    name: (arithmetic_function_name) @function.call))
-
-(arithmetic_assignment_expression
-  (arithmetic_function_source
-    name: (arithmetic_function_name) @function.call))
-
-(arithmetic_conditional_expression
-  (arithmetic_function_source
-    name: (arithmetic_function_name) @function.call))
-
-(arithmetic_binary_expression
-  (arithmetic_function_source
-    name: (arithmetic_function_name) @function.call))
-
-(arithmetic_unary_expression
-  (arithmetic_function_source
-    name: (arithmetic_function_name) @function.call))
-
-(arithmetic_source
-  (arithmetic_function_source
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_sequence_expression
-  (arithmetic_function_source
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_assignment_expression
-  (arithmetic_function_source
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_conditional_expression
-  (arithmetic_function_source
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_binary_expression
-  (arithmetic_function_source
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
-
-(arithmetic_unary_expression
-  (arithmetic_function_source
-    [
-      "("
-      ")"
-    ] @punctuation.bracket))
+(arithmetic_function_source
+  [
+    "("
+    ")"
+  ] @punctuation.bracket)
 
 (assignment_word
   name: (variable_name) @variable)
@@ -499,24 +343,6 @@
 
 (select_clause
   name: (name) @variable)
-
-(parameter_expansion
-  "$" @variable)
-
-(parameter_expansion
-  parameter: (variable_name) @variable)
-
-(parameter_expansion
-  parameter: (positional_parameter) @variable.parameter)
-
-(parameter_expansion
-  parameter: (special_parameter) @variable.builtin)
-
-(parameter_expansion
-  [
-    (parameter_length_operator)
-    (parameter_prefix_operator)
-  ] @operator)
 
 [
   (parameter_value_operator)
@@ -568,360 +394,225 @@
       (flag_argument_source
         (flag_argument_text) @string))))
 
-[
-  (assignment_word
-    subscript: (array_subscript
-      [
-        "["
-        "]"
-      ] @punctuation.bracket))
-  (parameter_expansion
-    subscript: (array_subscript
-      [
-        "["
-        "]"
-      ] @punctuation.bracket))
-  (parameter_suffix_source
+(parameter_expansion
+  [
+    "$" @variable
+    "{" @punctuation.bracket
+    "}" @punctuation.bracket
+    (variable_name) @variable
+    (positional_parameter) @variable.parameter
+    (special_parameter) @variable.builtin
+    (parameter_length_operator) @operator
+    (parameter_prefix_operator) @operator
     (array_subscript
       [
-        "["
-        "]"
-      ] @punctuation.bracket))
-  (arithmetic_source
-    (array_subscript
-      [
-        "["
-        "]"
-      ] @punctuation.bracket))
-  (arithmetic_array_reference
-    (array_subscript
-      [
-        "["
-        "]"
-      ] @punctuation.bracket))
-]
+        "[" @punctuation.bracket
+        "]" @punctuation.bracket
+        (subscript_source
+          [
+            (subscript_flags
+              [
+                "(" @punctuation.bracket
+                ")" @punctuation.bracket
+                (subscript_flag
+                  [
+                    (subscript_flag_name) @character.special
+                    (flag_argument
+                      [
+                        (flag_argument_delimiter) @punctuation.delimiter
+                        (flag_argument_source
+                          (flag_argument_text) @string)
+                      ])
+                  ])
+              ])
+            (subscript_range_candidate
+              (subscript_source
+                (subscript_flags
+                  [
+                    "(" @punctuation.bracket
+                    ")" @punctuation.bracket
+                    (subscript_flag
+                      [
+                        (subscript_flag_name) @character.special
+                        (flag_argument
+                          [
+                            (flag_argument_delimiter) @punctuation.delimiter
+                            (flag_argument_source
+                              (flag_argument_text) @string)
+                          ])
+                      ])
+                  ])))
+          ])
+      ])
+  ])
 
-[
-  (assignment_word
-    subscript: (array_subscript
+(assignment_word
+  subscript: (array_subscript
+    [
+      "[" @punctuation.bracket
+      "]" @punctuation.bracket
       (subscript_source
         [
           (subscript_flags
             [
-              "("
-              ")"
-            ] @punctuation.bracket)
+              "(" @punctuation.bracket
+              ")" @punctuation.bracket
+              (subscript_flag
+                [
+                  (subscript_flag_name) @character.special
+                  (flag_argument
+                    [
+                      (flag_argument_delimiter) @punctuation.delimiter
+                      (flag_argument_source
+                        (flag_argument_text) @string)
+                    ])
+                ])
+            ])
           (subscript_range_candidate
             (subscript_source
               (subscript_flags
                 [
-                  "("
-                  ")"
-                ] @punctuation.bracket)))
-        ])))
-  (parameter_expansion
-    subscript: (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            [
-              "("
-              ")"
-            ] @punctuation.bracket)
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                [
-                  "("
-                  ")"
-                ] @punctuation.bracket)))
-        ])))
-  (parameter_suffix_source
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            [
-              "("
-              ")"
-            ] @punctuation.bracket)
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                [
-                  "("
-                  ")"
-                ] @punctuation.bracket)))
-        ])))
-  (arithmetic_source
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            [
-              "("
-              ")"
-            ] @punctuation.bracket)
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                [
-                  "("
-                  ")"
-                ] @punctuation.bracket)))
-        ])))
-  (arithmetic_array_reference
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            [
-              "("
-              ")"
-            ] @punctuation.bracket)
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                [
-                  "("
-                  ")"
-                ] @punctuation.bracket)))
-        ])))
-]
+                  "(" @punctuation.bracket
+                  ")" @punctuation.bracket
+                  (subscript_flag
+                    [
+                      (subscript_flag_name) @character.special
+                      (flag_argument
+                        [
+                          (flag_argument_delimiter) @punctuation.delimiter
+                          (flag_argument_source
+                            (flag_argument_text) @string)
+                        ])
+                    ])
+                ])))
+        ])
+    ]))
 
-[
-  (assignment_word
-    subscript: (array_subscript
+(parameter_suffix_source
+  (array_subscript
+    [
+      "[" @punctuation.bracket
+      "]" @punctuation.bracket
       (subscript_source
         [
           (subscript_flags
-            (subscript_flag
-              (subscript_flag_name) @character.special))
+            [
+              "(" @punctuation.bracket
+              ")" @punctuation.bracket
+              (subscript_flag
+                [
+                  (subscript_flag_name) @character.special
+                  (flag_argument
+                    [
+                      (flag_argument_delimiter) @punctuation.delimiter
+                      (flag_argument_source
+                        (flag_argument_text) @string)
+                    ])
+                ])
+            ])
           (subscript_range_candidate
             (subscript_source
               (subscript_flags
-                (subscript_flag
-                  (subscript_flag_name) @character.special))))
-        ])))
-  (parameter_expansion
-    subscript: (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (subscript_flag_name) @character.special))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (subscript_flag_name) @character.special))))
-        ])))
-  (parameter_suffix_source
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (subscript_flag_name) @character.special))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (subscript_flag_name) @character.special))))
-        ])))
-  (arithmetic_source
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (subscript_flag_name) @character.special))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (subscript_flag_name) @character.special))))
-        ])))
-  (arithmetic_array_reference
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (subscript_flag_name) @character.special))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (subscript_flag_name) @character.special))))
-        ])))
-]
+                [
+                  "(" @punctuation.bracket
+                  ")" @punctuation.bracket
+                  (subscript_flag
+                    [
+                      (subscript_flag_name) @character.special
+                      (flag_argument
+                        [
+                          (flag_argument_delimiter) @punctuation.delimiter
+                          (flag_argument_source
+                            (flag_argument_text) @string)
+                        ])
+                    ])
+                ])))
+        ])
+    ]))
 
-[
-  (assignment_word
-    subscript: (array_subscript
+(arithmetic_source
+  (array_subscript
+    [
+      "[" @punctuation.bracket
+      "]" @punctuation.bracket
       (subscript_source
         [
           (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_delimiter) @punctuation.delimiter)))
+            [
+              "(" @punctuation.bracket
+              ")" @punctuation.bracket
+              (subscript_flag
+                [
+                  (subscript_flag_name) @character.special
+                  (flag_argument
+                    [
+                      (flag_argument_delimiter) @punctuation.delimiter
+                      (flag_argument_source
+                        (flag_argument_text) @string)
+                    ])
+                ])
+            ])
           (subscript_range_candidate
             (subscript_source
               (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_delimiter) @punctuation.delimiter)))))
-        ])))
-  (parameter_expansion
-    subscript: (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_delimiter) @punctuation.delimiter)))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_delimiter) @punctuation.delimiter)))))
-        ])))
-  (parameter_suffix_source
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_delimiter) @punctuation.delimiter)))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_delimiter) @punctuation.delimiter)))))
-        ])))
-  (arithmetic_source
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_delimiter) @punctuation.delimiter)))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_delimiter) @punctuation.delimiter)))))
-        ])))
-  (arithmetic_array_reference
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_delimiter) @punctuation.delimiter)))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_delimiter) @punctuation.delimiter)))))
-        ])))
-]
+                [
+                  "(" @punctuation.bracket
+                  ")" @punctuation.bracket
+                  (subscript_flag
+                    [
+                      (subscript_flag_name) @character.special
+                      (flag_argument
+                        [
+                          (flag_argument_delimiter) @punctuation.delimiter
+                          (flag_argument_source
+                            (flag_argument_text) @string)
+                        ])
+                    ])
+                ])))
+        ])
+    ]))
 
-[
-  (assignment_word
-    subscript: (array_subscript
+(arithmetic_array_reference
+  (array_subscript
+    [
+      "[" @punctuation.bracket
+      "]" @punctuation.bracket
       (subscript_source
         [
           (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_source
-                  (flag_argument_text) @string))))
+            [
+              "(" @punctuation.bracket
+              ")" @punctuation.bracket
+              (subscript_flag
+                [
+                  (subscript_flag_name) @character.special
+                  (flag_argument
+                    [
+                      (flag_argument_delimiter) @punctuation.delimiter
+                      (flag_argument_source
+                        (flag_argument_text) @string)
+                    ])
+                ])
+            ])
           (subscript_range_candidate
             (subscript_source
               (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_source
-                      (flag_argument_text) @string))))))
-        ])))
-  (parameter_expansion
-    subscript: (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_source
-                  (flag_argument_text) @string))))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_source
-                      (flag_argument_text) @string))))))
-        ])))
-  (parameter_suffix_source
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_source
-                  (flag_argument_text) @string))))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_source
-                      (flag_argument_text) @string))))))
-        ])))
-  (arithmetic_source
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_source
-                  (flag_argument_text) @string))))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_source
-                      (flag_argument_text) @string))))))
-        ])))
-  (arithmetic_array_reference
-    (array_subscript
-      (subscript_source
-        [
-          (subscript_flags
-            (subscript_flag
-              (flag_argument
-                (flag_argument_source
-                  (flag_argument_text) @string))))
-          (subscript_range_candidate
-            (subscript_source
-              (subscript_flags
-                (subscript_flag
-                  (flag_argument
-                    (flag_argument_source
-                      (flag_argument_text) @string))))))
-        ])))
-]
+                [
+                  "(" @punctuation.bracket
+                  ")" @punctuation.bracket
+                  (subscript_flag
+                    [
+                      (subscript_flag_name) @character.special
+                      (flag_argument
+                        [
+                          (flag_argument_delimiter) @punctuation.delimiter
+                          (flag_argument_source
+                            (flag_argument_text) @string)
+                        ])
+                    ])
+                ])))
+        ])
+    ]))
 
 (extended_pattern
   (pattern_operator) @operator)

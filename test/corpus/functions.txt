@@ -2019,3 +2019,30 @@ A redirection before an anonymous brace body keeps it a short command body
                   (literal)))
               argument: (word
                 (literal)))))))))
+
+==================
+A redirected keyword function body does not absorb arguments as function names
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+function exec >/dev/null f { :; }
+---
+
+==================
+An assignment after a redirected nocorrect prefix prevents a function definition
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+nocorrect >out x=1 f () { :; }
+---
+
+==================
+An assignment after repeated nocorrect prefixes prevents a function definition
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+nocorrect nocorrect x=1 f () { :; }
+---

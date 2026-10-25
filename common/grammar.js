@@ -722,7 +722,13 @@ export default (name) =>
           ),
         ),
       _logical_operator: ($) =>
-        prec.right(seq(choice($.and_if, $.or_if), repeat($._term))),
+        prec.right(
+          seq(
+            choice($.and_if, $.or_if),
+            repeat($._term),
+            $._logical_layout_end,
+          ),
+        ),
       pipeline: ($) =>
         prec.right(
           choice(
@@ -991,6 +997,7 @@ export default (name) =>
           $.function_keyword,
           optional($.function_option),
           optional(alias($._function_options_end_source, $.function_option)),
+          $._command_prefix_end,
         ),
       _named_parenthesized_function_tail: ($) =>
         prec.right(
@@ -1728,6 +1735,7 @@ export default (name) =>
           seq(
             nocorrectModifier($),
             repeat(choice(nocorrectModifier($), $._redirect)),
+            $._command_prefix_end,
           ),
         ),
       _nocorrect_modifier: ($) =>

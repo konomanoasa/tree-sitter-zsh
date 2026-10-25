@@ -4,24 +4,12 @@
 [![crates.io](https://img.shields.io/crates/v/konomanoasa-tree-sitter-zsh)](https://crates.io/crates/konomanoasa-tree-sitter-zsh)
 [![npm](https://img.shields.io/npm/v/@konomanoasa/tree-sitter-zsh)](https://www.npmjs.com/package/@konomanoasa/tree-sitter-zsh)
 
-[Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for
+[Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammars for
 Z Shell 5.9.2.
 
-The package provides two languages from shared grammar and scanner sources:
+## Parsing Option
 
-| Language | `EXTENDED_GLOB` | Rust binding |
-| --- | --- | --- |
-| `zsh` (main) | Enabled | `LANGUAGE` |
-| `zsh_default` | Disabled | `LANGUAGE_DEFAULT` |
-
-Both use native Zsh syntax with `BARE_GLOB_QUAL` enabled and
-`RE_MATCH_PCRE`, `C_PRECEDENCES`, `KSH_ARRAYS`, and `POSIX_IDENTIFIERS` disabled.
-Source commands such as `setopt` and `emulate` do not change these parsing
-conditions. The explicit `(*)` parameter substitution flag enables extended
-patterns locally in both languages. Conditional regex operands use POSIX ERE.
-
-The default variant's grammar and scanner are in `zsh_default/`; both variants
-use `queries/highlights.scm`. Regenerate both parsers with `npm run generate`.
+For zsh parsing with `EXTENDED_GLOB` disabled, use `zsh_default`.
 
 ## Installation
 
@@ -39,7 +27,7 @@ npm test
 
 ## Specification
 
-[Zsh Manual, Version 5.9.2](https://zsh.sourceforge.io/Doc/Release/)
+[zsh Manual, Version 5.9.2](https://zsh.sourceforge.io/Doc/Release/)
 
 ## Used By
 

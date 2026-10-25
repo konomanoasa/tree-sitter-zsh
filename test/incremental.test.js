@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parse, valid } from "./support/parser.js";
+import { sourceNodes } from "./support/cst.js";
+import { valid } from "./support/parser.js";
 
 const sources = [
   "in\n",
@@ -274,28 +275,6 @@ for (const source of sources) {
     assert.equal(valid(source), fresh);
   });
 }
-
-test("repairing incomplete bodies and separators matches complete fresh parsing", () => {
-  for (const { source, byte, insert } of [
-    {
-      source: "function f { :;\n",
-      byte: 15,
-      insert: "}",
-    },
-    {
-      source: "if true then :; fi\n",
-      byte: 7,
-      insert: ";",
-    },
-  ]) {
-    assert.equal(parse(source).hasError, true, source);
-    const repaired = source.slice(0, byte) + insert + source.slice(byte);
-    assert.equal(
-      valid(source, [{ byte, deleteBytes: 0, insert }]),
-      valid(repaired),
-    );
-  }
-});
 
 test("inserting a command argument matches a fresh parse", () => {
   assert.equal(
@@ -1488,6 +1467,44 @@ test("editing nocorrect function prefixes preserves fresh and incremental agreem
     assert.equal(valid(source, edits), valid(expected), source);
   }
 });
+
+for (const { name, source, byte, insert } of [
+  {
+    name: "keyword function option separator",
+    source: "function -T -- () { :; } fi\n",
+    byte: 11,
+    insert: " ",
+  },
+  {
+    name: "repeated anonymous function modifier",
+    source: "nocorrect nocorrect () { :; } arg\n",
+    byte: 12,
+    insert: "c",
+  },
+  {
+    name: "function modifier following a redirection",
+    source: "nocorrect >out nocorrect g () { :; }\n",
+    byte: 17,
+    insert: "c",
+  },
+  {
+    name: "newline after a condition logical operator comment",
+    source: "while false && # tail\n",
+    byte: 21,
+    insert: "\n",
+  },
+]) {
+  test(`restoring a ${name} preserves fresh and incremental agreement`, () => {
+    assert.equal(source[byte], insert);
+    assert.equal(
+      valid(source, [
+        { byte, deleteBytes: 1, insert: "" },
+        { byte, deleteBytes: 0, insert },
+      ]),
+      valid(source),
+    );
+  });
+}
 
 test("pending heredoc edits in delimiter command source preserve the matching value", () => {
   const source = "cat <<$(cat <<E)\nbody\n$(cat <<E)\nprint AFTER\n";
@@ -2790,4 +2807,157 @@ test("editing the word after a command prefix into another prefix element or a c
     valid("x=1 >out typeset y\n", [{ byte: 13, deleteBytes: 0, insert: "=" }]),
     valid("x=1 >out type=set y\n"),
   );
+});
+
+test("arithmetic edits switch between native expression structure and unresolved source", () => {
+  for (const [before, after] of [
+    ["1 + 2 * 3", "1 + $x * 3"],
+    ["1 + $x * 3", "1 + (2 * 3)"],
+    ["1 + 2 * 3", "1 + 2 & 3"],
+    ["1 + 2 * 3", "1 + 2 * 3 +"],
+    ["1 + 2 * 3", "[#16]1 + 2 * 3"],
+  ]) {
+    for (const [open, close] of [
+      ["((", "))"],
+      ["print $((", "))"],
+      ["print $[", "]"],
+      ["for ((", ";0;)) do :; done"],
+      ["cat <<END\n$((", "))\nEND"],
+      ["print `print $((", "))`"],
+    ]) {
+      const original = `${open}${before}${close}\n`;
+      const changed = `${open}${after}${close}\n`;
+      const edit = {
+        byte: open.length,
+        deleteBytes: before.length,
+        insert: after,
+      };
+      const undo = {
+        byte: open.length,
+        deleteBytes: after.length,
+        insert: before,
+      };
+      assert.equal(valid(original, [edit]), valid(changed));
+      assert.equal(valid(original, [edit, undo]), valid(original));
+    }
+  }
+});
+
+test("editing subscript flags operands and ranges restores candidate structure in each shell context", () => {
+  for (const [before, after] of [
+    ["1+2", "(r)foo*"],
+    ["(r)foo*", "(re)foo*"],
+    ["(re)foo*(bar)", "(r)foo*(bar)"],
+    ["(r)foo*", "(r)foo*,(R)bar?"],
+    ["(r)^foo~bar#", `(r)^foo~\${part}#`],
+    ["1+2", "1+$x"],
+    ["1+(2*3)", "1+(2*$x)"],
+    ["*", "(e)*"],
+    ["x[2]", "x[2,3]"],
+    ["(r)(#i)foo", "(r)(foo|bar)"],
+    ["(r)[a-z]", `(r)[a\${part}-z]`],
+    ["1+2", "1+"],
+  ]) {
+    let common = 0;
+    while (
+      common < Math.min(before.length, after.length) &&
+      before[common] === after[common]
+    )
+      common++;
+    let tail = 0;
+    while (
+      tail < Math.min(before.length, after.length) - common &&
+      before.at(-tail - 1) === after.at(-tail - 1)
+    )
+      tail++;
+    const removed = before.slice(common, before.length - tail);
+    const inserted = after.slice(common, after.length - tail);
+    for (const [open, close] of [
+      ["print ${a[", "]} tail\nprint after\n"],
+      ['print "${a[', ']}" tail\nprint after\n'],
+      ["print $a[", "] tail\nprint after\n"],
+      ["a[", "]=value\nprint after\n"],
+      ["cat <<END\n${a[", "]}\nEND\nprint after\n"],
+    ]) {
+      const source = open + before + close;
+      const changed = open + after + close;
+      const edit = {
+        byte: open.length + common,
+        deleteBytes: removed.length,
+        insert: inserted,
+      };
+      const undo = {
+        byte: edit.byte,
+        deleteBytes: inserted.length,
+        insert: removed,
+      };
+      assert.equal(valid(source, [edit]), valid(changed), changed);
+      assert.equal(valid(source, [edit, undo]), valid(source), source);
+    }
+  }
+});
+
+test("regex source edits preserve shell boundaries and match fresh ERE structure", () => {
+  for (const [before, after] of [
+    ["(ab|cd)+", `(a\${part}|cd)+`],
+    ["[a-z]", `[a\${part}-z]`],
+    ["a{2,3}", `a{\${count},3}`],
+    ["[abc]", "[abc"],
+    ["ab+", '"ab"+'],
+    ["<1-2>(x)", "<1-2><(print x)"],
+    ["(a|b)", "(a||b)"],
+    ["[[:alpha:]]", `[[:\${class}:]]`],
+  ]) {
+    for (const [prefix, suffix] of [
+      ["[[ x =~ ", " ]] && print AFTER\n"],
+      ["print $( [[ x =~ ", " ]] )\n"],
+      ["print `[[ x =~ ", " ]]`\n"],
+      ["cat <<END\n$( [[ x =~ ", " ]] )\nEND\n"],
+    ]) {
+      const original = prefix + before + suffix;
+      const changed = prefix + after + suffix;
+      const edit = {
+        byte: prefix.length,
+        deleteBytes: before.length,
+        insert: after,
+      };
+      const undo = {
+        byte: prefix.length,
+        deleteBytes: after.length,
+        insert: before,
+      };
+      assert.equal(valid(original, [edit]), valid(changed));
+      assert.equal(valid(original, [edit, undo]), valid(original));
+    }
+  }
+});
+
+test("pattern edits preserve language-specific structure and scanner state", () => {
+  for (const [before, after] of [
+    ["a#", "a##"],
+    ["*(a|b)", "*(a~b)"],
+    ["(#i)ab", "(#q.)"],
+    ["^foo/bar~baz", "foo~((^/bar))"],
+    [`\${(*)x/a#/_}`, `\${x/a#/_}`],
+  ]) {
+    for (const [prefix, suffix] of [
+      ["print ", "\nprint after\n"],
+      ["[[ x = ", " ]]\n"],
+      ["case x in ", ") :;; esac\n"],
+    ]) {
+      const original = prefix + before + suffix;
+      const edited = prefix + after + suffix;
+      const incremental = valid(original, [
+        {
+          byte: Buffer.byteLength(prefix),
+          deleteBytes: Buffer.byteLength(before),
+          insert: after,
+        },
+      ]);
+      assert.deepEqual(
+        sourceNodes(incremental, edited),
+        sourceNodes(valid(edited), edited),
+      );
+    }
+  }
 });

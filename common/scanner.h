@@ -5159,6 +5159,9 @@ static enum Token scan_command_word(struct Scan *scan) {
     !valid[REDIRECT_WORD_BEGIN] &&
     !valid[COUNT_WORD_BEGIN]
   ) {
+    enum Token modifier_name = precommand_name(in, valid, s->word_only);
+    if (modifier_name < TOKEN_COUNT) return modifier_name;
+    if (valid[COMMAND_PREFIX_END]) return TOKEN_COUNT;
     if (
       !s->word_only &&
       !valid[CASE_PATTERN_BEGIN] &&
@@ -5170,8 +5173,6 @@ static enum Token scan_command_word(struct Scan *scan) {
           !(valid[FUNCTION_OPEN] && logical_peek(in) == ')')))
     )
       return reject(scan);
-    enum Token modifier_name = precommand_name(in, valid, s->word_only);
-    if (modifier_name < TOKEN_COUNT) return modifier_name;
     struct LogicalPosition start = logical_position(in);
     enum Token token = read_keyword(in, timing_context(s));
     if (token != TOKEN_COUNT) {
@@ -5778,6 +5779,7 @@ static enum Token scan_word_start(struct Scan *scan) {
     advance(in);
     return NEGATION;
   }
+  if (valid[COMMAND_PREFIX_END]) return COMMAND_PREFIX_END;
   enum Token word_begin = valid[REDIRECT_WORD_BEGIN] ? REDIRECT_WORD_BEGIN
     : valid[FUNCTION_ARGUMENT_BEGIN]                 ? FUNCTION_ARGUMENT_BEGIN
     : valid[COUNT_WORD_BEGIN]                        ? COUNT_WORD_BEGIN
@@ -6641,10 +6643,10 @@ classify(struct Scanner *s, struct LogicalLexer *in, const bool *valid) {
     scan_redirect,
     scan_precommand,
     scan_command_word,
+    scan_parameter_operator,
     scan_arithmetic,
     scan_regex,
     scan_condition,
-    scan_parameter_operator,
     scan_word_start,
     scan_bracket,
     scan_tilde,
@@ -6662,6 +6664,10 @@ classify(struct Scanner *s, struct LogicalLexer *in, const bool *valid) {
     if (token != TOKEN_COUNT || scan.rejected) break;
   }
   if (token == TOKEN_COUNT && !scan.rejected) token = scan_text(&scan);
+  if (token == TOKEN_COUNT && valid[LOGICAL_LAYOUT_END]) {
+    logical_restore_position(in, &start);
+    token = LOGICAL_LAYOUT_END;
+  }
   if (token == TOKEN_COUNT && valid[HEADER_SEPARATOR_END]) {
     logical_restore_position(in, &start);
     token = HEADER_SEPARATOR_END;

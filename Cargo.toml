@@ -2,7 +2,7 @@
 name = "konomanoasa-tree-sitter-zsh"
 version = "0.2.0"
 edition = "2024"
-description = "Tree-sitter grammar for Zsh."
+description = "Tree-sitter grammars for zsh."
 readme = "README.md"
 repository = "https://github.com/konomanoasa/tree-sitter-zsh"
 license = "MIT"
@@ -12,17 +12,17 @@ include = [
   "/LICENSE",
   "/README.md",
   "/bindings/rust/*.rs",
-  "/queries/*.scm",
   "/common/*.h",
-  "/zsh_default/src/*.c",
-  "/zsh_default/src/*.h",
-  "/zsh_default/src/node-types.json",
-  "/zsh_default/src/tree_sitter/*.h",
+  "/queries/*.scm",
   "/src/*.c",
   "/src/*.h",
   "/src/node-types.json",
   "/src/tree_sitter/*.h",
   "/test/bindings.test.rs",
+  "/zsh_default/src/*.c",
+  "/zsh_default/src/*.h",
+  "/zsh_default/src/node-types.json",
+  "/zsh_default/src/tree_sitter/*.h",
 ]
 
 [lib]

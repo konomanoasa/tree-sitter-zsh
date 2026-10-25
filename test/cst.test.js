@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { sourceNodes } from "./support/cst.js";
+import { language } from "./support/language.js";
 import { parseSummary, valid } from "./support/parser.js";
 import {
   representativeSource,
@@ -65,7 +66,62 @@ test("representative native source parses through EOF", () => {
 });
 
 for (const { name, units, source } of scalingWorkloads) {
-  test(`large ${name} parse through EOF at each scale`, () => {
-    for (const factor of scaleFactors) parseSummary(source(units * factor));
-  });
+  for (const factor of scaleFactors) {
+    test(`large ${name} parses through EOF at scale ${factor}`, () => {
+      parseSummary(source(units * factor));
+    });
+  }
+}
+
+test("language selection fixes extended glob while explicit substitution flags stay local", () => {
+  for (const setting of [
+    "setopt extendedglob",
+    "unsetopt extendedglob",
+    "emulate zsh",
+  ]) {
+    const output = valid(`${setting}\nprint a#\n`);
+    assert.equal(output.includes("extended_pattern"), language.name === "zsh");
+  }
+  for (const quote of ["", '"']) {
+    const output = valid(`print ${quote}\${(*)x/a#/_}${quote} \${x/a#/_}\n`);
+    assert.equal(
+      (output.match(/extended_pattern/g) ?? []).length,
+      language.name === "zsh" ? 2 : 1,
+    );
+  }
+  const quoted = valid(`print "\${x#a*}" "\${x:-a*}"\n`);
+  assert.equal((quoted.match(/pattern_star_source/g) ?? []).length, 1);
+});
+
+const substitutionDepth = 256;
+const arithmeticDepth = 2048;
+const delimiterBytes = 4096;
+const pendingDocumentCount = 128;
+const invalidCloserCount = 512;
+
+const limitWorkloads = [
+  {
+    name: "deep substitutions",
+    source: `print ${"$(print ".repeat(substitutionDepth)}x${")".repeat(substitutionDepth)}\n`,
+  },
+  {
+    name: "deep arithmetic lookahead",
+    source: `print ${"$((".repeat(arithmeticDepth)}1${"))".repeat(arithmeticDepth)}\n`,
+  },
+  {
+    name: "large delimiter metadata",
+    source: `cat <<${"E".repeat(delimiterBytes)}\nbody\n`,
+  },
+  {
+    name: "many pending documents",
+    source: `cat ${Array.from({ length: pendingDocumentCount }, (_, i) => `<<E${i}`).join(" ")}\n${Array.from({ length: pendingDocumentCount }, (_, i) => `body\nE${i}\n`).join("")}`,
+  },
+  {
+    name: "repeated invalid closers",
+    source: ")\n".repeat(invalidCloserCount),
+  },
+];
+
+for (const { name, source } of limitWorkloads) {
+  test(`limit input completes: ${name}`, () => parseSummary(source, false));
 }

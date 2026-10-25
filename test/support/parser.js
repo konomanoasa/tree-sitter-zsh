@@ -2,41 +2,39 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before } from "node:test";
-import { createTreeSitter, grammars, root } from "../../scripts/tree-sitter.js";
+import { createTreeSitter, root } from "../../scripts/tree-sitter.js";
 import { assertSourceEnd } from "./cst.js";
 import { language } from "./language.js";
 
 let runner;
-const libraries = new Map();
+let library;
 let sequence = 0;
 before(() => {
   runner = createTreeSitter();
-  for (const grammar of grammars) {
-    const library = join(
-      runner.directory,
-      `${grammar.name}.${process.platform === "win32" ? "dll" : "so"}`,
-    );
-    const result = runner.run([
-      "build",
-      join(root, grammar.path),
-      "--output",
-      library,
-    ]);
-    assert.equal(result.status, 0, result.stderr);
-    libraries.set(grammar.name, library);
-  }
+  library = join(
+    runner.directory,
+    `${language.name}.${process.platform === "win32" ? "dll" : "so"}`,
+  );
+  const result = runner.run([
+    "build",
+    join(root, language.path),
+    "--output",
+    library,
+  ]);
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stderr);
 });
 after(() => runner?.close());
 
-export function parse(source, edits = [], name = language.name) {
+export function parse(source, edits = []) {
   const path = join(runner.directory, `${sequence++}.zsh`);
   writeFileSync(path, source);
   const args = [
     "parse",
     "--lib-path",
-    libraries.get(name),
+    library,
     "--lang-name",
-    name,
+    language.name,
     "--cst",
   ];
   if (edits.length)
@@ -47,6 +45,7 @@ export function parse(source, edits = [], name = language.name) {
       ),
     );
   const result = runner.run([...args, "--", path]);
+  assert.ifError(result.error);
   return {
     status: result.status,
     hasError: /^[0-9: \t-]+•/m.test(result.stdout),
@@ -55,8 +54,8 @@ export function parse(source, edits = [], name = language.name) {
   };
 }
 
-export function valid(source, edits = [], name = language.name) {
-  const result = parse(source, edits, name);
+export function valid(source, edits = []) {
+  const result = parse(source, edits);
   assert.equal(result.status, 0, result.output + result.stderr);
   assert.equal(result.hasError, false, result.output + result.stderr);
   let bytes = Buffer.from(source);
@@ -74,23 +73,20 @@ export function valid(source, edits = [], name = language.name) {
   return result.output;
 }
 
-export function parseSummary(
-  source,
-  expectedValid = true,
-  name = language.name,
-) {
+export function parseSummary(source, expectedValid = true) {
   const path = join(runner.directory, `${sequence++}.zsh`);
   writeFileSync(path, source);
   const result = runner.run([
     "parse",
     "--lib-path",
-    libraries.get(name),
+    library,
     "--lang-name",
-    name,
+    language.name,
     "--quiet",
     "--json-summary",
     path,
   ]);
+  assert.ifError(result.error);
   assert.ok(result.status === 0 || result.status === 1, result.stderr);
   const jsonStart = result.stdout.indexOf("{\n");
   assert.ok(jsonStart >= 0, result.stdout + result.stderr);

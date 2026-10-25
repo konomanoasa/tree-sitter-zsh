@@ -21,3 +21,37 @@ If:
 CompileFlags:
   Add:
     - -Wno-unused-function
+
+---
+If:
+  PathMatch:
+    - src/.*
+    - zsh_default/src/.*
+CompileFlags:
+  Add:
+    - -I.
+
+---
+If:
+  PathMatch:
+    - common/.*\.h
+    - test/[^/]*\.c
+CompileFlags:
+  Add:
+    - -I../src
+
+---
+If:
+  PathMatch: common/scanner\.h
+CompileFlags:
+  Add:
+    - -DZSH_EXTENDED_GLOB=1
+
+---
+If:
+  PathMatch:
+    - src/scanner\.c
+    - zsh_default/src/scanner\.c
+CompileFlags:
+  Add:
+    - -Wno-unused-function

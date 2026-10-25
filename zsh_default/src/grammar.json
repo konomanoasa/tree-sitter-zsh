@@ -269,6 +269,10 @@
               "type": "SYMBOL",
               "name": "_term"
             }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_logical_layout_end"
           }
         ]
       }
@@ -2983,6 +2987,10 @@
               "type": "BLANK"
             }
           ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_command_prefix_end"
         }
       ]
     },
@@ -10619,6 +10627,10 @@
                 }
               ]
             }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_command_prefix_end"
           }
         ]
       }
@@ -21868,6 +21880,14 @@
     {
       "type": "SYMBOL",
       "name": "_header_separator_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_command_prefix_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_logical_layout_end"
     },
     {
       "type": "SYMBOL",

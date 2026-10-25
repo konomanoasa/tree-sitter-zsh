@@ -6,6 +6,7 @@ import { createTreeSitter, root } from "../scripts/tree-sitter.js";
 
 import { language } from "./support/language.js";
 
+const firstThemeColor = 17;
 const captureNames = [
   "character.special",
   "comment",
@@ -39,7 +40,7 @@ before(() => {
     JSON.stringify({
       "parser-directories": [dirname(root)],
       theme: Object.fromEntries(
-        captureNames.map((name, index) => [name, 17 + index]),
+        captureNames.map((name, index) => [name, firstThemeColor + index]),
       ),
     }),
   );

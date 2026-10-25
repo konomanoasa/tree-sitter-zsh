@@ -162,6 +162,39 @@ a=([1+2*3]=x)
                     (literal)))))))))))
 
 ==================
+Parameter modifiers in a key take priority over arithmetic candidate operators
+:language(zsh)
+:language(zsh_default)
+==================
+a=([$name:s/a/b]=x)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment
+                (array_element_assignment
+                  key: (array_element_key
+                    source: (array_key_source
+                      (parameter_expansion
+                        parameter: (variable_name)
+                        (parameter_suffix_source
+                          (parameter_modifier
+                            (modifier_prefix)
+                            name: (modifier_name)
+                            (modifier_separator)
+                            pattern: (parameter_modifier_source (parameter_modifier_text))
+                            (modifier_separator)
+                            replacement: (parameter_modifier_source (parameter_modifier_text)))))))
+                  (assignment_operator)
+                  value: (assignment_value (literal)))))))))))
+
+==================
 Key candidates retain expressions inside groups beside dynamic source
 :language(zsh)
 :language(zsh_default)
