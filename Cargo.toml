@@ -10,6 +10,7 @@ build = "bindings/rust/build.rs"
 links = "tree-sitter-zsh"
 include = [
   "/LICENSE",
+  "/PARSING_POLICY.md",
   "/README.md",
   "/bindings/rust/*.rs",
   "/common/*.h",

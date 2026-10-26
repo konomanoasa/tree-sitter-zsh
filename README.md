@@ -7,10 +7,6 @@
 [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammars for
 Z Shell 5.9.2.
 
-## Parsing Option
-
-For zsh parsing with `EXTENDED_GLOB` disabled, use `zsh_default`.
-
 ## Installation
 
 ```sh
@@ -24,6 +20,10 @@ npm install
 npm run build
 npm test
 ```
+
+## Parsing Policy
+
+[Parsing Policy](PARSING_POLICY.md)
 
 ## Specification
 

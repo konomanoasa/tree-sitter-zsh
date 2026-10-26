@@ -61,6 +61,7 @@ test("npm distribution contains the parser scanner queries and binding sources",
     "bindings/rust/build.rs",
     "Cargo.toml",
     "README.md",
+    "PARSING_POLICY.md",
     "LICENSE",
   ])
     assert.ok(files.has(path), `missing package file: ${path}`);

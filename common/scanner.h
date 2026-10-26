@@ -1821,7 +1821,6 @@ static bool read_nested_boundary(
 
 static bool arithmetic_candidate(struct LogicalLexer *in, size_t *end);
 
-// Memoization prevents repeated nested probes after a failed candidate.
 // Depth-limited results are incomplete and must not be cached.
 static bool arithmetic_start(struct LogicalLexer *in, size_t *end) {
   if (end) *end = 0;

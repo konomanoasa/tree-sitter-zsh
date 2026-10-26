@@ -313,8 +313,7 @@ static inline void logical_clear(struct LogicalLexer *input) {
   source_cursor_clear(&input->cursor);
 }
 
-// Probes start at `(`, which clears pending backslashes and line-start state;
-// only stage kinds and flags distinguish their decoding views.
+// Probes start at `(`, clearing pending backslashes and line-start state.
 static inline uint8_t stage_composition(const struct SourceStage *stage) {
   return (uint8_t)((unsigned)stage->kind << 2 |
     (unsigned)stage->disabled << 1 |

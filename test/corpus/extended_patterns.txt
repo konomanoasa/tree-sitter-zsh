@@ -85,3 +85,19 @@ Repetition accepts wildcard bracket numeric range and grouped operands
 print ?# [a-z]## <1-3># (ab|cd)#
 ---
 (program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (extended_pattern operand: (pattern_question_source) operator: (pattern_operator))) argument: (word (extended_pattern operand: (pattern_bracket_source (pattern_character_range_source start: (pattern_bracket_text) (pattern_range_operator) end: (pattern_bracket_text))) operator: (pattern_operator))) argument: (word (extended_pattern operand: (pattern_numeric_range_source start: (pattern_number) (pattern_range_operator) end: (pattern_number)) operator: (pattern_operator))) argument: (word (extended_pattern operand: (pattern_group_source (pattern_alternatives (pattern_alternative (literal)) (pattern_alternation) (pattern_alternative (literal)))) operator: (pattern_operator)))))))))
+
+==================
+Tilde in parentheses forms an exclusion in the extended language
+:language(zsh)
+==================
+print *(P:a~b:)
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (pattern_star_source) (pattern_group_source (pattern_alternatives (pattern_alternative (extended_pattern left: (pattern_sequence (literal)) operator: (pattern_operator) right: (pattern_sequence (literal)))))))))))))
+
+==================
+Tilde remains inside a bare qualifier argument in the default language
+:language(zsh_default)
+==================
+print *(P:a~b:)
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (pattern_star_source) (glob_qualifier (glob_qualifier_list (glob_flag name: (glob_flag_name) argument: (glob_argument (glob_argument_delimiter) (glob_argument_source (glob_argument_text)) (glob_argument_delimiter))))))))))))
