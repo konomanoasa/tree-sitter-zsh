@@ -1,6 +1,6 @@
 [package]
 name = "konomanoasa-tree-sitter-zsh"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 description = "Tree-sitter grammars for zsh."
 readme = "README.md"
