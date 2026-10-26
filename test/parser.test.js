@@ -2575,38 +2575,237 @@ test("case item terminator removal preserves matching tails and repairs mixed en
   }
 });
 
-test("for word header completion distinguishes comments and terminators from word source", () => {
-  const header = "for x in a";
-  for (const { ending, complete } of [
-    { ending: "\n", complete: true },
-    { ending: ";", complete: true },
-    { ending: " # comment", complete: true },
-    { ending: " # comment\n", complete: true },
-    { ending: " ", complete: false },
-    { ending: "#comment", complete: false },
-    { ending: " '#comment'", complete: false },
-    { ending: "\\\n", complete: false },
+for (const keyword of ["for", "select"]) {
+  test(`${keyword} word header completion distinguishes comments and terminators from word source`, () => {
+    const header = `${keyword} x in a b :`;
+    for (const { ending, complete } of [
+      { ending: "\n", complete: true },
+      { ending: ";", complete: true },
+      { ending: " # comment", complete: true },
+      { ending: " # comment\n", complete: true },
+      { ending: " ", complete: false },
+      { ending: "#comment", complete: false },
+      { ending: " '#comment'", complete: false },
+      { ending: "\\\n", complete: false },
+    ]) {
+      const source = header + ending;
+      const add = { byte: header.length, deleteBytes: 0, insert: ending };
+      const remove = {
+        byte: header.length,
+        deleteBytes: ending.length,
+        insert: "",
+      };
+      assert.equal(parse(source).hasError, !complete, source);
+      assert.equal(parse(header, [add]).hasError, !complete, source);
+      assert.equal(parse(source, [remove]).hasError, true, header);
+      if (complete) assert.equal(valid(header, [add]), valid(source));
+    }
+  });
+}
+
+test("select header and body edits preserve classification across command sources", () => {
+  for (const [prefix, suffix] of [
+    ["", ""],
+    ["f() { ", "; }\n"],
+    ['echo "$(', ')"\n'],
+    ["a[$(", ")]=x\n"],
+    ["cat <<$(", ")\nBODY\n"],
   ]) {
-    const source = header + ending;
-    const add = { byte: header.length, deleteBytes: 0, insert: ending };
-    const remove = {
-      byte: header.length,
-      deleteBytes: ending.length,
-      insert: "",
-    };
-    assert.equal(parse(source).hasError, !complete, source);
-    assert.equal(parse(header, [add]).hasError, !complete, source);
-    assert.equal(parse(source, [remove]).hasError, true, header);
-    if (complete) assert.equal(valid(header, [add]), valid(source));
+    for (const { before, removed, inserted, after } of [
+      { before: "select x", removed: "", inserted: " :", after: "select x :" },
+      {
+        before: "select x (a b)",
+        removed: "",
+        inserted: " :",
+        after: "select x (a b) :",
+      },
+      {
+        before: "select x (a b)",
+        removed: " (",
+        inserted: "\n(",
+        after: "select x\n(a b)",
+      },
+      {
+        before: "select x (a b) :",
+        removed: "(a b)",
+        inserted: "in a b;",
+        after: "select x in a b; :",
+      },
+      {
+        before: "select x (a b) :",
+        removed: ":",
+        inserted: "do :; done",
+        after: "select x (a b) do :; done",
+      },
+      {
+        before: "select x (a b)",
+        removed: "(a b)",
+        inserted: "((a + b))",
+        after: "select x ((a + b))",
+      },
+    ]) {
+      const byte = removed ? before.indexOf(removed) : before.length;
+      assert.ok(byte >= 0);
+      assert.equal(
+        before.slice(0, byte) + inserted + before.slice(byte + removed.length),
+        after,
+      );
+      const source = prefix + before + suffix;
+      const changed = prefix + after + suffix;
+      const edit = {
+        byte: prefix.length + byte,
+        deleteBytes: removed.length,
+        insert: inserted,
+      };
+      const undo = {
+        byte: prefix.length + byte,
+        deleteBytes: inserted.length,
+        insert: removed,
+      };
+      const initial = valid(source);
+      assert.equal(valid(source, [edit]), valid(changed), changed);
+      assert.equal(valid(changed, [undo]), initial, source);
+      assert.equal(valid(source, [edit, undo]), initial, source);
+    }
   }
 });
 
-test("omitted if bodies do not hide missing explicit body closers", () => {
+test("select body insertion keeps following control operators outside the loop", () => {
+  for (const header of ["select x", "select x (a b)", "select x in a b;"]) {
+    for (const operator of ["&&", "||", "|", "|&", "&", "&!", "&|"]) {
+      const body = " { :; }";
+      const source = `${header} ${operator} :`;
+      const changed = `${header}${body} ${operator} :`;
+      const initial = valid(source);
+      const expected = valid(changed);
+      for (const [text, output] of [
+        [source, initial],
+        [changed, expected],
+      ]) {
+        const loop = sourceNodes(output, text).find(
+          (node) => node.type === "select_clause",
+        );
+        assert.ok(loop && loop.end <= text.indexOf(operator), output);
+      }
+      assert.equal(
+        valid(source, [{ byte: header.length, deleteBytes: 0, insert: body }]),
+        expected,
+        changed,
+      );
+      assert.equal(
+        valid(changed, [
+          { byte: header.length, deleteBytes: body.length, insert: "" },
+        ]),
+        initial,
+        source,
+      );
+    }
+  }
+});
+
+test("select EOF comment edits preserve header and body boundaries", () => {
+  for (const header of ["select x", "select x (a b)", "select x in a b :"]) {
+    const source = `${header} # tail`;
+    const changed = `${source}\n`;
+    const edit = { byte: source.length, deleteBytes: 0, insert: "\n" };
+    const undo = { byte: source.length, deleteBytes: 1, insert: "" };
+    assert.equal(valid(source, [edit]), valid(changed), changed);
+    assert.equal(valid(changed, [undo]), valid(source), source);
+    assert.equal(valid(source, [edit, undo]), valid(source), source);
+  }
+});
+
+test("foreach header edits preserve body forms across command sources", () => {
+  for (const [prefix, suffix] of [
+    ["", "\n"],
+    ["f() { ", "; }\n"],
+    ['echo "$(', ')"\n'],
+    ["echo `", "`\n"],
+    ["a[$(", ")]=x\n"],
+    ["cat <<$(", ")\nBODY\n"],
+  ]) {
+    for (const { before, removed, inserted, after } of [
+      {
+        before: "foreach x (a b) :; end",
+        removed: "(a b)",
+        inserted: "in a b;",
+        after: "foreach x in a b; :; end",
+      },
+      {
+        before: "foreach x (a b) { :; }",
+        removed: "(a b)",
+        inserted: "in a b;",
+        after: "foreach x in a b; { :; }",
+      },
+      {
+        before: "foreach x (a b) do :; done",
+        removed: "(a b)",
+        inserted: "in a b;",
+        after: "foreach x in a b; do :; done",
+      },
+      {
+        before: "foreach x (a) case x in x) :;; esac; end",
+        removed: "(a)",
+        inserted: "in a;",
+        after: "foreach x in a; case x in x) :;; esac; end",
+      },
+      {
+        before: "foreach x in a; :; end",
+        removed: "x in",
+        inserted: "x # name\nin",
+        after: "foreach x # name\nin a; :; end",
+      },
+      {
+        before: "foreach x in a; :; end",
+        removed: "a;",
+        inserted: "a # header\n",
+        after: "foreach x in a # header\n :; end",
+      },
+      {
+        before: "foreach x in a b :; end",
+        removed: "b :",
+        inserted: "b; :",
+        after: "foreach x in a b; :; end",
+      },
+    ]) {
+      const byte = before.indexOf(removed);
+      assert.ok(byte >= 0);
+      assert.equal(
+        before.slice(0, byte) + inserted + before.slice(byte + removed.length),
+        after,
+      );
+      const source = prefix + before + suffix;
+      const changed = prefix + after + suffix;
+      const edit = {
+        byte: prefix.length + byte,
+        deleteBytes: removed.length,
+        insert: inserted,
+      };
+      const undo = {
+        byte: prefix.length + byte,
+        deleteBytes: inserted.length,
+        insert: removed,
+      };
+      const initial = valid(source);
+      assert.equal(valid(source, [edit]), valid(changed), changed);
+      assert.equal(valid(changed, [undo]), initial, source);
+      assert.equal(valid(source, [edit, undo]), initial, source);
+    }
+  }
+});
+
+test("compound body closer removal and repair preserve delimiter requirements", () => {
   for (const [source, closing] of [
     ["if false; then :;", " fi"],
     ["if [[ x ]] { :;", " }"],
     ["if [[ x ]] (:", ")"],
     ["if :; then :; elif false; then :;", " fi"],
+    ["select x (a) do :;", " done"],
+    ["select x (a) { :;", " }"],
+    ["select x; (:", ")"],
+    ["foreach x in a; :;", " end"],
+    ["foreach x in a; do :;", " done"],
+    ["foreach x in a; { :;", " }"],
   ]) {
     const complete = source + closing;
     assert.equal(parse(source).hasError, true, source);

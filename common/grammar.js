@@ -681,6 +681,7 @@ export default (name) =>
       [$.precommand_modifier, $._precommand_function_first_word],
       [$._loop_in_words, $._term],
       [$._foreach_words, $._foreach_group_header_end],
+      [$._foreach_header, $._foreach_group_header_separator],
       [$._conditional_primary, $.conditional_binary_expression],
       [$._conditional_expression, $.conditional_and_expression],
       [$.conditional_and_expression, $.conditional_or_expression],
@@ -898,31 +899,43 @@ export default (name) =>
               ),
               headerSeparator($),
               seq(
-                field("words", alias($._for_words, $.loop_words)),
+                field(
+                  "words",
+                  alias($._parenthesized_loop_words, $.loop_words),
+                ),
                 optional(headerSeparator($)),
               ),
             ),
           ),
         ),
+      _foreach_names: ($) =>
+        seq($.foreach_keyword, repeat1(field("name", $.name))),
       _foreach_header: ($) =>
         seq(
-          $.foreach_keyword,
-          repeat1(field("name", $.name)),
-          field("words", alias($._foreach_words, $.loop_words)),
+          $._foreach_names,
+          choice(
+            field("words", alias($._foreach_words, $.loop_words)),
+            seq($._loop_in_words, headerSeparator($)),
+          ),
         ),
       _foreach_group_header: ($) =>
         prec.right(
           seq(
-            $.foreach_keyword,
-            repeat1(field("name", $.name)),
-            field("words", alias($._foreach_group_words, $.loop_words)),
-            optional(headerSeparator($)),
+            $._foreach_names,
+            choice(
+              seq(
+                field("words", alias($._foreach_group_words, $.loop_words)),
+                optional(headerSeparator($)),
+              ),
+              seq($._loop_in_words, $._foreach_group_header_separator),
+            ),
           ),
         ),
       _foreach_group_header_end: ($) => $._right_paren_source,
+      _foreach_group_header_separator: ($) => headerSeparator($),
       _loop_in_words: ($) => seq(repeat($._line), field("words", $.loop_words)),
       loop_words: ($) => seq($.in_keyword, repeat(field("word", $.word))),
-      _for_words: ($) =>
+      _parenthesized_loop_words: ($) =>
         seq(
           $._for_words_open_source,
           repeat(choice(field("word", $.word), $._term)),
@@ -953,14 +966,26 @@ export default (name) =>
           ),
         ),
       select_clause: ($) =>
-        prec.right(seq(repeat($._redirect), $._select_header, loopBody($))),
+        prec.right(
+          seq(repeat($._redirect), $._select_header, optional(loopBody($))),
+        ),
       _select_header: ($) =>
         prec.right(
           seq(
             $.select_keyword,
             field("name", $.name),
             choice(
-              seq($._loop_in_words, headerSeparator($)),
+              seq(
+                $._loop_in_words,
+                choice(headerSeparator($), $._trailing_comment),
+              ),
+              seq(
+                field(
+                  "words",
+                  alias($._parenthesized_loop_words, $.loop_words),
+                ),
+                optional(headerSeparator($)),
+              ),
               optional(headerSeparator($)),
             ),
           ),

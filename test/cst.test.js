@@ -95,6 +95,7 @@ test("language selection fixes extended glob while explicit substitution flags s
 
 const substitutionDepth = 256;
 const arithmeticDepth = 2048;
+const failingArithmeticDepth = 32;
 const delimiterBytes = 4096;
 const pendingDocumentCount = 128;
 const invalidCloserCount = 512;
@@ -107,6 +108,10 @@ const limitWorkloads = [
   {
     name: "deep arithmetic lookahead",
     source: `print ${"$((".repeat(arithmeticDepth)}1${"))".repeat(arithmeticDepth)}\n`,
+  },
+  {
+    name: "failing nested arithmetic candidates",
+    source: `x=${"$((".repeat(failingArithmeticDepth)}$[[((1)(r))${"))".repeat(failingArithmeticDepth)}\n`,
   },
   {
     name: "large delimiter metadata",

@@ -7,14 +7,29 @@
 #define SOURCE_BACKQUOTE_BOUNDARY INT32_C(0x110000)
 #define SOURCE_END_BOUNDARY INT32_C(0x110001)
 
+struct ProbeMemo {
+  size_t position;
+  size_t view;
+  size_t stage_count;
+  size_t end;
+  bool result;
+};
+
 struct NativeInput {
   TSLexer *lexer;
   int32_t *characters;
   size_t count;
   size_t capacity;
   size_t lookahead_depth;
+  bool depth_exhausted;
   enum SourceResult (*boundary)(void *, size_t);
   void *boundary_payload;
+  struct ProbeMemo *memos;
+  size_t memo_count;
+  size_t memo_capacity;
+  uint8_t *views;
+  size_t view_count;
+  size_t view_capacity;
   bool failed;
 };
 
@@ -298,8 +313,88 @@ static inline void logical_clear(struct LogicalLexer *input) {
   source_cursor_clear(&input->cursor);
 }
 
+// Probes start at `(`, which clears pending backslashes and line-start state;
+// only stage kinds and flags distinguish their decoding views.
+static inline uint8_t stage_composition(const struct SourceStage *stage) {
+  return (uint8_t)((unsigned)stage->kind << 2 |
+    (unsigned)stage->disabled << 1 |
+    (unsigned)stage->quoted);
+}
+
+static inline bool probe_memo_matches(
+  const struct NativeInput *native,
+  const struct ProbeMemo *memo,
+  size_t position,
+  const struct LogicalLexer *input
+) {
+  if (
+    memo->position != position || memo->stage_count != input->cursor.stage_count
+  )
+    return false;
+  for (size_t index = 0; index < memo->stage_count; index += 1) {
+    if (
+      native->views[memo->view + index] !=
+      stage_composition(&input->cursor.stages[index])
+    )
+      return false;
+  }
+  return true;
+}
+
+static inline const struct ProbeMemo *probe_memo_find(
+  const struct NativeInput *native,
+  size_t position,
+  const struct LogicalLexer *input
+) {
+  for (size_t index = 0; index < native->memo_count; index += 1) {
+    const struct ProbeMemo *memo = &native->memos[index];
+    if (probe_memo_matches(native, memo, position, input)) return memo;
+  }
+  return NULL;
+}
+
+static inline void probe_memo_store(
+  struct NativeInput *native,
+  size_t position,
+  const struct LogicalLexer *input,
+  size_t end,
+  bool result
+) {
+  size_t count = input->cursor.stage_count;
+  uint8_t *views = source_grow(
+    native->views,
+    &native->view_capacity,
+    native->view_count + count,
+    sizeof(*views)
+  );
+  if (views == NULL) return;
+  native->views = views;
+  struct ProbeMemo *memos = source_grow(
+    native->memos,
+    &native->memo_capacity,
+    native->memo_count + 1,
+    sizeof(*memos)
+  );
+  if (memos == NULL) return;
+  native->memos = memos;
+  for (size_t index = 0; index < count; index += 1) {
+    views[native->view_count + index] =
+      stage_composition(&input->cursor.stages[index]);
+  }
+  memos[native->memo_count++] = (struct ProbeMemo){
+    .position = position,
+    .view = native->view_count,
+    .stage_count = count,
+    .end = end,
+    .result = result,
+  };
+  native->view_count += count;
+}
+
 static inline void native_input_clear(struct NativeInput *input) {
   ts_free(input->characters);
+  ts_free(input->memos);
+  ts_free(input->views);
   *input = (struct NativeInput){0};
 }
 

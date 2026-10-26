@@ -54,7 +54,6 @@ struct SourceRemoval {
   enum SourceRemovalKind kind;
   struct SourceOrigin origin;
   int64_t slash;
-  size_t stage;
 };
 
 struct SourceSnapshot {
@@ -194,8 +193,7 @@ static inline bool source_append_removal(
   struct SourceCursor *cursor,
   enum SourceRemovalKind kind,
   struct SourceOrigin origin,
-  int64_t slash,
-  size_t stage
+  int64_t slash
 ) {
   if (cursor->removal_count == SIZE_MAX) {
     return false;
@@ -214,7 +212,6 @@ static inline bool source_append_removal(
     .kind = kind,
     .origin = origin,
     .slash = slash,
-    .stage = stage,
   };
   return true;
 }
@@ -259,8 +256,7 @@ static inline bool source_feed_stage(
         cursor,
         SOURCE_REMOVED_TAB,
         character.origin,
-        INT64_MIN,
-        index
+        INT64_MIN
       );
     }
     stage->at_line_start = character.value == '\n';
@@ -281,8 +277,7 @@ static inline bool source_feed_stage(
         cursor,
         SOURCE_REMOVED_CONTINUATION,
         character.origin,
-        slash,
-        index
+        slash
       );
     }
     if (

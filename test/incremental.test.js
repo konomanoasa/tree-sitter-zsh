@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { sourceNodes } from "./support/cst.js";
-import { valid } from "./support/parser.js";
+import { parse, valid } from "./support/parser.js";
 
 const sources = [
   "in\n",
@@ -2142,6 +2142,37 @@ for (const keyword of ["while", "until"]) {
   });
 }
 
+test("chained edits turning control keywords into words extend the reused condition list", () => {
+  for (const { seed, edits, after } of [
+    {
+      seed: "if false; then :; elif :;\n",
+      edits: [
+        { byte: 13, deleteBytes: 2, insert: "" },
+        { byte: 19, deleteBytes: 0, insert: "." },
+      ],
+      after: "if false; the:; eli.f :;\n",
+    },
+    {
+      seed: "if :; then :; else :;\n",
+      edits: [
+        { byte: 9, deleteBytes: 2, insert: "" },
+        { byte: 15, deleteBytes: 0, insert: "." },
+      ],
+      after: "if :; the:; els.e :;\n",
+    },
+    {
+      seed: "while :; do :; done\n",
+      edits: [
+        { byte: 10, deleteBytes: 3, insert: ":" },
+        { byte: 16, deleteBytes: 0, insert: "." },
+      ],
+      after: "while :; d:; don.e\n",
+    },
+  ]) {
+    assert.equal(valid(seed, edits), valid(after));
+  }
+});
+
 test("if and final elif body edits preserve their condition and enclosing boundaries", () => {
   for (const branch of ["if ", "if false; then :; elif "]) {
     for (const { condition, body } of [
@@ -2509,11 +2540,78 @@ test("joining a quoted heredoc prefix preserves the matching delimiter", () => {
   );
 });
 
-test("editing an empty regex group preserves its shell operand", () => {
-  assert.equal(
-    valid("[[ x =~ () ]]\n", [{ byte: 9, deleteBytes: 0, insert: "a" }]),
-    valid("[[ x =~ (a) ]]\n"),
-  );
+test("repairing condition hyphens and adjacent regex parentheses restores the fresh CST", () => {
+  for (const [prefix, suffix] of [
+    ["", "\n"],
+    ["f() { ", "; }\n"],
+    ['echo "$(', ')"\n'],
+    ["echo `", "`\n"],
+  ]) {
+    for (const [before, removed, inserted, after] of [
+      ["[[ - ]]", "-", "- = -", "[[ - = - ]]"],
+      ["[[ - ]]", "-", "-n -", "[[ -n - ]]"],
+      ["[[ - ]]", "-", '"-"', '[[ "-" ]]'],
+      ["[[ - ]]", "-", "\\-", "[[ \\- ]]"],
+      ["[[ - ]]", "-", '-""', '[[ -"" ]]'],
+      ["[[ - && x ]]", "-", "x", "[[ x && x ]]"],
+      ["[[ x =~ () ]]", "()", "(a)", "[[ x =~ (a) ]]"],
+      ["[[ x =~ (()) ]]", "()", "(a)", "[[ x =~ ((a)) ]]"],
+      ["[[ x =~ a() ]]", "()", "( )", "[[ x =~ a( ) ]]"],
+      ["[[ x =~ [()] ]]", "()", "(a)", "[[ x =~ [(a)] ]]"],
+      ["[[ x =~ [[=a()=]] ]]", "()", "b", "[[ x =~ [[=ab=]] ]]"],
+      ["[[ x =~ () ]]", "()", "(|)", "[[ x =~ (|) ]]"],
+      ["[[ x =~ () ]]", "()", '("")', '[[ x =~ ("") ]]'],
+      ["[[ x =~ () ]]", "()", "$re", "[[ x =~ $re ]]"],
+    ]) {
+      const offset = before.indexOf(removed);
+      assert.ok(offset >= 0);
+      assert.equal(
+        before.slice(0, offset) +
+          inserted +
+          before.slice(offset + removed.length),
+        after,
+      );
+      const source = prefix + before + suffix;
+      const changed = prefix + after + suffix;
+      const byte = Buffer.byteLength(prefix + before.slice(0, offset));
+      const edit = {
+        byte,
+        deleteBytes: Buffer.byteLength(removed),
+        insert: inserted,
+      };
+      const undo = {
+        byte,
+        deleteBytes: Buffer.byteLength(inserted),
+        insert: removed,
+      };
+      assert.equal(parse(source).hasError, true, source);
+      const fresh = valid(changed);
+      assert.equal(valid(source, [edit]), fresh, changed);
+      assert.equal(parse(changed, [undo]).hasError, true, source);
+      assert.equal(valid(changed, [undo, edit]), fresh, changed);
+    }
+  }
+});
+
+test("regex parentheses use the current command source before continuation removal", () => {
+  for (const { source, accepted } of [
+    { source: "[[ x =~ (\\\n) ]]\n", accepted: true },
+    { source: "echo $([[ x =~ (\\\n) ]])\n", accepted: true },
+    { source: "echo `[[ x =~ (\\\n) ]]`\n", accepted: false },
+    { source: "cat <<E\n$([[ x =~ (\\\n) ]])\nE\n", accepted: false },
+  ]) {
+    const changed = source.replace("(\\\n)", "(a)");
+    const byte = source.indexOf("(\\\n)") + 1;
+    const edit = { byte, deleteBytes: 2, insert: "a" };
+    const undo = { byte, deleteBytes: 1, insert: "\\\n" };
+    assert.equal(parse(source).hasError, !accepted, source);
+    const fresh = valid(changed);
+    assert.equal(valid(source, [edit]), fresh, changed);
+    const reverted = parse(changed, [undo]);
+    assert.equal(reverted.hasError, !accepted, source);
+    if (accepted) assert.equal(reverted.output, valid(source));
+    assert.equal(valid(changed, [undo, edit]), fresh, changed);
+  }
 });
 
 test("editing a continuation after a bracket keeps its first closing bracket literal", () => {

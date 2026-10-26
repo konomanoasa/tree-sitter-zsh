@@ -654,13 +654,36 @@ for x in a;
 0:10 - 0:11                   ";"
 
 ==================
-Foreach requires its documented parenthesized words
-:error
+Foreach in words precede a list body and its end keyword
 :language(zsh)
 :language(zsh_default)
 ==================
-foreach x in a; :; end
+foreach x in a b; :; end
 ---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))))
+              (end_keyword))))))))
 
 ==================
 Foreach accepts a direct brace body
@@ -2194,3 +2217,483 @@ while false && # tail
                   (and_if)
                   (comment
                     (comment_text)))))))))))
+
+==================
+A parenthesized select keeps its choices separate from its short body
+:language(zsh)
+:language(zsh_default)
+==================
+select x (a b) :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
+A parenthesized select without a body retains only its header
+:language(zsh)
+:language(zsh_default)
+==================
+select x (a b)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                word: (word
+                  (literal))))))))))
+
+==================
+A select without choices or a body retains its name and header newline
+:language(zsh)
+:language(zsh_default)
+==================
+select x
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              separator: (term))))))))
+
+==================
+Parenthesized select choices retain layout before a do body
+:language(zsh)
+:language(zsh_default)
+==================
+select x (
+if; do # words
+done
+); do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                word: (word
+                  (literal))
+                (comment
+                  (comment_text))
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+
+==================
+An empty parenthesized select keeps its explicit choice list
+:language(zsh)
+:language(zsh_default)
+==================
+select x (; ;
+) :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              words: (loop_words)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+
+==================
+A newline after the select name makes parentheses a subshell body
+:language(zsh)
+:language(zsh_default)
+==================
+select x
+(: a)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (subshell
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal))
+                                  argument: (word
+                                    (literal)))))))))))))))))))
+
+==================
+A colon before the select header newline remains a choice with no body
+:language(zsh)
+:language(zsh_default)
+==================
+select x in a b :
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal))
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              separator: (term))))))))
+
+==================
+A select with empty parentheses retains an empty choice list without a body
+:language(zsh)
+:language(zsh_default)
+==================
+select x ()
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              words: (loop_words))))))))
+
+==================
+Double parentheses after the select name introduce an arithmetic body
+:language(zsh)
+:language(zsh_default)
+==================
+select x ((1))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (arithmetic_command
+                        (arithmetic_source
+                          expression: (arithmetic_number))))))))))))))
+
+==================
+An asynchronous separator remains outside a bodyless select by contract
+:cst
+:language(zsh)
+:language(zsh_default)
+==================
+select x &
+---
+0:0  - 0:10   program
+0:0  - 0:10     list
+0:0  - 0:8        sublist
+0:0  - 0:8          pipeline
+0:0  - 0:8            command
+0:0  - 0:8              complex_command
+0:0  - 0:8                select_clause
+0:0  - 0:6                  select_keyword `select`
+0:7  - 0:8                  name: name `x`
+0:9  - 0:10       "&"
+
+==================
+Foreach in accepts multiple names and keeps header comments in their own scopes
+:language(zsh)
+:language(zsh_default)
+==================
+foreach x y # names
+in a b; # header
+:; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              name: (name)
+              (comment
+                (comment_text))
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              separator: (term
+                (comment
+                  (comment_text)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))))
+              (end_keyword))))))))
+
+==================
+An empty foreach in word list still requires and retains end
+:language(zsh)
+:language(zsh_default)
+==================
+foreach x in; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword))
+              separator: (term)
+              (end_keyword))))))))
+
+==================
+Foreach in header keywords remain words until the separator
+:language(zsh)
+:language(zsh_default)
+==================
+foreach x in do end :; :; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal))
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))))
+              (end_keyword))))))))
+
+==================
+Foreach in accepts a do body closed by done
+:language(zsh)
+:language(zsh_default)
+==================
+foreach x in a; do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))
+
+==================
+Foreach in closes a direct brace body before the following command
+:language(zsh)
+:language(zsh_default)
+==================
+foreach x in a; { :; }
+print next
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal)))))))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+Foreach in preserves an initial brace in a list closed by end by contract
+:language(zsh)
+:language(zsh_default)
+==================
+foreach x in a; { :; }; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                (in_keyword)
+                word: (word
+                  (literal)))
+              separator: (term)
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (brace_group
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (literal)))))))))))))
+              (end_keyword))))))))
+
+==================
+Foreach in requires a separator before its list body
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+foreach x in a b end
+---
+
+==================
+Foreach in does not treat a missing end as an omitted body
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+foreach x in a; :
+---

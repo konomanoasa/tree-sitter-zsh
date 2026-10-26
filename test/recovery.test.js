@@ -59,6 +59,26 @@ for (const { name, body, owner } of [
     owner: "conditional_command",
   },
   {
+    name: "a bare hyphen condition",
+    body: "[[ - ]]\n",
+    owner: "conditional_command",
+  },
+  {
+    name: "adjacent empty regex parentheses",
+    body: "[[ x =~ () ]]\n",
+    owner: "conditional_command",
+  },
+  {
+    name: "nested empty regex parentheses",
+    body: "[[ x =~ (()) ]]\n",
+    owner: "conditional_command",
+  },
+  {
+    name: "empty regex parentheses inside a bracket expression",
+    body: "[[ x =~ [()] ]]\n",
+    owner: "conditional_command",
+  },
+  {
     name: "an empty condition",
     body: "[[ ]]\n",
     owner: "conditional_command",

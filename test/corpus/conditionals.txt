@@ -1235,15 +1235,15 @@ An unmatched closing brace after a regex interval is a shell boundary
 :language(zsh)
 :language(zsh_default)
 ==================
-[[ x =~ ()a{3}} ]]
+[[ x =~ a{3}} ]]
 ---
 
 ==================
-Empty regex parentheses and unclosed opening braces remain operand source
+An unclosed opening brace remains regex operand source
 :language(zsh)
 :language(zsh_default)
 ==================
-[[ x =~ ()a{ ]]
+[[ x =~ a{ ]]
 ---
 (program
   (list
@@ -1259,7 +1259,6 @@ Empty regex parentheses and unclosed opening braces remain operand source
                 right: (regex_operand
                   expression: (extended_reg_exp
                     (ere_branch
-                      (ere_expression)
                       (ere_expression
                         (one_char_or_coll_elem_ere
                           (ordinary_character)))
@@ -2176,3 +2175,66 @@ if ((1)) { :; } # comment\
                               (literal))))))))))))))
     (comment
       (comment_text))))
+
+==================
+A bare hyphen cannot be a condition
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+[[ - ]]
+---
+
+==================
+A bare hyphen cannot precede a logical condition operator
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+[[ - && x ]]
+---
+
+==================
+Adjacent empty regex parentheses require shell recovery
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ () ]]
+---
+
+==================
+Nested empty regex parentheses require shell recovery
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ (()) ]]
+---
+
+==================
+A regex prefix does not admit adjacent empty parentheses
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ a() ]]
+---
+
+==================
+Regex bracket members do not admit adjacent empty parentheses
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ [()] ]]
+---
+
+==================
+Regex collating payloads do not admit adjacent empty parentheses
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ [[=a()=]] ]]
+---

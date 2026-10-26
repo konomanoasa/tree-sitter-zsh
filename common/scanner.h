@@ -1637,6 +1637,18 @@ static bool emit(struct Scanner *s, TSLexer *lexer, const bool *valid) {
 static void advance(struct LogicalLexer *input) {
   input->lexer.advance(&input->lexer, false);
 }
+// Read past the longest keyword and its boundary so keyword-to-word edits
+// invalidate reused reductions closed by zero-width list markers.
+enum { LOOKAHEAD_EXTENSION = 16 };
+static void extend_lookahead(struct LogicalLexer *in) {
+  struct LogicalPosition saved = logical_position(in);
+  while (horizontal(current(in))) advance(in);
+  for (
+    size_t i = 0; i < LOOKAHEAD_EXTENSION && in->result == SOURCE_CHARACTER; ++i
+  )
+    advance(in);
+  logical_restore_position(in, &saved);
+}
 static bool closing_brace_start(struct LogicalLexer *in) {
   if (current(in) != '}') return false;
   struct LogicalPosition saved = logical_position(in);
@@ -1807,9 +1819,32 @@ static bool read_nested_boundary(
   bool *incomplete
 );
 
+static bool arithmetic_candidate(struct LogicalLexer *in, size_t *end);
+
+// Memoization prevents repeated nested probes after a failed candidate.
+// Depth-limited results are incomplete and must not be cached.
 static bool arithmetic_start(struct LogicalLexer *in, size_t *end) {
   if (end) *end = 0;
   if (current(in) != '(' || logical_peek(in) != '(') return false;
+  struct NativeInput *native = in->native;
+  size_t position = logical_raw_position(in);
+  const struct ProbeMemo *memo = probe_memo_find(native, position, in);
+  if (memo) {
+    if (end) *end = memo->end;
+    return memo->result;
+  }
+  bool exhausted = native->depth_exhausted;
+  native->depth_exhausted = false;
+  size_t found = 0;
+  bool result = arithmetic_candidate(in, &found);
+  if (!native->depth_exhausted)
+    probe_memo_store(native, position, in, found, result);
+  native->depth_exhausted |= exhausted;
+  if (end) *end = found;
+  return result;
+}
+
+static bool arithmetic_candidate(struct LogicalLexer *in, size_t *end) {
   struct LogicalPosition saved = logical_position(in);
   size_t nesting = 0, brackets = 0;
   bool result = false;
@@ -1974,6 +2009,10 @@ condition_operator(struct LogicalLexer *in, bool unary, size_t *length) {
     token = CONDITION_PATTERN_OPERATOR;
   else if (current(in) == '-') {
     advance(in);
+    if (unary && word_boundary(in, WORD_BEGIN) && current(in) != '(') {
+      if (length) *length = 1;
+      return CONDITION_UNARY_OPERATOR;
+    }
     int32_t second = current(in);
     bool nonempty = !word_boundary(in, WORD_BEGIN);
     advance(in);
@@ -2828,13 +2867,14 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
 
 struct DocumentBoundary {
   struct LogicalLexer view;
-  const struct Document *document;
+  size_t document;
   bool line_start;
   bool found;
   size_t end;
 };
 
 struct DocumentInput {
+  const struct Scanner *scanner;
   struct DocumentBoundary *boundaries;
   size_t count;
 };
@@ -2850,7 +2890,7 @@ static bool document_input_init(
   struct NativeInput *native,
   struct Scanner *s
 ) {
-  *input = (struct DocumentInput){0};
+  *input = (struct DocumentInput){.scanner = s};
   if (!active_document(s)) return true;
   input->boundaries = ts_calloc(s->document_count, sizeof(*input->boundaries));
   if (!input->boundaries) return false;
@@ -2867,7 +2907,7 @@ static bool document_input_init(
     if (snapshot.stage_count > s->source.stage_count) return false;
     if (d->ending) continue;
     struct DocumentBoundary *bound = &input->boundaries[input->count++];
-    bound->document = d;
+    bound->document = i;
     bound->line_start = snapshot.stages[snapshot.stage_count - 1].at_line_start;
     if (!logical_init_at(&bound->view, native, &snapshot, 0, false))
       return false;
@@ -2882,8 +2922,12 @@ static void document_boundary_advance(struct DocumentBoundary *bound) {
 
 static enum SourceResult document_boundary(void *payload, size_t position) {
   struct DocumentInput *input = payload;
+  const struct Scanner *s = input->scanner;
   for (size_t i = 0; i < input->count; ++i) {
     struct DocumentBoundary *bound = &input->boundaries[i];
+    if (bound->document >= s->document_count) continue;
+    const struct Document *document = &s->documents[bound->document];
+    if (document->finished) continue;
     struct LogicalLexer *view = &bound->view;
     while (!bound->found && position >= view->consumed) {
       if (view->result == SOURCE_FAILURE) return SOURCE_FAILURE;
@@ -2897,13 +2941,13 @@ static enum SourceResult document_boundary(void *payload, size_t position) {
           current(view) != '\n' &&
           matches
         ) {
-          matches = delimiter_matches(bound->document, current(view), &length);
+          matches = delimiter_matches(document, current(view), &length);
           document_boundary_advance(bound);
         }
         if (view->result == SOURCE_FAILURE) return SOURCE_FAILURE;
         if (
           matches &&
-          length == bound->document->length &&
+          length == document->length &&
           (current(view) == '\n' || view->consumed > start)
         ) {
           bound->found = true;
@@ -3645,6 +3689,7 @@ read_boundary(struct BoundaryProbe *probe, struct LogicalLexer *in) {
         (separator == SEMICOLON || separator == NEWLINE) &&
         (frame->header == FOR_KEYWORD ||
           frame->header == SELECT_KEYWORD ||
+          frame->header == FOREACH_KEYWORD ||
           frame->header == FUNCTION_KEYWORD)
       )
         frame->body_ready = true;
@@ -3868,8 +3913,10 @@ static bool read_nested_boundary(
   bool *incomplete
 ) {
   if (incomplete) *incomplete = true;
-  if (in->native->lookahead_depth >= (SOURCE_STATE_CAPACITY - 2) / 2)
+  if (in->native->lookahead_depth >= (SOURCE_STATE_CAPACITY - 2) / 2) {
+    in->native->depth_exhausted = true;
     return false;
+  }
   struct LogicalLexer ahead;
   if (!logical_fork(&ahead, in, in->consumed, in->cursor.stage_count, NULL, 0))
     return false;
@@ -4218,7 +4265,11 @@ static enum Token scan_documents(struct Scan *scan) {
     struct DocumentInput *documents = in->native->boundary_payload;
     for (size_t i = 0; i < documents->count; ++i) {
       const struct DocumentBoundary *bound = &documents->boundaries[i];
-      if (bound->document == doc && bound->found && bound->end == 0)
+      if (
+        bound->document == (size_t)(doc - s->documents) &&
+        bound->found &&
+        bound->end == 0
+      )
         doc->found = true;
     }
     if (
@@ -5398,6 +5449,26 @@ static enum Token regex_character(struct Scan *scan, enum Token token) {
   return token;
 }
 
+static bool regex_empty_parentheses(struct LogicalLexer *in) {
+  if (current(in) != '(' || logical_peek(in) != ')') return false;
+  struct SourceStage stage = in->cursor.stages[in->cursor.stage_count - 1];
+  stage.disabled = true;
+  struct LogicalLexer source;
+  if (!logical_fork(
+        &source,
+        in,
+        logical_raw_position(in),
+        in->cursor.stage_count - 1,
+        &stage,
+        1
+      ))
+    return false;
+  advance(&source);
+  bool adjacent = current(&source) == ')';
+  logical_clear(&source);
+  return adjacent;
+}
+
 static enum Token scan_regex(struct Scan *scan) {
   if (scan->context != REGEX_BEGIN) return TOKEN_COUNT;
   struct LogicalLexer *in = scan->in;
@@ -5417,6 +5488,7 @@ static enum Token scan_regex(struct Scan *scan) {
   )
     return TOKEN_COUNT;
   if (regex_shell_start(scan->s, in)) return TOKEN_COUNT;
+  if (regex_empty_parentheses(in)) return reject(scan);
   if (c == '<' && numeric_range_start(in)) top->delimiter = '>';
   bool payload = valid[ERE_COMPOUND_CHARACTER_BEGIN] ||
     valid[ERE_COMPOUND_MULTI_BEGIN] ||
@@ -5490,7 +5562,8 @@ static enum Token scan_regex(struct Scan *scan) {
       in->result == SOURCE_CHARACTER &&
       !logical_backquote_end(in) &&
       !regex_boundary(scan->s, in, top) &&
-      !regex_shell_start(scan->s, in)
+      !regex_shell_start(scan->s, in) &&
+      !regex_empty_parentheses(in)
     ) {
       if (current(in) == marker && logical_peek(in) == ']') break;
       regex_advance(in, top);
@@ -5603,6 +5676,7 @@ static enum Token scan_condition(struct Scan *scan) {
     struct LogicalPosition end = logical_position(in);
     bool operand = condition_operand(in);
     bool binary = condition_infix(in);
+    if (!binary && length == 1) return reject(scan);
     if (!binary && (length == 2 || operand)) {
       logical_restore_position(in, &end);
       return token;
@@ -6514,7 +6588,8 @@ static enum Token scan_text(struct Scan *scan) {
         end = expansion_start(in) ||
           quoted_part_start(c) ||
           ((c != '=' || in->consumed == start) && process_start(s, in)) ||
-          regex_boundary(s, in, top);
+          regex_boundary(s, in, top) ||
+          regex_empty_parentheses(in);
         if (!end) {
           if (c == '(') top->arguments++;
           else if (c == ')' && top->arguments) top->arguments--;
@@ -6832,6 +6907,9 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
   valid[DOLLAR_SINGLE_QUOTE_ESCAPE] = context == DOLLAR_SQ_OPEN;
   valid[PARAMETER_CLOSE] = context == PARAMETER_OPEN;
   valid[SUBSCRIPT_TEXT] = doc && subscript_context(context);
+  valid[REGEX_OPEN] = context == REGEX_BEGIN;
+  valid[REGEX_CLOSE] = context == REGEX_BEGIN;
+  valid[REGEX_END] = context == REGEX_BEGIN;
   valid[CONDITION_CLOSE_FIRST] =
     context == CONDITION_BEGIN || context == CONDITION_GROUP_OPEN;
   valid[CONDITION_CLOSE] = valid[CONDITION_CLOSE_FIRST];
@@ -6872,6 +6950,7 @@ static bool zsh_scanner_scan(void *payload, TSLexer *lexer, const bool *valid) {
           token = REMOVED_SOURCE;
         } else token = classify(s, &input, valid);
         if (token < TOKEN_COUNT && valid[token]) {
+          extend_lookahead(&input);
           lexer->result_symbol = token;
           if (token == TRAILING_COMMENT_TEXT) token = COMMENT_TEXT;
           s->emission = token;
