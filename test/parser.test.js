@@ -2794,10 +2794,150 @@ test("foreach header edits preserve body forms across command sources", () => {
   }
 });
 
+for (const { name, head, brace } of [
+  { name: "a brace if", head: "if [[ x ]] { :; }", brace: true },
+  {
+    name: "a then to brace transition",
+    head: "if false; then :; elif [[ x ]] { :; }",
+    brace: true,
+  },
+  {
+    name: "consecutive brace branches",
+    head: "if [[ x ]] { :; } elif [[ x ]] { :; }",
+    brace: true,
+  },
+  {
+    name: "a brace to then transition",
+    head: "if [[ x ]] { :; } elif false; then :;",
+    brace: false,
+  },
+  {
+    name: "consecutive then branches",
+    head: "if false; then :; elif false; then :;",
+    brace: false,
+  },
+]) {
+  test(`${name} uses its final branch to determine the terminator`, () => {
+    for (const { tail, accepted } of [
+      { tail: "", accepted: false },
+      { tail: " ", accepted: false },
+      { tail: "\n", accepted: brace },
+      { tail: "\nprint AFTER\n", accepted: brace },
+      { tail: "; print AFTER\n", accepted: brace },
+      { tail: " # comment", accepted: brace },
+      { tail: " # comment\nprint AFTER\n", accepted: brace },
+      { tail: " fi", accepted: true },
+      { tail: " fi > /dev/null | :", accepted: true },
+      { tail: " else { :; }", accepted: brace },
+      { tail: " else { :; } fi", accepted: !brace },
+      { tail: " else\n{ :; }", accepted: brace },
+      { tail: " else\n{ :; } fi", accepted: !brace },
+      { tail: " else; { :; }", accepted: brace },
+      { tail: " else; { :; } fi", accepted: !brace },
+      { tail: " else # comment\n{ :; }", accepted: brace },
+      { tail: " else # comment\n{ :; } fi", accepted: !brace },
+      { tail: " else :; fi", accepted: true },
+      { tail: " else > /dev/null { :; } fi", accepted: true },
+      { tail: " else > /dev/null { :; }", accepted: false },
+      { tail: " > /dev/null\n", accepted: false },
+      { tail: " | :", accepted: false },
+      { tail: " && :", accepted: false },
+      { tail: " &", accepted: false },
+      { tail: "\nfi", accepted: !brace },
+    ]) {
+      const source = head + tail;
+      if (!accepted) {
+        assert.equal(parse(source).hasError, true, source);
+        continue;
+      }
+      const nodes = sourceNodes(valid(source), source);
+      const after = nodes.find(
+        (node) => node.type === "simple_command" && node.text === "print AFTER",
+      );
+      if (source.includes("print AFTER")) {
+        assert.ok(after, source);
+        assert.ok(
+          nodes.every(
+            (node) => node.type !== "if_clause" || node.end <= after.start,
+          ),
+          source,
+        );
+      }
+    }
+  });
+}
+
+test("a brace if requires its own terminator before an enclosing closer", () => {
+  for (const [prefix, suffix] of [
+    ["{ ", " }"],
+    ["(", ")"],
+    ["x=$(", ")"],
+    ["x=`", "`"],
+    ["case x in x) ", ";; esac"],
+    ["case x in x) ", ";& esac"],
+    ["case x in x) ", ";| esac"],
+  ]) {
+    const head = `${prefix}if false; then :; elif [[ x ]] { :; }`;
+    assert.equal(parse(head + suffix).hasError, true, head + suffix);
+    valid(`${head}\n${suffix}`);
+    valid(`${head} fi${suffix}`);
+  }
+});
+
+test("mixed inner branches leave following elif and else clauses with the outer if", () => {
+  for (const ending of [";", " fi;", " else { print INNER_ELSE; };"]) {
+    const inner = `if false; then :; elif [[ x ]] { print INNER; }${ending}`;
+    const source = `if false; then ${inner} elif false; then print OUTER_ELIF; else print OUTER_ELSE; fi\nprint AFTER\n`;
+    const nodes = sourceNodes(valid(source), source);
+    const clauses = nodes.filter((node) => node.type === "if_clause");
+    assert.equal(clauses.length, 2, source);
+    const [outer, nested] = clauses;
+    assert.equal(nested.start, source.indexOf(inner), source);
+    assert.equal(nested.end, source.indexOf(inner) + inner.length - 1, source);
+    assert.equal(outer.start, 0, source);
+    for (const label of ["OUTER_ELIF", "OUTER_ELSE"]) {
+      const command = nodes.find(
+        (node) =>
+          node.type === "simple_command" && node.text === `print ${label}`,
+      );
+      assert.ok(command, source);
+      assert.ok(nested.end < command.start && command.end < outer.end, source);
+    }
+    assert.ok(outer.end < source.indexOf("print AFTER"), source);
+  }
+});
+
+test("mixed if branches keep their owners inside command source lookahead", () => {
+  const body =
+    "if [[ x ]] { :; } elif false; then :; elif [[ x ]] { :; } else { :; }";
+  for (const [prefix, suffix] of [
+    ["a[$(", ")]=x\n"],
+    ["a[`", "`]=x\n"],
+    ["print ${x[$(", ")]}\n"],
+    ["cat <<$(", `)\nBODY\n$(${body})\n`],
+  ]) {
+    const source = `${prefix}${body}${suffix}print AFTER\n`;
+    const nodes = sourceNodes(valid(source), source);
+    const clauses = nodes.filter((node) => node.type === "if_clause");
+    assert.equal(clauses.length, 1, source);
+    assert.equal(clauses[0].text, body, source);
+    assert.equal(
+      nodes.filter((node) => node.type === "if_branch").length,
+      3,
+      source,
+    );
+    assert.equal(
+      nodes.filter((node) => node.type === "else_clause").length,
+      1,
+      source,
+    );
+  }
+});
+
 test("compound body closer removal and repair preserve delimiter requirements", () => {
   for (const [source, closing] of [
     ["if false; then :;", " fi"],
-    ["if [[ x ]] { :;", " }"],
+    ["if [[ x ]] { :;", " };"],
     ["if [[ x ]] (:", ")"],
     ["if :; then :; elif false; then :;", " fi"],
     ["select x (a) do :;", " done"],

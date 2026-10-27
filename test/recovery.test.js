@@ -47,6 +47,26 @@ for (const { name, body, owner } of [
     owner: "while_clause",
   },
   { name: "an if body", body: "if :; then ) ; fi\n", owner: "if_clause" },
+  {
+    name: "a mixed brace branch body",
+    body: "if false; then :; elif [[ x ]] { ) ; };\n",
+    owner: "if_clause",
+  },
+  {
+    name: "a mixed then branch body",
+    body: "if [[ x ]] { :; } elif :; then ) ; fi\n",
+    owner: "if_clause",
+  },
+  {
+    name: "a mixed brace else body",
+    body: "if false; then :; elif [[ x ]] { :; } else { ) ; }\n",
+    owner: "if_clause",
+  },
+  {
+    name: "an extra fi after a mixed brace else",
+    body: "if false; then :; elif [[ x ]] { :; } else { :; } fi\n",
+    owner: "if_clause",
+  },
   { name: "a brace group", body: "{ ) ; }\n", owner: "brace_group" },
   {
     name: "an always body",

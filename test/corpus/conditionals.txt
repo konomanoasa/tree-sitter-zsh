@@ -2238,3 +2238,301 @@ Regex collating payloads do not admit adjacent empty parentheses
 ==================
 [[ x =~ [[=a()=]] ]]
 ---
+
+==================
+A mixed brace branch ends at a separator before the next command
+:language(zsh)
+:language(zsh_default)
+==================
+if :; then :; elif [[ x ]] { :; }; :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal))))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+Consecutive brace branches can consume their own fi
+:language(zsh)
+:language(zsh_default)
+==================
+if [[ x ]] { :; } elif [[ x ]] { :; } fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal)))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal)))))))))
+              (fi_keyword))))))))
+
+==================
+A mixed brace branch selects a short brace else without fi
+:language(zsh)
+:language(zsh_default)
+==================
+if :; then :; elif [[ x ]] { :; } else { :; }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              branch: (if_branch
+                (elif_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal)))))))))
+              alternative: (else_clause
+                (else_keyword)
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal))))))))))))))))
+
+==================
+A brace branch can select an ordinary else list closed by fi
+:language(zsh)
+:language(zsh_default)
+==================
+if [[ x ]] { :; } else :; fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (conditional_command
+                            condition: (word
+                              (literal))))))))
+                body: (brace_group
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word
+                              (literal)))))))))
+              alternative: (else_clause
+                (else_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              (fi_keyword))))))))
+
+==================
+A then branch keeps its else brace command inside the ordinary list
+:language(zsh)
+:language(zsh_default)
+==================
+if :; then :; else { :; } fi
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (if_clause
+              branch: (if_branch
+                (if_keyword)
+                condition: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (then_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal))))))))
+              alternative: (else_clause
+                (else_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (complex_command
+                          (brace_group
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal))))))))))))))
+              (fi_keyword))))))))
+
+==================
+A short brace else after mixed branches rejects an extra fi
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+if :; then :; elif [[ x ]] { :; } else { :; } fi
+---
+
+
+==================
+A mixed brace branch does not terminate at a pipe
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+if :; then :; elif [[ x ]] { :; } | :
+---
+
+
+==================
+A brace branch does not use the omitted-body EOF exception
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+if [[ x ]] { :; }
+---
+
+
+==================
+A case item separator cannot terminate a brace branch
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+case x in x) if [[ x ]] { :; };; esac
+---

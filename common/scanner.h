@@ -175,6 +175,14 @@ static bool key_context(enum Token token) {
   return token == ARRAY_KEY_OPEN || token == ARRAY_KEY_GROUP_OPEN;
 }
 
+static bool condition_context(enum Token token) {
+  return token == CONDITION_BEGIN || token == CONDITION_GROUP_OPEN;
+}
+
+static bool quote_context(enum Token token) {
+  return token == SQ_OPEN || token == DQ_OPEN || token == DOLLAR_SQ_OPEN;
+}
+
 static bool arithmetic_key_context(const struct Scanner *s) {
   for (size_t i = s->count; i > 0; --i) {
     enum Token token = s->contexts[i - 1].opener;
@@ -326,8 +334,7 @@ static bool filename_pattern(const struct Scanner *s) {
     if (substitution_context(token)) return true;
     if (
       token == CASE_PATTERN_BEGIN ||
-      token == CONDITION_BEGIN ||
-      token == CONDITION_GROUP_OPEN ||
+      condition_context(token) ||
       subscript_context(token) ||
       token == PARAMETER_OPEN ||
       token == PARAMETER_REPLACEMENT_OPERATOR ||
@@ -351,12 +358,9 @@ static bool argument_source(const struct Context *owner) {
   if (!owner) return true;
   enum Token token = owner->opener;
   return word_context(token) ||
-    token == ASSIGNMENT_BEGIN ||
-    token == DECLARATION_ASSIGNMENT_BEGIN ||
-    token == ARRAY_ELEMENT_BEGIN ||
+    assignment_context(token) ||
     token == ARRAY_OPEN ||
-    token == ARRAY_KEY_OPEN ||
-    token == ARRAY_KEY_GROUP_OPEN ||
+    key_context(token) ||
     token == SUBSCRIPT_PREFIX_OPEN ||
     token == UNBRACED_MODIFIER_BEGIN ||
     precommand_context(token) ||
@@ -366,8 +370,7 @@ static bool argument_source(const struct Context *owner) {
     token == FOR_WORDS_OPEN ||
     token == CASE_PATTERN_BEGIN ||
     token == REGEX_BEGIN ||
-    token == CONDITION_BEGIN ||
-    token == CONDITION_GROUP_OPEN;
+    condition_context(token);
 }
 
 static bool process_start(const struct Scanner *s, struct LogicalLexer *in) {
@@ -379,8 +382,7 @@ static bool process_start(const struct Scanner *s, struct LogicalLexer *in) {
     enum Token token = s->contexts[i - 1].opener;
     if (
       pattern_context(token) ||
-      token == ARRAY_KEY_OPEN ||
-      token == ARRAY_KEY_GROUP_OPEN ||
+      key_context(token) ||
       token == SUBSCRIPT_PREFIX_OPEN ||
       token == UNBRACED_MODIFIER_BEGIN ||
       token == GLOB_MODIFIER_BEGIN
@@ -750,10 +752,11 @@ static bool push(struct Scanner *s, enum Token token) {
   int32_t delimiter = s->argument_delimiter;
   if (token == GLOB_QUALIFIER_OPEN) context->delimiter = 'q';
   if (token == PATTERN_CLASS_OPEN) context->delimiter = delimiter;
-  if (token == FLAG_ARGUMENT_OPEN)
+  if (token == FLAG_ARGUMENT_OPEN) {
     context->delimiter = closing_delimiter(delimiter);
-  if (token == FLAG_ARGUMENT_OPEN && s->count > 1)
-    context->delimiter_kind = s->contexts[s->count - 2].delimiter_kind;
+    if (s->count > 1)
+      context->delimiter_kind = s->contexts[s->count - 2].delimiter_kind;
+  }
   if (token == GLOB_ARGUMENT_BEGIN && s->count > 1) {
     struct Context *parent = &s->contexts[s->count - 2];
     context->arguments = parent->arguments;
@@ -901,6 +904,7 @@ static bool word_only_after(enum Token token, bool previous) {
     case IN_KEYWORD:
     case FUNCTION_KEYWORD:
     case CLOSED_BODY_END:
+    case IF_BRACE_END:
     case FUNCTION_ARGUMENTS_BEGIN:
       return true;
     default:
@@ -945,7 +949,7 @@ static void track_context(struct Context *top, enum Token token) {
     if (token == PARAMETER_PATTERN_OPERATOR) top->parameter_pattern = true;
     else if (token == PARAMETER_VALUE_OPERATOR) top->parameter_pattern = false;
   }
-  if (top->opener == CONDITION_BEGIN || top->opener == CONDITION_GROUP_OPEN)
+  if (condition_context(top->opener))
     top->delimiter = token == CONDITION_CLOSE_FIRST ? ']' : 0;
   if (top->opener == CASE_PATTERN_BEGIN && !layout) {
     if (token == CASE_PATTERN_OPEN) top->delimiter = '(';
@@ -1118,9 +1122,7 @@ static struct Context *group_source_owner(struct Scanner *s, enum Token group) {
   for (size_t i = s->count; i > 0; --i) {
     struct Context *owner = &s->contexts[i - 1];
     if (
-      owner->opener == SQ_OPEN ||
-      owner->opener == DQ_OPEN ||
-      owner->opener == DOLLAR_SQ_OPEN ||
+      quote_context(owner->opener) ||
       owner->opener == FLAG_ARGUMENT_OPEN ||
       owner->opener == REGEX_BEGIN
     )
@@ -1663,6 +1665,9 @@ static void skip_name(struct LogicalLexer *in) {
   while (name_character(current(in))) advance(in);
 }
 static void skip_digits(struct LogicalLexer *in) {
+  while (digit(current(in))) advance(in);
+}
+static void skip_number_digits(struct LogicalLexer *in) {
   while (digit(current(in)) || current(in) == '_') advance(in);
 }
 static void skip_numeric_range(struct LogicalLexer *in) {
@@ -1762,16 +1767,9 @@ assignment_start(struct LogicalLexer *in, bool element, size_t *value_start) {
   if (element) {
     if (current(in) != '[') return false;
   } else {
-    if (digit(current(in))) {
-      do {
-        advance(in);
-      } while (digit(current(in)));
-    } else {
-      if (!name_start(current(in))) return false;
-      do {
-        advance(in);
-      } while (name_character(current(in)));
-    }
+    if (digit(current(in))) skip_digits(in);
+    else if (name_start(current(in))) skip_name(in);
+    else return false;
   }
   bool result = true;
   if (current(in) == '[') {
@@ -1894,11 +1892,11 @@ static bool numeric_range_start(struct LogicalLexer *in) {
   struct LogicalPosition saved = logical_position(in);
   if (current(in) != '<') return false;
   advance(in);
-  while (digit(current(in))) advance(in);
+  skip_digits(in);
   bool found = current(in) == '-';
   if (found) {
     advance(in);
-    while (digit(current(in))) advance(in);
+    skip_digits(in);
     found = current(in) == '>';
   }
   logical_restore_position(in, &saved);
@@ -2255,6 +2253,21 @@ arithmetic_character_boundary(struct LogicalLexer *in, bool semicolon) {
     expansion_start(in);
 }
 
+static size_t escape_digit_count(int32_t c) {
+  return c == 'u'                        ? 4
+    : c == 'U'                           ? 8
+    : c == 'x' || (c >= '0' && c <= '7') ? 2
+                                         : 0;
+}
+
+static int escape_digit_value(int32_t c, bool octal) {
+  int value = digit(c)     ? c - '0'
+    : c >= 'a' && c <= 'f' ? c - 'a' + 10
+    : c >= 'A' && c <= 'F' ? c - 'A' + 10
+                           : -1;
+  return value < (octal ? 8 : 16) ? value : -1;
+}
+
 static bool
 arithmetic_character(struct LogicalLexer *in, bool escaped, bool semicolon) {
   while (in->result == SOURCE_CHARACTER) {
@@ -2280,20 +2293,12 @@ arithmetic_character(struct LogicalLexer *in, bool escaped, bool semicolon) {
       continue;
     }
     bool octal = c >= '0' && c <= '7';
-    size_t remaining = c == 'u' ? 4
-      : c == 'U'                ? 8
-      : c == 'x'                ? 2
-      : octal                   ? 2
-                                : 0;
-    while (remaining && in->result == SOURCE_CHARACTER) {
-      int32_t value = current(in);
-      if (
-        octal ? value < '0' || value > '7'
-              : !digit(value) &&
-            !(value >= 'a' && value <= 'f') &&
-            !(value >= 'A' && value <= 'F')
-      )
-        break;
+    size_t remaining = escape_digit_count(c);
+    while (
+      remaining &&
+      in->result == SOURCE_CHARACTER &&
+      escape_digit_value(current(in), octal) >= 0
+    ) {
       advance(in);
       remaining--;
     }
@@ -2318,19 +2323,19 @@ static enum Token arithmetic_token(
       advance(in);
       skip_name(in);
     } else {
-      skip_digits(in);
+      skip_number_digits(in);
       if (current(in) == '#') {
         advance(in);
         skip_name(in);
       } else {
         if (current(in) == '.') {
           advance(in);
-          skip_digits(in);
+          skip_number_digits(in);
         }
         if (current(in) == 'e' || current(in) == 'E') {
           advance(in);
           if (current(in) == '+' || current(in) == '-') advance(in);
-          skip_digits(in);
+          skip_number_digits(in);
         }
       }
     }
@@ -2370,9 +2375,7 @@ static enum Token arithmetic_token(
     (valid[ARITHMETIC_VARIABLE] || valid[ARITHMETIC_FUNCTION_NAME]) &&
     name_start(c)
   ) {
-    do {
-      advance(in);
-    } while (name_character(current(in)));
+    skip_name(in);
     struct LogicalPosition end = logical_position(in);
     while (horizontal(current(in))) advance(in);
     enum Token token = current(in) == '(' && valid[ARITHMETIC_FUNCTION_NAME]
@@ -2621,18 +2624,14 @@ dollar_escape(struct LogicalLexer *in, struct DollarEscape *escape) {
       escape->length = utf8_encode((uint32_t)current(in), escape->bytes);
       escape->valid = escape->length != 0;
       advance(in);
-    } else if (c == 'u' || c == 'U' || c == 'x' || (c >= '0' && c <= '7')) {
+    } else if (escape_digit_count(c)) {
       unicode = c == 'u' || c == 'U';
       bool octal = c >= '0' && c <= '7';
-      size_t remaining = c == 'u' ? 4 : c == 'U' ? 8 : 2;
+      size_t remaining = escape_digit_count(c);
       uint32_t value = octal ? (uint32_t)(c - '0') : 0;
       while (remaining && in->result == SOURCE_CHARACTER) {
-        int32_t v = current(in);
-        int32_t n = digit(v)     ? v - '0'
-          : v >= 'a' && v <= 'f' ? v - 'a' + 10
-          : v >= 'A' && v <= 'F' ? v - 'A' + 10
-                                 : -1;
-        if (n < 0 || n >= (octal ? 8 : 16)) break;
+        int n = escape_digit_value(current(in), octal);
+        if (n < 0) break;
         value = value * (octal ? 8 : 16) + (uint32_t)n;
         remaining--;
         advance(in);
@@ -3031,6 +3030,11 @@ struct BoundaryProbe {
   struct Scanner documents;
   const struct Scanner *owner;
 };
+
+static void probe_clear(struct BoundaryProbe *probe) {
+  ts_free(probe->frames);
+  clear(&probe->documents);
+}
 
 static bool boundary_condition_header(enum Token token) {
   return token == IF_KEYWORD ||
@@ -3877,8 +3881,7 @@ static bool read_condition_word(struct LogicalLexer *in) {
       word_boundary(&ahead, WORD_BEGIN);
   }
   size_t end = ahead.consumed;
-  ts_free(probe.frames);
-  clear(&probe.documents);
+  probe_clear(&probe);
   logical_clear(&ahead);
   if (found)
     while (in->result == SOURCE_CHARACTER && in->consumed < end) advance(in);
@@ -3946,8 +3949,7 @@ static bool read_nested_boundary(
     }
     end = ahead.consumed;
   }
-  ts_free(probe.frames);
-  clear(&probe.documents);
+  probe_clear(&probe);
   if (incomplete && !found && !arithmetic)
     *incomplete = ahead.result != SOURCE_CHARACTER;
   logical_clear(&ahead);
@@ -3971,8 +3973,7 @@ static size_t subscript_boundary(
   bool result =
     read_subscript_boundary(&probe, &ahead, element, word_boundary, quoting);
   size_t end = result ? ahead.consumed : 0;
-  clear(&probe.documents);
-  ts_free(probe.frames);
+  probe_clear(&probe);
   logical_clear(&ahead);
   return end;
 }
@@ -4130,8 +4131,7 @@ static bool word_part_context(enum Token token) {
     subscript_context(token) ||
     pattern_context(token) ||
     modifier_context(token) ||
-    token == ARRAY_KEY_OPEN ||
-    token == ARRAY_KEY_GROUP_OPEN ||
+    key_context(token) ||
     token == SUBSCRIPT_PREFIX_OPEN ||
     token == PARAMETER_FLAGS_OPEN ||
     token == SUBSCRIPT_FLAGS_OPEN ||
@@ -4328,9 +4328,7 @@ static void scan_prepare(struct Scan *scan) {
   scan->in_body =
     scan->doc && !scan->doc->ending && scan->context == DOCUMENT_BEGIN;
   scan->in_word = word_part_context(scan->context);
-  scan->quoted = scan->context == SQ_OPEN ||
-    scan->context == DQ_OPEN ||
-    scan->context == DOLLAR_SQ_OPEN;
+  scan->quoted = quote_context(scan->context);
   scan->quoting = source_quoting(s);
   scan->grouped = word_source_grouped(s);
   scan->subscript_prefix = valid[SUBSCRIPT_PREFIX_OPEN] &&
@@ -4397,13 +4395,15 @@ static enum Token brace_source_token(struct Scan *scan) {
     : TOKEN_COUNT;
 }
 
+static enum Token advance_brace_token(struct Scan *scan, enum Token token) {
+  advance(scan->in);
+  if (scan->c == '.') advance(scan->in);
+  return token;
+}
+
 static enum Token scan_brace_source(struct Scan *scan) {
   enum Token token = brace_source_token(scan);
-  if (token != TOKEN_COUNT) {
-    advance(scan->in);
-    if (scan->c == '.') advance(scan->in);
-  }
-  return token;
+  return token == TOKEN_COUNT ? TOKEN_COUNT : advance_brace_token(scan, token);
 }
 
 static enum Token scan_structure(struct Scan *scan) {
@@ -4419,15 +4419,15 @@ static enum Token scan_structure(struct Scan *scan) {
                                                : ASSIGNMENT_BEGIN;
   if (valid[ARRAY_ELEMENT_BEGIN] && assignment_start(in, true, NULL))
     return ARRAY_ELEMENT_BEGIN;
-  if (valid[ARITHMETIC_EXPRESSION_BEGIN] && arithmetic_start(in, NULL))
-    return ARITHMETIC_EXPRESSION_BEGIN;
   if (
-    (valid[ARITHMETIC_FOR_BEGIN] ||
+    (valid[ARITHMETIC_EXPRESSION_BEGIN] ||
+      valid[ARITHMETIC_FOR_BEGIN] ||
       (valid[ARITHMETIC_BEGIN] && !s->word_only)) &&
     arithmetic_start(in, NULL)
   )
-    return valid[ARITHMETIC_FOR_BEGIN] ? ARITHMETIC_FOR_BEGIN
-                                       : ARITHMETIC_BEGIN;
+    return valid[ARITHMETIC_EXPRESSION_BEGIN] ? ARITHMETIC_EXPRESSION_BEGIN
+      : valid[ARITHMETIC_FOR_BEGIN]           ? ARITHMETIC_FOR_BEGIN
+                                              : ARITHMETIC_BEGIN;
   if (valid[ARITHMETIC_END]) return ARITHMETIC_END;
   if (valid[FOR_WORDS_OPEN] && c == '(' && !arithmetic_start(in, NULL)) {
     advance(in);
@@ -4509,20 +4509,16 @@ static enum Token scan_source_end(struct Scan *scan) {
     (c == ']' || enclosing_source_end(s, in, s->count - 1, false))
   )
     return SUBSCRIPT_PREFIX_END;
+  enum Token group_end = valid[PATTERN_GROUP_END] && c != ')'
+    ? PATTERN_GROUP_END
+    : valid[BRACE_EXPANSION_END] && c != '}' ? BRACE_EXPANSION_END
+                                             : TOKEN_COUNT;
   if (
-    valid[PATTERN_GROUP_END] &&
-    c != ')' &&
+    group_end != TOKEN_COUNT &&
     !scan->continues &&
     enclosing_source_end(s, in, s->count, scan->grouped)
   )
-    return PATTERN_GROUP_END;
-  if (
-    valid[BRACE_EXPANSION_END] &&
-    c != '}' &&
-    !scan->continues &&
-    enclosing_source_end(s, in, s->count, scan->grouped)
-  )
-    return BRACE_EXPANSION_END;
+    return group_end;
   if (
     scan->context == REGEX_BEGIN &&
     valid[REGEX_END] &&
@@ -4813,6 +4809,12 @@ static enum Token scan_parameter_source(struct Scan *scan) {
   return in->consumed > start ? PARAMETER_CLOSING_TEXT : TOKEN_COUNT;
 }
 
+static bool advance_flag_source(struct Scan *scan, bool parameter) {
+  if (parameter) return advance_parameter_source(scan);
+  advance(scan->in);
+  return true;
+}
+
 static enum Token scan_parameter_flags(struct Scan *scan) {
   enum Token context = scan->context;
   if (context != PARAMETER_FLAGS_OPEN && context != SUBSCRIPT_FLAGS_OPEN)
@@ -4833,12 +4835,8 @@ static enum Token scan_parameter_flags(struct Scan *scan) {
     top->delimiter = c;
     top->initial = false;
     top->arguments--;
-    if (context == PARAMETER_FLAGS_OPEN) {
-      top->delimiter_kind = parameter_character_kind(scan->s, in);
-      if (!advance_parameter_source(scan)) return TOKEN_COUNT;
-    } else {
-      advance(in);
-    }
+    if (parameter) top->delimiter_kind = parameter_character_kind(scan->s, in);
+    if (!advance_flag_source(scan, parameter)) return TOKEN_COUNT;
     return FLAG_ARGUMENT_OPEN;
   }
   enum Token name = parameter ? PARAMETER_FLAG_NAME : SUBSCRIPT_FLAG_NAME;
@@ -4863,18 +4861,13 @@ static enum Token scan_parameter_flags(struct Scan *scan) {
       : parameter && (c == 'l' || c == 'r') ? 3
                                             : 1;
     top->initial = true;
-    if (parameter) {
-      if (!advance_parameter_source(scan)) return TOKEN_COUNT;
-    } else {
-      advance(in);
-    }
-    if (c == 'q' && (current(in) == '-' || current(in) == '+')) {
-      if (parameter) {
-        if (!advance_parameter_source(scan)) return TOKEN_COUNT;
-      } else {
-        advance(in);
-      }
-    }
+    if (!advance_flag_source(scan, parameter)) return TOKEN_COUNT;
+    if (
+      c == 'q' &&
+      (current(in) == '-' || current(in) == '+') &&
+      !advance_flag_source(scan, parameter)
+    )
+      return TOKEN_COUNT;
     return name;
   }
   return TOKEN_COUNT;
@@ -5045,9 +5038,7 @@ static enum Token scan_modifier(struct Scan *scan) {
     }
   }
   if (valid[MODIFIER_COUNT] && top->delimiter && count_allowed && digit(c)) {
-    do {
-      advance(in);
-    } while (digit(current(in)));
+    skip_digits(in);
     top->delimiter = 0;
     return MODIFIER_COUNT;
   }
@@ -5078,8 +5069,7 @@ static enum Token scan_layout(struct Scan *scan) {
   bool vertical = arithmetic_context(scan->context) ||
     subscript_math ||
     key_math ||
-    scan->context == CONDITION_BEGIN ||
-    scan->context == CONDITION_GROUP_OPEN;
+    condition_context(scan->context);
   if (
     !scan->in_body &&
     valid[LAYOUT] &&
@@ -5197,8 +5187,7 @@ static enum Token scan_command_word(struct Scan *scan) {
     logical_restore_position(in, &saved);
   }
   bool arithmetic = arithmetic_context(context);
-  bool condition =
-    context == CONDITION_BEGIN || context == CONDITION_GROUP_OPEN;
+  bool condition = condition_context(context);
   if (
     !scan->in_word &&
     !scan->quoted &&
@@ -5370,8 +5359,7 @@ static bool regex_skip_shell(const struct Scanner *s, struct LogicalLexer *in) {
     struct BoundaryProbe probe = {0};
     bool found =
       read_subscript_boundary(&probe, in, false, true, SOURCE_UNQUOTED);
-    ts_free(probe.frames);
-    clear(&probe.documents);
+    probe_clear(&probe);
     if (!found) return false;
   }
   return true;
@@ -5487,7 +5475,7 @@ static enum Token scan_regex(struct Scan *scan) {
   )
     return TOKEN_COUNT;
   if (regex_shell_start(scan->s, in)) return TOKEN_COUNT;
-  if (regex_empty_parentheses(in)) return reject(scan);
+  if (!valid[COMMAND_OPEN] && regex_empty_parentheses(in)) return reject(scan);
   if (c == '<' && numeric_range_start(in)) top->delimiter = '>';
   bool payload = valid[ERE_COMPOUND_CHARACTER_BEGIN] ||
     valid[ERE_COMPOUND_MULTI_BEGIN] ||
@@ -5599,9 +5587,7 @@ static enum Token scan_regex(struct Scan *scan) {
     return ERE_CLASS_NAME_BEGIN;
   }
   if (valid[ERE_COUNT_BEGIN] && digit(c)) {
-    do {
-      advance(in);
-    } while (digit(current(in)));
+    skip_digits(in);
     return ERE_COUNT_BEGIN;
   }
   if (
@@ -5657,9 +5643,7 @@ static enum Token scan_regex(struct Scan *scan) {
 }
 
 static enum Token scan_condition(struct Scan *scan) {
-  enum Token context = scan->context;
-  if (context != CONDITION_BEGIN && context != CONDITION_GROUP_OPEN)
-    return TOKEN_COUNT;
+  if (!condition_context(scan->context)) return TOKEN_COUNT;
   struct LogicalLexer *in = scan->in;
   const bool *valid = scan->valid;
   if (valid[CONDITION_NOT] && scan->c == '!' && boundary(logical_peek(in))) {
@@ -5831,9 +5815,7 @@ static enum Token scan_word_start(struct Scan *scan) {
   int32_t c = scan->c;
   if (valid[NAME] && name_start(c)) {
     struct LogicalPosition start = logical_position(in);
-    do {
-      advance(in);
-    } while (name_character(current(in)));
+    skip_name(in);
     if (command_word_end(in)) return NAME;
     logical_restore_position(in, &start);
   }
@@ -5857,8 +5839,7 @@ static enum Token scan_word_start(struct Scan *scan) {
     : valid[FUNCTION_ARGUMENT_BEGIN]                 ? FUNCTION_ARGUMENT_BEGIN
     : valid[COUNT_WORD_BEGIN]                        ? COUNT_WORD_BEGIN
                                                      : WORD_BEGIN;
-  bool condition =
-    scan->context == CONDITION_BEGIN || scan->context == CONDITION_GROUP_OPEN;
+  bool condition = condition_context(scan->context);
   if (
     valid[word_begin] &&
     !valid[NAME] &&
@@ -6048,9 +6029,7 @@ static enum Token scan_pattern(struct Scan *scan) {
   }
   if (context == NUMERIC_RANGE_OPEN) {
     if (valid[PATTERN_NUMBER] && digit(c)) {
-      do {
-        advance(in);
-      } while (digit(current(in)));
+      skip_digits(in);
       return PATTERN_NUMBER;
     }
     if (valid[PATTERN_RANGE_OPERATOR] && c == '-') {
@@ -6140,11 +6119,8 @@ static enum Token scan_pattern(struct Scan *scan) {
     return BRACE_EXPANSION_OPEN;
   }
   enum Token separator = brace_separator_token(scan);
-  if (context == BRACE_EXPANSION_OPEN && separator != TOKEN_COUNT) {
-    advance(in);
-    if (c == '.') advance(in);
-    return separator;
-  }
+  if (context == BRACE_EXPANSION_OPEN && separator != TOKEN_COUNT)
+    return advance_brace_token(scan, separator);
   return TOKEN_COUNT;
 }
 
@@ -6361,15 +6337,11 @@ static enum Token scan_expansion(struct Scan *scan) {
     }
   }
   if (valid[VARIABLE_NAME] && name_start(c)) {
-    do {
-      advance(in);
-    } while (name_character(current(in)));
+    skip_name(in);
     return VARIABLE_NAME;
   }
   if (valid[POSITIONAL_PARAMETER] && digit(c)) {
-    do {
-      advance(in);
-    } while (digit(current(in)));
+    skip_digits(in);
     return POSITIONAL_PARAMETER;
   }
   if (scan->special_parameter) {
@@ -6417,6 +6389,8 @@ static enum Token scan_expansion(struct Scan *scan) {
   }
   return TOKEN_COUNT;
 }
+
+static const char arithmetic_operator_characters[] = "+-!~&^|*/%<>?:=,#";
 
 static enum Token text_kind(const struct Scan *scan) {
   const bool *valid = scan->valid;
@@ -6609,7 +6583,7 @@ static enum Token scan_text(struct Scan *scan) {
           (c == ';' && valid[SEMICOLON]) ||
           c == '\\' ||
           c == '`' ||
-          in_set(c, "+-!~&^|*/%<>?:=,#");
+          in_set(c, arithmetic_operator_characters);
         if (!end && square) {
           if (c == '[') square->brackets++;
           else if (c == ']' && square->brackets) square->brackets--;
@@ -6642,13 +6616,14 @@ static enum Token scan_text(struct Scan *scan) {
           end = end ||
             name_character(c) ||
             (c == '.' && digit(logical_peek(in))) ||
-            in_set(c, "+-!~&^|*/%<>?:=,#");
+            in_set(c, arithmetic_operator_characters);
         break;
       case SUBSCRIPT_TEXT:
         end = (!(subscript_flags(s) & SUBSCRIPT_MATCH) &&
                 (name_character(c) ||
                   (c == '.' && digit(logical_peek(in))) ||
-                  in_set(c, "+-!~&^|*/%<>?:=,#@"))) ||
+                  in_set(c, arithmetic_operator_characters) ||
+                  c == '@')) ||
           c == '[' ||
           c == ']' ||
           c == '(' ||
@@ -6763,6 +6738,15 @@ classify(struct Scanner *s, struct LogicalLexer *in, const bool *valid) {
     logical_restore_position(in, &start);
     token = CLOSED_BODY_END;
   }
+  if (token == TOKEN_COUNT && valid[IF_BRACE_END]) {
+    logical_restore_position(in, &start);
+    if (
+      scan.c == '\n' ||
+      scan.c == '#' ||
+      (scan.c == ';' && !in_set(logical_peek(in), ";&|"))
+    )
+      token = IF_BRACE_END;
+  }
   if (token == TOKEN_COUNT && valid[SHORT_IF_END]) {
     logical_restore_position(in, &start);
     if (s->word_only || control_keyword(in) != ELSE_KEYWORD)
@@ -6876,8 +6860,7 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
   valid[HERE_END_FINISH] = doc && doc->ending;
   valid[DOCUMENT_FINISH] = doc != NULL;
   valid[HERE_SEQUENCE_END] = context == HERE_SEQUENCE_BEGIN;
-  bool quoted =
-    context == SQ_OPEN || context == DQ_OPEN || context == DOLLAR_SQ_OPEN;
+  bool quoted = quote_context(context);
   if (context == DOCUMENT_BEGIN) {
     valid[HERE_DOCUMENT_TEXT] = true;
     valid[QUOTED_HERE_DOCUMENT_TEXT] = true;
@@ -6909,8 +6892,7 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
   valid[REGEX_OPEN] = context == REGEX_BEGIN;
   valid[REGEX_CLOSE] = context == REGEX_BEGIN;
   valid[REGEX_END] = context == REGEX_BEGIN;
-  valid[CONDITION_CLOSE_FIRST] =
-    context == CONDITION_BEGIN || context == CONDITION_GROUP_OPEN;
+  valid[CONDITION_CLOSE_FIRST] = condition_context(context);
   valid[CONDITION_CLOSE] = valid[CONDITION_CLOSE_FIRST];
   valid[CONDITION_GROUP_CLOSE] = context == CONDITION_GROUP_OPEN;
 }

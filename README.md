@@ -13,6 +13,14 @@ Z Shell 5.9.2.
 npm install @konomanoasa/tree-sitter-zsh
 ```
 
+## Parsing Option
+
+For zsh parsing with `EXTENDED_GLOB` enabled, use `zsh_extended_glob`.
+
+## Parsing Policy
+
+[Parsing Policy](PARSING_POLICY.md)
+
 ## Development
 
 ```sh
@@ -21,18 +29,14 @@ npm run build
 npm test
 ```
 
-## Parsing Policy
-
-[Parsing Policy](PARSING_POLICY.md)
-
 ## Specification
 
 [zsh Manual, Version 5.9.2](https://zsh.sourceforge.io/Doc/Release/)
 
-## Used By
-
-[zsh-ts-mode](https://github.com/konomanoasa/zsh-ts-mode)
-
 ## License
 
 [MIT](LICENSE)
+
+## Used By
+
+[zsh-ts-mode](https://github.com/konomanoasa/zsh-ts-mode)

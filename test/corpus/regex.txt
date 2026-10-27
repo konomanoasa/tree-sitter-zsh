@@ -290,3 +290,33 @@ Unicode ERE characters remain individual source leaves
                         (ere_dupl_symbol
                           minimum: (duplication_count)
                           maximum: (duplication_count))))))))))))))
+
+==================
+Empty substitutions inside a regex operand are not adjacent empty groups
+:language(zsh)
+:language(zsh_default)
+==================
+[[ x =~ =()$()a<() ]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (conditional_command
+              condition: (conditional_binary_expression
+                left: (word
+                  (literal))
+                (conditional_operator)
+                right: (regex_operand
+                  expression: (extended_reg_exp
+                    (ere_branch
+                      (regex_source_expression
+                        (process_substitution)
+                        (command_substitution))
+                      (ere_expression
+                        (one_char_or_coll_elem_ere
+                          (ordinary_character)))
+                      (regex_source_expression
+                        (process_substitution)))))))))))))

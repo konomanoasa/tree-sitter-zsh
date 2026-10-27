@@ -2697,3 +2697,39 @@ Foreach in does not treat a missing end as an omitted body
 ==================
 foreach x in a; :
 ---
+
+==================
+A short for requires a separator before an arithmetic command body
+:error
+:language(zsh)
+:language(zsh_default)
+==================
+for x ((++i))
+---
+
+==================
+A separated arithmetic command remains the short for body
+:language(zsh)
+:language(zsh_default)
+==================
+for x; ((++i))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              separator: (term)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (arithmetic_command
+                        (arithmetic_source
+                          expression: (arithmetic_update_expression
+                            operator: (arithmetic_operator)
+                            operand: (arithmetic_variable)))))))))))))))

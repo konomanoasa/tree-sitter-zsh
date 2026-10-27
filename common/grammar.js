@@ -181,7 +181,7 @@ const whileClause = ($, keyword) =>
     ),
   );
 
-const ifBranches = ($, keyword, braceTail) =>
+const ifBranches = ($, keyword) =>
   prec.right(
     choice(
       seq(
@@ -192,7 +192,7 @@ const ifBranches = ($, keyword, braceTail) =>
         1,
         seq(
           field("branch", alias($[`_${keyword}_brace_branch`], $.if_branch)),
-          braceTail,
+          $._if_brace_tail,
         ),
       ),
       seq(
@@ -682,6 +682,8 @@ export default (name) =>
       [$._loop_in_words, $._term],
       [$._foreach_words, $._foreach_group_header_end],
       [$._foreach_header, $._foreach_group_header_separator],
+      [$.else_clause, $._term],
+      [$._terminated_sublist, $._term],
       [$._conditional_primary, $.conditional_binary_expression],
       [$._conditional_expression, $.conditional_and_expression],
       [$.conditional_and_expression, $.conditional_or_expression],
@@ -815,15 +817,12 @@ export default (name) =>
       case_fallthrough: ($) => lexeme($, "case_fallthrough"),
       case_continue: ($) => lexeme($, "case_continue"),
       if_clause: ($) =>
-        prec.right(
-          seq(repeat($._redirect), ifBranches($, "if", $._if_brace_tail)),
-        ),
-      _if_branches: ($) => ifBranches($, "elif", $._if_brace_tail),
-      _if_then_branches: ($) => ifBranches($, "elif", $._if_then_tail),
+        prec.right(seq(repeat($._redirect), ifBranches($, "if"))),
+      _if_branches: ($) => ifBranches($, "elif"),
       _if_then_tail: ($) =>
         prec.right(
           choice(
-            $._if_then_branches,
+            $._if_branches,
             seq(
               optional(field("alternative", $.else_clause)),
               $.fi_keyword,
@@ -834,14 +833,10 @@ export default (name) =>
       _if_brace_tail: ($) =>
         prec.right(
           choice(
-            $._if_branches,
+            $._if_then_tail,
+            $._if_brace_end,
             seq(
-              optional(
-                field(
-                  "alternative",
-                  alias($._brace_else_clause, $.else_clause),
-                ),
-              ),
+              field("alternative", alias($._brace_else_clause, $.else_clause)),
               $._closed_body_end,
               repeat($._redirect),
             ),
@@ -850,7 +845,7 @@ export default (name) =>
       _brace_branch_content: ($) =>
         seq(
           condition($),
-          field("body", alias($._header_brace_group, $.brace_group)),
+          field("body", alias($._header_brace_group_content, $.brace_group)),
         ),
       _short_branch_content: ($) =>
         seq(condition($), field("body", $.sublist), $._short_if_end),
@@ -881,7 +876,8 @@ export default (name) =>
       _brace_else_clause: ($) =>
         seq(
           $.else_keyword,
-          field("body", alias($._header_brace_group, $.brace_group)),
+          repeat($._term),
+          field("body", alias($._header_brace_group_content, $.brace_group)),
         ),
       do_group: ($) => seq($.do_keyword, terminated($, "body"), $.done_keyword),
       while_clause: ($) => whileClause($, $.while_keyword),
@@ -1942,7 +1938,6 @@ export default (name) =>
       brace_group: ($) => redirected($, $._brace_group_content),
       _brace_group_content: ($) =>
         groupContent($, $._left_brace_source, $._right_brace_source),
-      _header_brace_group: ($) => redirected($, $._header_brace_group_content),
       _header_brace_group_content: ($) =>
         groupContent($, $._header_brace_open_source, $._right_brace_source),
       word: ($) => seq($._word_begin, $._word_source, $._word_end),

@@ -2219,7 +2219,7 @@ test("if separator edits move a brace body into the condition", () => {
     ["cat <<$(", ")\nBODY\n"],
   ]) {
     const head = `${prefix}if [[ x ]]`;
-    const tail = ` { :; }${suffix}`;
+    const tail = ` { :; }\n${suffix}`;
     for (const separator of [";", "\n", " # condition\n"]) {
       const before = head + tail;
       const after = head + separator + tail;
@@ -2243,13 +2243,19 @@ test("if separator edits move a brace body into the condition", () => {
 
 test("mixed if branches retain closure ownership when their final body changes", () => {
   for (const [prefix, bodies] of [
-    ["if :; then :; elif [[ x ]] ", ["", "then :; fi", "{ :; } fi"]],
-    ["if [[ x ]] { :; } elif [[ x ]] ", ["", "then :; fi", "{ :; }"]],
+    [
+      "if :; then :; elif [[ x ]] ",
+      ["", "then :; fi", "{ :; }", "{ :; } fi", "{ :; } else { :; }"],
+    ],
+    [
+      "if [[ x ]] { :; } elif [[ x ]] ",
+      ["", "then :; fi", "{ :; }", "{ :; } fi", "{ :; } else :; fi"],
+    ],
   ]) {
     for (const beforeBody of bodies) {
       const afterBody = ":";
-      const before = prefix + beforeBody;
-      const after = prefix + afterBody;
+      const before = `${prefix}${beforeBody}\n`;
+      const after = `${prefix}${afterBody}\n`;
       assert.equal(
         valid(before, [
           {
@@ -2298,6 +2304,115 @@ test("if EOF comment edits retain the source condition without adding a body", (
         );
       }
     }
+  }
+});
+
+test("mixed if terminator edits preserve fresh trees and repair incomplete endings", () => {
+  for (const { before, removed, inserted, after, accepted } of [
+    {
+      before: "if false; then :; elif [[ x ]] { :; } fi\nprint AFTER\n",
+      removed: " fi",
+      inserted: ";",
+      after: "if false; then :; elif [[ x ]] { :; };\nprint AFTER\n",
+      accepted: true,
+    },
+    {
+      before: "if false; then :; elif [[ x ]] { :; }\nprint AFTER\n",
+      removed: "{ :; }",
+      inserted: "then :; fi",
+      after: "if false; then :; elif [[ x ]] then :; fi\nprint AFTER\n",
+      accepted: true,
+    },
+    {
+      before:
+        "if false; then :; elif [[ x ]] { :; } else { :; }\nprint AFTER\n",
+      removed: "else { :; }",
+      inserted: "else :; fi",
+      after: "if false; then :; elif [[ x ]] { :; } else :; fi\nprint AFTER\n",
+      accepted: true,
+    },
+    {
+      before:
+        "if false; then :; elif [[ x ]] { :; } else { :; }\nprint AFTER\n",
+      removed: "else { :; }",
+      inserted: "else > /dev/null { :; } fi",
+      after:
+        "if false; then :; elif [[ x ]] { :; } else > /dev/null { :; } fi\nprint AFTER\n",
+      accepted: true,
+    },
+    {
+      before:
+        "if false; then :; elif [[ x ]] { :; } else { :; }\nprint AFTER\n",
+      removed: "else { :; }",
+      inserted: "else { :; } fi",
+      after:
+        "if false; then :; elif [[ x ]] { :; } else { :; } fi\nprint AFTER\n",
+      accepted: false,
+    },
+    {
+      before: "if false; then :; elif [[ x ]] { :; }\n",
+      removed: "\n",
+      inserted: "",
+      after: "if false; then :; elif [[ x ]] { :; }",
+      accepted: false,
+    },
+    {
+      before: "if false; then :; elif [[ x ]] { :; }; print AFTER\n",
+      removed: "; print",
+      inserted: " | print",
+      after: "if false; then :; elif [[ x ]] { :; } | print AFTER\n",
+      accepted: false,
+    },
+    {
+      before: "if :; then if false; then :; elif [[ x ]] { :; }; else :; fi\n",
+      removed: "{ :; };",
+      inserted: "{ :; } else { :; };",
+      after:
+        "if :; then if false; then :; elif [[ x ]] { :; } else { :; }; else :; fi\n",
+      accepted: true,
+    },
+  ]) {
+    const byte = before.indexOf(removed);
+    assert.ok(byte >= 0);
+    assert.equal(
+      before.slice(0, byte) + inserted + before.slice(byte + removed.length),
+      after,
+    );
+    const edit = { byte, deleteBytes: removed.length, insert: inserted };
+    const undo = { byte, deleteBytes: inserted.length, insert: removed };
+    const original = valid(before);
+    const fresh = parse(after);
+    const edited = parse(before, [edit]);
+    assert.equal(fresh.hasError, !accepted, after);
+    assert.equal(edited.hasError, !accepted, after);
+    assert.deepEqual(
+      sourceNodes(edited.output, after),
+      sourceNodes(fresh.output, after),
+      after,
+    );
+    assert.equal(valid(after, [undo]), original, before);
+    assert.equal(valid(before, [edit, undo]), original, before);
+  }
+});
+
+test("separators after a brace else keyword preserve the short body through edits", () => {
+  for (const separator of ["\n", ";", " # comment\n", ";\n; # comment\n"]) {
+    const head = "if false; then :; elif [[ x ]] { :; } else";
+    const body = " { :; }\nprint AFTER\n";
+    const before = head + body;
+    const after = head + separator + body;
+    assert.equal(
+      valid(before, [{ byte: head.length, deleteBytes: 0, insert: separator }]),
+      valid(after),
+      after,
+    );
+    assert.equal(
+      valid(after, [
+        { byte: head.length, deleteBytes: separator.length, insert: "" },
+      ]),
+      valid(before),
+      before,
+    );
   }
 });
 

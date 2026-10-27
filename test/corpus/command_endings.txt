@@ -430,7 +430,7 @@ An anonymous ordinary body leaves the next reserved brace outside its arguments
 :language(zsh)
 :language(zsh_default)
 ==================
-if () [[ x ]] { :; }
+if () [[ x ]] { :; };
 ---
 (program
   (list
