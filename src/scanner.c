@@ -1,4 +1,4 @@
-#define ZSH_EXTENDED_GLOB 1
+#define ZSH_EXTENDED_GLOB 0
 #include "../common/scanner.h"
 
 void *tree_sitter_zsh_external_scanner_create(void) {

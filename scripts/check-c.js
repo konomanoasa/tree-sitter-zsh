@@ -44,7 +44,7 @@ const variants = grammars.map((grammar) => {
     source,
     headers,
     contractArguments: [
-      `-DZSH_EXTENDED_GLOB=${grammar.name === "zsh" ? 1 : 0}`,
+      `-DZSH_EXTENDED_GLOB=${grammar.name === "zsh_extended_glob" ? 1 : 0}`,
     ],
     reuseAllocator: [source, ...headers].some((file) =>
       readFileSync(file, "utf8").includes('"tree_sitter/alloc.h"'),

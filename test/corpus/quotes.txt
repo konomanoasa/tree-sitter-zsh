@@ -1,7 +1,7 @@
 ==================
 A lone backslash at EOF remains a separate argument
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print x \
 ---
@@ -18,7 +18,7 @@ print x \
 ==================
 A lone backslash at EOF remains attached to its word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print x\
 ---
@@ -34,7 +34,7 @@ print x\
 ==================
 A final backslash newline is a continuation without another argument
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print x \
 
@@ -52,7 +52,7 @@ print x \
 ==================
 A trailing backslash in decoded source preserves its closing backquote
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print `print x \\` after
 ---
@@ -78,7 +78,7 @@ print `print x \\` after
 ==================
 A trailing backslash in a backquote preserves assignment subscript boundaries
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a[`print 1 \\`]=x
 ---
@@ -108,7 +108,7 @@ a[`print 1 \\`]=x
 An escaped backquote does not close its substitution
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print `print x \`
 ---
@@ -117,7 +117,7 @@ print `print x \`
 A trailing backslash does not close a double quote
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "x\
 ---
@@ -125,7 +125,7 @@ print "x\
 ==================
 Adjacent quote segments belong to one argument
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print pre'quoted'"double"post
 ---
@@ -145,7 +145,7 @@ print pre'quoted'"double"post
 ==================
 A logical word retains a physical continuation
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 pr\
 int value
@@ -162,7 +162,7 @@ int value
 ==================
 Unicode escape is one dollar quoted escape
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $'\u03a3'
 ---
@@ -179,7 +179,7 @@ print $'\u03a3'
 ==================
 Dollar single quote spelling remains literal within double quotes
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$'x'"
 ---
@@ -196,7 +196,7 @@ print "$'x'"
 ==================
 Dollar quote control prefixes preserve complete escapes and the closing quote
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $'\c' $'\M-\C-x' $'\C-'
 ---
@@ -216,7 +216,7 @@ print $'\c' $'\M-\C-x' $'\C-'
 ==================
 The backquote closes its command source and a trailing comment
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print `print x # comment` `# only a comment`
 ---
@@ -242,7 +242,7 @@ print `print x # comment` `# only a comment`
 ==================
 The backquote closes a trailing comment after a terminated command
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print `print x
 #c`
@@ -269,7 +269,7 @@ print `print x
 ==================
 A continued dollar quote prefix keeps its continuation outside quoted content
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $\
 'a\

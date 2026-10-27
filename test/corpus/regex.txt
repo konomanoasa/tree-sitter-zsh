@@ -1,7 +1,7 @@
 ==================
 Quoted source is not a single repeated ERE atom
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ "ab"+ ]]
 ---
@@ -25,7 +25,7 @@ Quoted source is not a single repeated ERE atom
 ==================
 An explicit regex group owns repetition around a parameter expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ (a${part})+ ]]
 ---
@@ -57,7 +57,7 @@ An explicit regex group owns repetition around a parameter expansion
 ==================
 POSIX bracket classes retain their distinct payloads
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ [[:alpha:]][[=a=]][[.ch.]] ]]
 ---
@@ -110,7 +110,7 @@ POSIX bracket classes retain their distinct payloads
 ==================
 A leading closing bracket can begin a negated character range
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ [^]-a] ]]
 ---
@@ -145,7 +145,7 @@ A leading closing bracket can begin a negated character range
 ==================
 A trailing hyphen is separate from the preceding character range
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ [a-z-] ]]
 ---
@@ -180,7 +180,7 @@ A trailing hyphen is separate from the preceding character range
 ==================
 Interval bounds and the repetition modifier belong to the repeated group
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ (a|b){2,3}? ]]
 ---
@@ -216,7 +216,7 @@ Interval bounds and the repetition modifier belong to the repeated group
 ==================
 A dynamic range endpoint does not create a static range
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ [a${x}-z] ]]
 ---
@@ -259,7 +259,7 @@ A dynamic range endpoint does not create a static range
 ==================
 Unicode ERE characters remain individual source leaves
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ (雪|é){2,3} ]]
 ---
@@ -294,7 +294,7 @@ Unicode ERE characters remain individual source leaves
 ==================
 Empty substitutions inside a regex operand are not adjacent empty groups
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ =()$()a<() ]]
 ---

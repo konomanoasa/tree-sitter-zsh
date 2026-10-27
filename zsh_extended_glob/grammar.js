@@ -1,3 +1,3 @@
 import defineGrammar from "../common/grammar.js";
 
-export default defineGrammar("zsh_default");
+export default defineGrammar("zsh_extended_glob");

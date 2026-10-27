@@ -1,7 +1,7 @@
 ==================
 A second time in the target pipeline is an ordinary command name
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time time true
 ---
@@ -24,7 +24,7 @@ time time true
 ==================
 Timing extends across pipe operands
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time : | time true
 ---
@@ -51,7 +51,7 @@ time : | time true
 ==================
 Logical operators end the timing target before the next pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time : && time true
 ---
@@ -83,7 +83,7 @@ time : && time true
 ==================
 A timed group inherits ordinary time words across its internal separators
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time { :; time true; }
 ---
@@ -118,7 +118,7 @@ time { :; time true; }
 ==================
 A substitution starts an independent timing scope
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time print $(time true)
 ---
@@ -153,7 +153,7 @@ time print $(time true)
 ==================
 A timing keyword without a target keeps no synthetic pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time
 ---
@@ -170,7 +170,7 @@ time
 A command named time cannot take an unseparated brace command as an argument
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time time { :; }
 ---
@@ -179,7 +179,7 @@ time time { :; }
 A timed pipeline keeps later time spellings ordinary before a brace command
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time : | time { :; }
 ---
@@ -188,7 +188,7 @@ time : | time { :; }
 A timed group cannot reinterpret a command named time as another timing keyword
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time { time { :; }; }
 ---
@@ -196,7 +196,7 @@ time { time { :; }; }
 ==================
 A delimiter substitution keeps case as an argument of an ordinary time command
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(time time case)
 BODY

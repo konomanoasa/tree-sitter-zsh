@@ -84,17 +84,20 @@ test("language selection fixes extended glob while explicit substitution flags s
     "unsetopt noglob",
   ]) {
     const output = valid(`${setting}\nprint a#\n`);
-    assert.equal(output.includes("extended_pattern"), language.name === "zsh");
+    assert.equal(
+      output.includes("extended_pattern"),
+      language.name === "zsh_extended_glob",
+    );
   }
   assert.equal(
     valid("noglob print a#\n").includes("extended_pattern"),
-    language.name === "zsh",
+    language.name === "zsh_extended_glob",
   );
   for (const quote of ["", '"']) {
     const output = valid(`print ${quote}\${(*)x/a#/_}${quote} \${x/a#/_}\n`);
     assert.equal(
       (output.match(/extended_pattern/g) ?? []).length,
-      language.name === "zsh" ? 2 : 1,
+      language.name === "zsh_extended_glob" ? 2 : 1,
     );
   }
   const quoted = valid(`print "\${x#a*}" "\${x:-a*}"\n`);

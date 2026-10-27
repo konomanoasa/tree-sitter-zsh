@@ -20,10 +20,10 @@ include = [
   "/src/node-types.json",
   "/src/tree_sitter/*.h",
   "/test/bindings.test.rs",
-  "/zsh_default/src/*.c",
-  "/zsh_default/src/*.h",
-  "/zsh_default/src/node-types.json",
-  "/zsh_default/src/tree_sitter/*.h",
+  "/zsh_extended_glob/src/*.c",
+  "/zsh_extended_glob/src/*.h",
+  "/zsh_extended_glob/src/node-types.json",
+  "/zsh_extended_glob/src/tree_sitter/*.h",
 ]
 
 [lib]

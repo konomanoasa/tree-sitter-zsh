@@ -1,7 +1,7 @@
 ==================
 Nested pattern parentheses and qualifier argument sources retain distinct ownership
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print *(e(ls)) *(e{ls}) *(e[ls])
 ---
@@ -47,7 +47,7 @@ print *(e(ls)) *(e{ls}) *(e[ls])
 
 ==================
 Bare and explicit qualifier lists keep commas and whole-result modifiers outside each list
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print *(W,X:t) *(#qW,X:t)
 ---
@@ -91,7 +91,7 @@ print *(W,X:t) *(#qW,X:t)
 
 ==================
 Globbing flags own their inline arguments
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print (#ia2)foo
 ---
@@ -117,7 +117,7 @@ print (#ia2)foo
 
 ==================
 Unresolved source after qualifier modifiers remains outside condition lists
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print *(:t!) *(#q:t!)
 ---
@@ -150,7 +150,7 @@ print *(:t!) *(#q:t!)
 ==================
 A qualifier argument preserves a quoted string without parsing its code
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print *(e:'true':)
 ---
@@ -178,7 +178,7 @@ print *(e:'true':)
 ==================
 A glob modifier retains a source count
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print *(:h2)
 ---
@@ -200,7 +200,7 @@ print *(:h2)
 
 ==================
 A numeric range stays inside a qualifier argument
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print *(#qP:<1-2>:)
 ---

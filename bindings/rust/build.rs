@@ -17,7 +17,7 @@ fn main() {
 
   let grammars = [
     ("src", "tree-sitter-zsh"),
-    ("zsh_default/src", "tree-sitter-zsh-default"),
+    ("zsh_extended_glob/src", "tree-sitter-zsh-extended-glob"),
   ];
   for (directory, _) in grammars {
     println!("cargo::rerun-if-changed={directory}");

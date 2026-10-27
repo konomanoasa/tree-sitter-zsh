@@ -1,7 +1,7 @@
 ==================
 Arithmetic argument candidates preserve native precedence and argument commas
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ((f(1+2&3,4)))
 ---
@@ -30,7 +30,7 @@ Arithmetic argument candidates preserve native precedence and argument commas
 ==================
 Dynamic argument source retains one expansion without inventing expression association
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ((f(1+$x)))
 ---
@@ -53,7 +53,7 @@ Dynamic argument source retains one expansion without inventing expression assoc
 ==================
 Explicit argument groups retain unresolved inner source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ((f(1+(2*$x))))
 ---
@@ -80,7 +80,7 @@ Explicit argument groups retain unresolved inner source
 ==================
 An arithmetic expansion inside an argument candidate remains confirmed
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ((f(1+$((2*3)))))
 ---
@@ -108,7 +108,7 @@ An arithmetic expansion inside an argument candidate remains confirmed
 ==================
 Nested calls inside argument candidates keep candidate names and shared argument source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ((f(g(1+2))))
 ---
@@ -134,7 +134,7 @@ Nested calls inside argument candidates keep candidate names and shared argument
 ==================
 Empty arithmetic calls do not synthesize argument source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ((f()))
 ---
@@ -152,7 +152,7 @@ Empty arithmetic calls do not synthesize argument source
 ==================
 Incomplete arithmetic remains acceptable string argument source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ((f((1+))))
 ---

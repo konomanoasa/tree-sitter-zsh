@@ -18,19 +18,19 @@
       ]
     },
     {
-      "name": "zsh_default",
-      "title": "zsh (default options)",
-      "scope": "source.zsh_default",
-      "path": "zsh_default",
-      "file-types": ["zsh_default"],
-      "injection-regex": "^zsh_default$",
+      "name": "zsh_extended_glob",
+      "title": "zsh (extended glob)",
+      "scope": "source.zsh_extended_glob",
+      "path": "zsh_extended_glob",
+      "file-types": ["zsh_extended_glob"],
+      "injection-regex": "^zsh_extended_glob$",
       "highlights": "queries/highlights.scm",
       "external-files": [
         "common/scanner.h",
         "common/source.h",
         "common/input.h",
         "common/tokens.json",
-        "zsh_default/src/tokens.h",
+        "zsh_extended_glob/src/tokens.h",
         "src/parser.c",
         "src/tree_sitter/parser.h"
       ]

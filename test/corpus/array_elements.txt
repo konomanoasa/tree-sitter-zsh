@@ -1,7 +1,7 @@
 ==================
 Explicit array elements retain their key and empty values
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a=([1]=x [2]=)
 ---
@@ -28,7 +28,7 @@ a=([1]=x [2]=)
 ==================
 Element keys preserve literal brackets and do not introduce subscript flags
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a=([a[b]=x [(r)x]=y)
 ---
@@ -62,7 +62,7 @@ a=([a[b]=x [(r)x]=y)
 ==================
 Quoted closing brackets remain within an assignment subscript
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a[']']=x
 ---
@@ -83,7 +83,7 @@ a[']']=x
 ==================
 Positional assignment and unbraced positional word suffix have distinct roles
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 12=x print $2[3,5]
 ---
@@ -105,7 +105,7 @@ Positional assignment and unbraced positional word suffix have distinct roles
 ==================
 A partial subscript candidate does not borrow the key delimiter
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a=([$x[1]=y)
 ---
@@ -133,7 +133,7 @@ a=([$x[1]=y)
 ==================
 Explicit keys retain arithmetic precedence as a candidate
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a=([1+2*3]=x)
 ---
@@ -164,7 +164,7 @@ a=([1+2*3]=x)
 ==================
 Parameter modifiers in a key take priority over arithmetic candidate operators
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a=([$name:s/a/b]=x)
 ---
@@ -197,7 +197,7 @@ a=([$name:s/a/b]=x)
 ==================
 Key candidates retain expressions inside groups beside dynamic source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a=([1+(2*3)]=x [1+(2*$x)]=y)
 ---
@@ -243,7 +243,7 @@ a=([1+(2*3)]=x [1+(2*$x)]=y)
 ==================
 An inner key bracket cannot acquire the outer closing bracket
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a=([word[2]=x)
 ---

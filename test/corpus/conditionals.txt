@@ -1,7 +1,7 @@
 ==================
 Leading parenthesized unary operands retain word candidates despite native rejection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n (x) ]]
 ---
@@ -23,7 +23,7 @@ Leading parenthesized unary operands retain word candidates despite native rejec
 ==================
 String ordering comparisons retain leading parenthesized word operands
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x < (x) ]]
 [[ x > (x) ]]
@@ -62,7 +62,7 @@ String ordering comparisons retain leading parenthesized word operands
 ==================
 A suffixed parenthesized condition operand retains its pattern group inside the word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n (x)y ]]
 ---
@@ -85,7 +85,7 @@ A suffixed parenthesized condition operand retains its pattern group inside the 
 ==================
 Quoted and escaped condition parentheses preserve their own source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n "(x)" ]]
 [[ -n \(x\) ]]
@@ -117,7 +117,7 @@ Quoted and escaped condition parentheses preserve their own source
 ==================
 Empty quotes and literal prefixes remain before condition operand candidates
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n ""(x) ]]
 [[ x < x(y) ]]
@@ -156,7 +156,7 @@ Empty quotes and literal prefixes remain before condition operand candidates
 ==================
 Expression groups and comparison patterns keep distinct parenthesis ownership
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ (x) ]]
 [[ x = (x) ]]
@@ -190,7 +190,7 @@ Expression groups and comparison patterns keep distinct parenthesis ownership
 An empty conditional command requires an expression
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ ]]
 ---
@@ -199,7 +199,7 @@ An empty conditional command requires an expression
 Newlines cannot replace a conditional expression
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[
 ]]
@@ -209,7 +209,7 @@ Newlines cannot replace a conditional expression
 A comment cannot replace a conditional expression
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ # no expression
 ]]
@@ -218,7 +218,7 @@ A comment cannot replace a conditional expression
 ==================
 An empty quoted word after a comment remains a conditional expression
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ # empty string
 "" ]]
@@ -238,7 +238,7 @@ An empty quoted word after a comment remains a conditional expression
 ==================
 Standalone negation ends before condition and branch keywords without a separator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if ! then ! else ! fi
 ---
@@ -268,7 +268,7 @@ if ! then ! else ! fi
 ==================
 Standalone coproc ends before condition and branch keywords without a separator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if coproc then coproc else coproc fi
 ---
@@ -302,7 +302,7 @@ if coproc then coproc else coproc fi
 Conditional negation still requires its expression
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ ! ]]
 ---
@@ -311,7 +311,7 @@ Conditional negation still requires its expression
 An attached control keyword cannot follow a conditional close
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if [[ x ]]then :; fi
 ---
@@ -320,7 +320,7 @@ if [[ x ]]then :; fi
 An attached hash remains conditional word text instead of starting a comment
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x ]]#comment
 ---
@@ -329,7 +329,7 @@ An attached hash remains conditional word text instead of starting a comment
 A removed continuation cannot separate a conditional close from a keyword
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if [[ x ]]\
 then :; fi
@@ -338,7 +338,7 @@ then :; fi
 ==================
 Closing bracket prefixes remain source in string unary pattern and regex operands
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ ]]x ]]
 [[ -n ]]x ]]
@@ -399,7 +399,7 @@ Closing bracket prefixes remain source in string unary pattern and regex operand
 ==================
 Pattern groups and numeric ranges continue operands after closing bracket prefixes
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n ]](x) ]]
 [[ -n ]]<1-2> ]]
@@ -436,7 +436,7 @@ Pattern groups and numeric ranges continue operands after closing bracket prefix
 ==================
 Shell operators and enclosing closers can immediately follow a conditional close
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ([[ x ]])
 { [[ x ]]}
@@ -499,7 +499,7 @@ Shell operators and enclosing closers can immediately follow a conditional close
 ==================
 An enclosing brace ends a bodyless if without supplying body nodes
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { if :; }
 ---
@@ -529,7 +529,7 @@ An enclosing brace ends a bodyless if without supplying body nodes
 ==================
 Explicit then and fi preserve an empty if body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then fi
 ---
@@ -555,7 +555,7 @@ if :; then fi
 ==================
 Conditional comments preserve grouped logic and operand fields
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ # head
 ! # negation
@@ -618,7 +618,7 @@ x ]]
 ==================
 String comparison comments remain outside the operand words
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x # left
 < # right
@@ -645,7 +645,7 @@ y ]]
 ==================
 Comments preserve and precedence inside or and a trailing condition boundary
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x # or left
 || x # and left
@@ -681,7 +681,7 @@ Comments preserve and precedence inside or and a trailing condition boundary
 ==================
 Comments do not turn binary operand spellings into unary operators
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n # left
 == # right
@@ -708,7 +708,7 @@ Comments do not turn binary operand spellings into unary operators
 ==================
 A comment before a regex operand does not become regex source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ # regex
 x # end
@@ -739,7 +739,7 @@ x # end
 ==================
 Condition comments hide closing brackets and incomplete shell syntax
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x # ]] ) " $(
 ]]
@@ -759,7 +759,7 @@ Condition comments hide closing brackets and incomplete shell syntax
 ==================
 A backslash in a condition comment does not continue the comment
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ # raw \
 x ]]
@@ -780,7 +780,7 @@ x ]]
 A word-initial hash cannot be a bare regex operand
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ # ]]
 ---
@@ -789,7 +789,7 @@ A word-initial hash cannot be a bare regex operand
 Closing brackets inside a comment cannot complete the condition
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x # ]]
 ---
@@ -797,7 +797,7 @@ Closing brackets inside a comment cannot complete the condition
 ==================
 Semicolon-only if branches retain their condition and body lists
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if ; then; elif ; then; else; fi
 ---
@@ -827,7 +827,7 @@ if ; then; elif ; then; else; fi
 A simple command condition requires a separator before then
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if true then print yes; fi
 ---
@@ -836,7 +836,7 @@ if true then print yes; fi
 A body requires a separator before fi
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if true; then print yes fi
 ---
@@ -845,14 +845,14 @@ if true; then print yes fi
 A while condition requires a separator before do
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 while true do print yes; done
 ---
 ==================
 Conditional logic owns its operands
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n $x && $x == yes ]]
 ---
@@ -881,7 +881,7 @@ Conditional logic owns its operands
 ==================
 Process substitutions are condition operands rather than comparison operators
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ >(x) && -n <(y) ]]
 ---
@@ -918,7 +918,7 @@ Process substitutions are condition operands rather than comparison operators
 ==================
 A numeric range after a unary operator is an operand rather than a comparison
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n <1-2> ]]
 ---
@@ -940,7 +940,7 @@ A numeric range after a unary operator is an operand rather than a comparison
 ==================
 Regex groups retain POSIX branches and expressions
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ $x =~ (a|b) ]]
 ---
@@ -973,7 +973,7 @@ Regex groups retain POSIX branches and expressions
 ==================
 Invalid regex internals remain shell source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ $x =~ [ ]]
 ---
@@ -997,7 +997,7 @@ Invalid regex internals remain shell source
 Unmatched shell parentheses in a regex operand require recovery
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ $x =~ ( ]]
 ---
@@ -1005,7 +1005,7 @@ Unmatched shell parentheses in a regex operand require recovery
 ==================
 Direct regex intervals retain counts before a following condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ aaa =~ a{3} && 123 =~ ^[0-9]{2,4}$ ]]
 print after
@@ -1068,7 +1068,7 @@ print after
 ==================
 A regex brace pair survives an intervening parameter expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ aaa =~ a{${count}} ]]
 ---
@@ -1098,7 +1098,7 @@ A regex brace pair survives an intervening parameter expansion
 A regex parenthesis cannot protect a shell semicolon
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ aaa =~ (a;b) ]]
 ---
@@ -1106,7 +1106,7 @@ A regex parenthesis cannot protect a shell semicolon
 ==================
 A unary operator spelling can be the left operand of a binary comparison
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n = -n ]]
 ---
@@ -1127,7 +1127,7 @@ A unary operator spelling can be the left operand of a binary comparison
 ==================
 An operator prefix attached to quoted source remains one condition word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n"$x" ]]
 ---
@@ -1147,7 +1147,7 @@ An operator prefix attached to quoted source remains one condition word
 ==================
 A standalone long condition spelling remains a word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -custom ]]
 ---
@@ -1165,7 +1165,7 @@ A standalone long condition spelling remains a word
 A pattern comparison operator cannot split a longer word
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x ==y ]]
 ---
@@ -1174,7 +1174,7 @@ A pattern comparison operator cannot split a longer word
 A regex comparison operator cannot split a longer word
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~a ]]
 ---
@@ -1182,7 +1182,7 @@ A regex comparison operator cannot split a longer word
 ==================
 A prefix condition retains all arguments without resolving a module condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -custom a b c ]]
 ---
@@ -1205,7 +1205,7 @@ A prefix condition retains all arguments without resolving a module condition
 ==================
 A condition name retains quoted source without evaluating parameter expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n"$x" value ]]
 ---
@@ -1225,7 +1225,7 @@ A condition name retains quoted source without evaluating parameter expansion
 A single-letter unary condition cannot serve as a binary operator
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ -n -x x ]]
 ---
@@ -1233,7 +1233,7 @@ A single-letter unary condition cannot serve as a binary operator
 An unmatched closing brace after a regex interval is a shell boundary
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ a{3}} ]]
 ---
@@ -1241,7 +1241,7 @@ An unmatched closing brace after a regex interval is a shell boundary
 ==================
 An unclosed opening brace remains regex operand source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ a{ ]]
 ---
@@ -1268,7 +1268,7 @@ An unclosed opening brace remains regex operand source
 ==================
 Regex numeric-range spellings retain ERE characters before a following condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ <1-2>(x<-3><4->)<-><2-1> && y ]]
 ---
@@ -1363,7 +1363,7 @@ Regex numeric-range spellings retain ERE characters before a following condition
 ==================
 All process substitution forms retain their command bodies in a regex operand
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ =(:)<(:)>(:) ]]
 ---
@@ -1408,7 +1408,7 @@ All process substitution forms retain their command bodies in a regex operand
 ==================
 Regex braces and parentheses survive an intervening process substitution
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ a{(<(:))}tail ]]
 ---
@@ -1460,7 +1460,7 @@ Regex braces and parentheses survive an intervening process substitution
 ==================
 A noninitial equals retains ERE groups instead of process substitution
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ x=(:)(=(:)) ]]
 ---
@@ -1506,7 +1506,7 @@ A noninitial equals retains ERE groups instead of process substitution
 ==================
 A regex parenthesis protects an unmatched closing brace
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ (}) ]]
 ---
@@ -1535,7 +1535,7 @@ A regex parenthesis protects an unmatched closing brace
 A bare closing brace cannot supply a string condition despite native acceptance
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ } ]]
 ---
@@ -1544,7 +1544,7 @@ A bare closing brace cannot supply a string condition despite native acceptance
 A bare closing brace cannot begin a regex operand
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ } ]]
 ---
@@ -1553,7 +1553,7 @@ A bare closing brace cannot begin a regex operand
 A quoted opening brace cannot protect an outer regex closing brace
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ a"{"} ]]
 ---
@@ -1562,7 +1562,7 @@ A quoted opening brace cannot protect an outer regex closing brace
 An ordinary less-than cannot continue a regex operand
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ a<b ]]
 ---
@@ -1571,7 +1571,7 @@ An ordinary less-than cannot continue a regex operand
 A nonnumeric angle-bracket pair cannot begin a regex operand
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ <a> ]]
 ---
@@ -1579,7 +1579,7 @@ A nonnumeric angle-bracket pair cannot begin a regex operand
 ==================
 A conditional command ends directly before then
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if [[ x ]] then :; fi
 ---
@@ -1613,7 +1613,7 @@ if [[ x ]] then :; fi
 ==================
 A brace condition ends directly before then
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if { :; } then :; fi
 ---
@@ -1652,7 +1652,7 @@ if { :; } then :; fi
 ==================
 A timed brace condition ends directly before then
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if time { :; } then :; fi
 ---
@@ -1696,7 +1696,7 @@ if time { :; } then :; fi
 ==================
 A bodyless if at EOF retains only its source keyword
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if
 ---
@@ -1713,7 +1713,7 @@ if
 ==================
 A separated brace remains in the omitted if condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if [[ x ]]; { :; }
 ---
@@ -1750,7 +1750,7 @@ if [[ x ]]; { :; }
 ==================
 A final elif may omit its condition and body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; elif
 ---
@@ -1784,7 +1784,7 @@ if :; then :; elif
 ==================
 A final elif condition remains inside its original if
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if false; then :; elif :;
 ---
@@ -1825,7 +1825,7 @@ if false; then :; elif :;
 ==================
 An outer elif follows an inner if with an omitted body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then if false; elif :; then :; fi
 ---
@@ -1883,7 +1883,7 @@ if :; then if false; elif :; then :; fi
 ==================
 A brace branch can continue with a then branch
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if [[ x ]] { :; } elif :; then :; fi
 ---
@@ -1934,7 +1934,7 @@ if [[ x ]] { :; } elif :; then :; fi
 ==================
 A then branch can continue with a brace branch before fi
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; elif [[ x ]] { :; } fi
 ---
@@ -1985,7 +1985,7 @@ if :; then :; elif [[ x ]] { :; } fi
 ==================
 A then branch can end with a short sublist elif
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; elif [[ x ]] :
 ---
@@ -2033,7 +2033,7 @@ if :; then :; elif [[ x ]] :
 ==================
 An omitted if body leaves following redirects in the condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 >before if false >condition;
 ---
@@ -2066,7 +2066,7 @@ An omitted if body leaves following redirects in the condition
 An outer else cannot follow an uncompleted inner short if
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then if false; else :; fi
 ---
@@ -2076,7 +2076,7 @@ if :; then if false; else :; fi
 An explicit then still requires its closing fi
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { if :; then :; }
 ---
@@ -2086,7 +2086,7 @@ An explicit then still requires its closing fi
 A missing elif body cannot manufacture a matching fi
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; elif :; fi
 ---
@@ -2096,7 +2096,7 @@ if :; then :; elif :; fi
 A condition pipe still requires its next command
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { if : | }
 ---
@@ -2104,7 +2104,7 @@ A condition pipe still requires its next command
 ==================
 A short brace if retains an outer list separator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if ((1)) { :; }; :
 ---
@@ -2143,7 +2143,7 @@ if ((1)) { :; }; :
 ==================
 A backslash in a trailing comment does not remove a short if terminator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if ((1)) { :; } # comment\
 
@@ -2180,7 +2180,7 @@ if ((1)) { :; } # comment\
 A bare hyphen cannot be a condition
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ - ]]
 ---
@@ -2189,7 +2189,7 @@ A bare hyphen cannot be a condition
 A bare hyphen cannot precede a logical condition operator
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ - && x ]]
 ---
@@ -2198,7 +2198,7 @@ A bare hyphen cannot precede a logical condition operator
 Adjacent empty regex parentheses require shell recovery
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ () ]]
 ---
@@ -2207,7 +2207,7 @@ Adjacent empty regex parentheses require shell recovery
 Nested empty regex parentheses require shell recovery
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ (()) ]]
 ---
@@ -2216,7 +2216,7 @@ Nested empty regex parentheses require shell recovery
 A regex prefix does not admit adjacent empty parentheses
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ a() ]]
 ---
@@ -2225,7 +2225,7 @@ A regex prefix does not admit adjacent empty parentheses
 Regex bracket members do not admit adjacent empty parentheses
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ [()] ]]
 ---
@@ -2234,7 +2234,7 @@ Regex bracket members do not admit adjacent empty parentheses
 Regex collating payloads do not admit adjacent empty parentheses
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ x =~ [[=a()=]] ]]
 ---
@@ -2242,7 +2242,7 @@ Regex collating payloads do not admit adjacent empty parentheses
 ==================
 A mixed brace branch ends at a separator before the next command
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; elif [[ x ]] { :; }; :
 ---
@@ -2298,7 +2298,7 @@ if :; then :; elif [[ x ]] { :; }; :
 ==================
 Consecutive brace branches can consume their own fi
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if [[ x ]] { :; } elif [[ x ]] { :; } fi
 ---
@@ -2350,7 +2350,7 @@ if [[ x ]] { :; } elif [[ x ]] { :; } fi
 ==================
 A mixed brace branch selects a short brace else without fi
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; elif [[ x ]] { :; } else { :; }
 ---
@@ -2410,7 +2410,7 @@ if :; then :; elif [[ x ]] { :; } else { :; }
 ==================
 A brace branch can select an ordinary else list closed by fi
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if [[ x ]] { :; } else :; fi
 ---
@@ -2453,7 +2453,7 @@ if [[ x ]] { :; } else :; fi
 ==================
 A then branch keeps its else brace command inside the ordinary list
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; else { :; } fi
 ---
@@ -2502,7 +2502,7 @@ if :; then :; else { :; } fi
 A short brace else after mixed branches rejects an extra fi
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; elif [[ x ]] { :; } else { :; } fi
 ---
@@ -2512,7 +2512,7 @@ if :; then :; elif [[ x ]] { :; } else { :; } fi
 A mixed brace branch does not terminate at a pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if :; then :; elif [[ x ]] { :; } | :
 ---
@@ -2522,7 +2522,7 @@ if :; then :; elif [[ x ]] { :; } | :
 A brace branch does not use the omitted-body EOF exception
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if [[ x ]] { :; }
 ---
@@ -2532,7 +2532,7 @@ if [[ x ]] { :; }
 A case item separator cannot terminate a brace branch
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 case x in x) if [[ x ]] { :; };; esac
 ---

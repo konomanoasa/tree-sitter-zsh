@@ -1,6 +1,6 @@
 ==================
-Extended glob operators flags and qualifiers are active in the main language
-:language(zsh)
+Extended glob operators flags and qualifiers are active in the extended glob language
+:language(zsh_extended_glob)
 ==================
 print a# ^(a|b) (#i)a *(#q.) *(a~b)
 ---
@@ -8,7 +8,7 @@ print a# ^(a|b) (#i)a *(#q.) *(a~b)
 
 ==================
 Default language keeps ordinary patterns and recognizes bare qualifier syntax
-:language(zsh_default)
+:language(zsh)
 ==================
 print a# ^(a|b) (#i)a *(#q.) *(a~b)
 ---
@@ -16,7 +16,7 @@ print a# ^(a|b) (#i)a *(#q.) *(a~b)
 
 ==================
 Repetition owns only the last literal character
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print 12#
 ---
@@ -24,7 +24,7 @@ print 12#
 
 ==================
 Filename negation ends at a directory separator and exclusion extends across it
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print ^foo/bar~^baz/qux
 ---
@@ -32,7 +32,7 @@ print ^foo/bar~^baz/qux
 
 ==================
 Exclusion is left associative
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print a~b~c
 ---
@@ -40,7 +40,7 @@ print a~b~c
 
 ==================
 A group in an excluded pattern treats slashes as ordinary characters
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print foo~((^bar/baz))
 ---
@@ -48,11 +48,19 @@ print foo~((^bar/baz))
 
 ==================
 Quoted and expanded source does not become a single repeated pattern atom
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print "ab"# ${part}#
 ---
 (program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (double_quoted (double_quote_text)) (pattern_operator_source)) argument: (word (parameter_expansion parameter: (variable_name)) (pattern_operator_source))))))))
+
+==================
+Explicit parameter substitution flags enable extended glob locally in zsh_extended_glob
+:language(zsh_extended_glob)
+==================
+print ${(*)x/12#/_} ${x/12#/_}
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion (parameter_flags (parameter_flag (parameter_flag_name))) parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal) (extended_pattern operand: (literal) operator: (pattern_operator))) (parameter_replacement_separator) replacement: (parameter_word (literal))))) argument: (word (parameter_expansion parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal) (extended_pattern operand: (literal) operator: (pattern_operator))) (parameter_replacement_separator) replacement: (parameter_word (literal)))))))))))
 
 ==================
 Explicit parameter substitution flags enable extended glob locally in zsh
@@ -60,19 +68,11 @@ Explicit parameter substitution flags enable extended glob locally in zsh
 ==================
 print ${(*)x/12#/_} ${x/12#/_}
 ---
-(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion (parameter_flags (parameter_flag (parameter_flag_name))) parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal) (extended_pattern operand: (literal) operator: (pattern_operator))) (parameter_replacement_separator) replacement: (parameter_word (literal))))) argument: (word (parameter_expansion parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal) (extended_pattern operand: (literal) operator: (pattern_operator))) (parameter_replacement_separator) replacement: (parameter_word (literal)))))))))))
-
-==================
-Explicit parameter substitution flags enable extended glob locally in zsh_default
-:language(zsh_default)
-==================
-print ${(*)x/12#/_} ${x/12#/_}
----
 (program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion (parameter_flags (parameter_flag (parameter_flag_name))) parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal) (extended_pattern operand: (literal) operator: (pattern_operator))) (parameter_replacement_separator) replacement: (parameter_word (literal))))) argument: (word (parameter_expansion parameter: (variable_name) (parameter_replacement (parameter_replacement_operator) pattern: (parameter_pattern (literal)) (parameter_replacement_separator) replacement: (parameter_word (literal)))))))))))
 
 ==================
 Brace alternatives retain separate repeated pattern operands
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print {a#,b#}
 ---
@@ -80,7 +80,7 @@ print {a#,b#}
 
 ==================
 Repetition accepts wildcard bracket numeric range and grouped operands
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print ?# [a-z]## <1-3># (ab|cd)#
 ---
@@ -88,7 +88,7 @@ print ?# [a-z]## <1-3># (ab|cd)#
 
 ==================
 Tilde in parentheses forms an exclusion in the extended language
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print *(P:a~b:)
 ---
@@ -96,7 +96,7 @@ print *(P:a~b:)
 
 ==================
 Tilde remains inside a bare qualifier argument in the default language
-:language(zsh_default)
+:language(zsh)
 ==================
 print *(P:a~b:)
 ---

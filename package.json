@@ -18,11 +18,11 @@
     "src/tree_sitter/*.h",
     "test/bindings.test.rs",
     "tree-sitter.json",
-    "zsh_default/grammar.js",
-    "zsh_default/src/*.c",
-    "zsh_default/src/*.h",
-    "zsh_default/src/*.json",
-    "zsh_default/src/tree_sitter/*.h"
+    "zsh_extended_glob/grammar.js",
+    "zsh_extended_glob/src/*.c",
+    "zsh_extended_glob/src/*.h",
+    "zsh_extended_glob/src/*.json",
+    "zsh_extended_glob/src/tree_sitter/*.h"
   ],
   "publishConfig": {
     "access": "public"

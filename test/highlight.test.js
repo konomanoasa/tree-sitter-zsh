@@ -444,14 +444,17 @@ const cases = [
       ["[", "punctuation.bracket"],
       ["[", "punctuation.bracket"],
       [" "],
-      ["x", language.name === "zsh" ? "string.regexp" : "string"],
-      ["#", language.name === "zsh" ? "operator" : "string"],
+      ["x", language.name === "zsh_extended_glob" ? "string.regexp" : "string"],
+      ["#", language.name === "zsh_extended_glob" ? "operator" : "string"],
       ["y", "string"],
       [" "],
       ["==", "operator"],
       [" "],
       ["x", "string.regexp"],
-      ["#", language.name === "zsh" ? "operator" : "string.regexp"],
+      [
+        "#",
+        language.name === "zsh_extended_glob" ? "operator" : "string.regexp",
+      ],
       ["y", "string.regexp"],
       [" "],
       ["# ]]", "comment"],
@@ -742,7 +745,7 @@ const cases = [
       [" "],
       ["*", "character.special"],
       ["(", "punctuation.bracket"],
-      ...(language.name === "zsh"
+      ...(language.name === "zsh_extended_glob"
         ? [
             ["#", "punctuation.special"],
             ["qP", "character.special"],
@@ -752,7 +755,7 @@ const cases = [
       ['"', "punctuation.delimiter"],
       ["$tag", "variable"],
       ['"', "punctuation.delimiter"],
-      ...(language.name === "zsh"
+      ...(language.name === "zsh_extended_glob"
         ? [
             ["::", "punctuation.delimiter"],
             ["h", "character.special"],
@@ -1081,7 +1084,7 @@ const cases = [
       ["print", "function.call"],
       [" "],
       ["(", "punctuation.bracket"],
-      ...(language.name === "zsh"
+      ...(language.name === "zsh_extended_glob"
         ? [
             ["#", "punctuation.special"],
             ["i", "character.special"],
@@ -1094,8 +1097,11 @@ const cases = [
       [".N", "character.special"],
       [")", "punctuation.bracket"],
       [" "],
-      ["^", language.name === "zsh" ? "operator" : "string"],
-      ["bar", language.name === "zsh" ? "string.regexp" : "string"],
+      ["^", language.name === "zsh_extended_glob" ? "operator" : "string"],
+      [
+        "bar",
+        language.name === "zsh_extended_glob" ? "string.regexp" : "string",
+      ],
       ["\n"],
     ],
   },
@@ -1106,7 +1112,7 @@ const cases = [
       [" "],
       ["*", "character.special"],
       ["(", "punctuation.bracket"],
-      ...(language.name === "zsh"
+      ...(language.name === "zsh_extended_glob"
         ? [
             ["P:a", "string.regexp"],
             ["~", "operator"],

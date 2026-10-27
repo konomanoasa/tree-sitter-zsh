@@ -1,7 +1,7 @@
 ==================
 Quoted references own one nested parameter command or parenthesized arithmetic expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"${x}"} ${"$(print x)"} ${"$((1+2))"}
 ---
@@ -40,7 +40,7 @@ print ${"${x}"} ${"$(print x)"} ${"$((1+2))"}
 ==================
 Empty reference quotes retain source outside the actual parameter field
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${""x} ${""${x}""} ${"${x}"""} ${""""}
 ---
@@ -73,7 +73,7 @@ print ${""x} ${""${x}""} ${"${x}"""} ${""""}
 ==================
 Empty reference quotes preserve flags control prefixes and length ownership
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(U)^""x} ${""#x}
 ---
@@ -99,7 +99,7 @@ print ${(U)^""x} ${""#x}
 ==================
 Subscripts modifiers and default operands follow complete reference quote sequences
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"${x}"""[1]:h} ${""[1]} ${"":-fallback}
 ---
@@ -132,7 +132,7 @@ print ${"${x}"""[1]:h} ${""[1]} ${"":-fallback}
 ==================
 Empty quotes before a dollar special parameter do not make square bracket arithmetic
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${""$[1]}
 ---
@@ -153,7 +153,7 @@ print ${""$[1]}
 ==================
 A parameter operand keeps ordinary quoted text and adjacent expansions
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${:-"text$x"${x}}
 ---
@@ -177,7 +177,7 @@ print ${:-"text$x"${x}}
 A quoted reference cannot contain an unbraced parameter
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"$x"}
 ---
@@ -186,7 +186,7 @@ print ${"$x"}
 A quoted reference cannot use literal text as a parameter name
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"x"}
 ---
@@ -195,7 +195,7 @@ print ${"x"}
 A quoted reference cannot use an escaped character as a parameter name
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"\x"}
 ---
@@ -204,7 +204,7 @@ print ${"\x"}
 A quoted nested reference cannot concatenate trailing text
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"${x}text"}
 ---
@@ -213,7 +213,7 @@ print ${"${x}text"}
 A quoted reference cannot concatenate two nested values
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"${x}${x}"}
 ---
@@ -222,7 +222,7 @@ print ${"${x}${x}"}
 A quoted reference cannot contain a backquote substitution
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"`print x`"}
 ---
@@ -231,7 +231,7 @@ print ${"`print x`"}
 A quoted reference cannot contain square bracket arithmetic
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"$[1+2]"}
 ---
@@ -240,7 +240,7 @@ print ${"$[1+2]"}
 A scalar parameter name cannot take trailing empty reference quotes
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x""}
 ---
@@ -249,7 +249,7 @@ print ${x""}
 A nested reference cannot concatenate another nonempty quote segment
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"${x}""${x}"}
 ---
@@ -258,7 +258,7 @@ print ${"${x}""${x}"}
 Reference quotes cannot follow a parameter subscript
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${"${x}"[1]""}
 ---
@@ -266,7 +266,7 @@ print ${"${x}"[1]""}
 ==================
 Nameless unbraced control prefixes retain source without inventing a parameter name
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $~ $= $^ $~~^=
 ---
@@ -296,7 +296,7 @@ print $~ $= $^ $~~^=
 ==================
 Braces after nameless control prefixes remain outside the parameter expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $~{ $~{x} $={a,b}
 ---
@@ -333,7 +333,7 @@ print $~{ $~{x} $={a,b}
 ==================
 An existence prefix without a name remains literal before brace expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $+ $+{x} $+{a,b}
 ---
@@ -363,7 +363,7 @@ print $+ $+{x} $+{a,b}
 ==================
 An invalid existence target leaves the complete unbraced prefix sequence as quoted text
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$+? $++x $+~x $~+{a,b}"
 ---
@@ -379,7 +379,7 @@ print "$+? $++x $+~x $~+{a,b}"
 ==================
 Valid existence targets and control targets stay inside the unbraced source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $~+x $+1 $^x
 ---
@@ -410,7 +410,7 @@ print $~+x $+1 $^x
 ==================
 Quoted literal prefix text preserves a following independent expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$+${x}" "$~{x}"
 ---
@@ -434,7 +434,7 @@ print "$+${x}" "$~{x}"
 ==================
 Nameless control sources retain subscript and modifier suffixes
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$~[1]" "$=:u"
 ---
@@ -462,7 +462,7 @@ print "$~[1]" "$=:u"
 ==================
 Dollar special parameters retain operations and subscripts before nested expansions
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${$-abc} ${$[1]} ${$((1))} ${$(print x)} ${${x}}
 ---
@@ -505,7 +505,7 @@ print ${$-abc} ${$[1]} ${$((1))} ${$(print x)} ${${x}}
 ==================
 Braced parameter references retain all repeated subscripts before modifiers
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x[1][2]:h} ${${x}[1][2]}
 ---
@@ -535,7 +535,7 @@ print ${x[1][2]:h} ${${x}[1][2]}
 ==================
 Special parameter references take priority over parameter operations
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${#} ${?} ${-} ${##3}
 ---
@@ -558,7 +558,7 @@ print ${#} ${?} ${-} ${##3}
 ==================
 Length applies to special parameters and the default value of an empty reference
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${##} ${#?} ${#-} ${#:-word}
 ---
@@ -590,7 +590,7 @@ print ${##} ${#?} ${#-} ${#:-word}
 ==================
 Unbraced length references own positional and special parameters
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $#12 $#? $#- $#$ $#* $#@
 ---
@@ -623,7 +623,7 @@ print $#12 $#? $#- $#$ $#* $#@
 ==================
 Unbraced length references own their operator and variable
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $#name
 ---
@@ -642,7 +642,7 @@ print $#name
 ==================
 An unbraced subscript retains a confirmed suffix with neutral contents
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $a[1]
 ---
@@ -662,7 +662,7 @@ print $a[1]
 ==================
 Closing braces inside subscripts remain subscript text
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 x[a}]=1
 print $x[}]
@@ -696,7 +696,7 @@ print $x[}]
 ==================
 Nested parentheses after a subscript bracket are groups rather than flags
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x[((1))]
 ---
@@ -720,7 +720,7 @@ print $x[((1))]
 ==================
 Subscript range candidates preserve arithmetic endpoints and unresolved source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[1+2,foo*]}
 ---
@@ -750,7 +750,7 @@ print ${a[1+2,foo*]}
 ==================
 An unfinished unbraced subscript ends before the pipeline operator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $a[1|print next]
 ---
@@ -759,7 +759,7 @@ print $a[1|print next]
 ==================
 An unfinished unbraced subscript retains its opening bracket
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x[
 ---
@@ -768,7 +768,7 @@ print $x[
 ==================
 An unfinished unbraced subscript retains its source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x[1
 ---
@@ -778,7 +778,7 @@ print $x[1
 A braced opening subscript requires its closing bracket
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x[}
 ---
@@ -787,7 +787,7 @@ print ${x[}
 A braced subscript with an operand requires its closing bracket
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x[1}
 ---
@@ -796,7 +796,7 @@ print ${x[1}
 Double quotation cannot supply a missing braced parameter subscript closer
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print -r -- "${x[{}"
 ---
@@ -805,7 +805,7 @@ print -r -- "${x[{}"
 Arithmetic context cannot supply a missing braced parameter subscript closer
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 (( ${x[} ))
 ---
@@ -814,7 +814,7 @@ Arithmetic context cannot supply a missing braced parameter subscript closer
 A quoted braced parameter rejects an unmatched unescaped subscript brace
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print -r -- "${x[{]}"
 ---
@@ -823,7 +823,7 @@ print -r -- "${x[{]}"
 An arithmetic braced parameter rejects an unmatched unescaped subscript brace
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 (( ${x[{]} ))
 ---
@@ -831,7 +831,7 @@ An arithmetic braced parameter rejects an unmatched unescaped subscript brace
 ==================
 An unfinished nested subscript preserves the enclosing parameter end
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x:-$a[1}after]
 ---
@@ -840,7 +840,7 @@ print ${x:-$a[1}after]
 ==================
 A quoted parameter does not give an apostrophe ownership of its closing brace
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "${x:-'a}'"
 ---
@@ -864,7 +864,7 @@ print "${x:-'a}'"
 ==================
 A quoted parameter does not start a brace expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "${x:-{a}"
 ---
@@ -888,7 +888,7 @@ print "${x:-{a}"
 incomplete source reports standard recovery: "print ${x:s}\n"
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x:s}
 ---
@@ -897,7 +897,7 @@ print ${x:s}
 incomplete source reports standard recovery: "print ${x:s/abc}\n"
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x:s/abc}
 ---
@@ -906,7 +906,7 @@ print ${x:s/abc}
 incomplete source reports standard recovery: "print ${x:F}\n"
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x:F}
 ---
@@ -914,7 +914,7 @@ print ${x:F}
 ==================
 An unfinished subscript cannot cross the enclosing quote and word boundary
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$a[1" "]"
 ---
@@ -923,7 +923,7 @@ print "$a[1" "]"
 ==================
 Apostrophes in a double quoted suffix do not hide an explicit expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$a['$i']"
 ---

@@ -1,7 +1,7 @@
 ==================
 Subscript arithmetic candidates use native bitwise precedence
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[1+2&3]}
 ---
@@ -29,7 +29,7 @@ print ${a[1+2&3]}
 ==================
 A range owns one comma and retains an arithmetic sequence inside its end group
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[1,0+(2,3)]}
 ---
@@ -63,7 +63,7 @@ print ${a[1,0+(2,3)]}
 ==================
 All element candidates remain distinct from literal flagged operators
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[*]} ${a[@]} ${a[(e)*]}
 ---
@@ -100,7 +100,7 @@ print ${a[*]} ${a[@]} ${a[(e)*]}
 ==================
 Candidate references and calls retain their own operand boundaries
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[x[2]+f(3)]}
 ---
@@ -132,7 +132,7 @@ print ${a[x[2]+f(3)]}
 ==================
 Dynamic subscript source retains one expansion and explicit candidate groups
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[1+$x]} ${a[1+(2*$x)]}
 ---
@@ -170,7 +170,7 @@ print ${a[1+$x]} ${a[1+(2*$x)]}
 ==================
 Reverse subscript candidates retain wildcard brackets and character ranges
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[(r)foo*[a-z]]}
 ---
@@ -202,7 +202,7 @@ print ${a[(r)foo*[a-z]]}
 ==================
 Reverse subscript groups retain alternatives without choosing the parameter type
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[(r)(ab|cd)]}
 ---
@@ -234,7 +234,7 @@ print ${a[(r)(ab|cd)]}
 ==================
 Literal reverse matching retains source groups without arithmetic candidates
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[(re)foo*(bar)]}
 ---
@@ -264,7 +264,7 @@ print ${a[(re)foo*(bar)]}
 ==================
 Each reverse range endpoint owns its flags and pattern candidate
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[(r)foo*,(R)bar?]}
 ---
@@ -301,7 +301,7 @@ print ${a[(r)foo*,(R)bar?]}
 ==================
 Incomplete arithmetic and multiple commas retain subscript source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[1+]} ${a[1,,3]}
 ---
@@ -333,7 +333,7 @@ print ${a[1+]} ${a[1,,3]}
 ==================
 Whitespace prevents an all element spelling without rejecting the subscript
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[ *]} ${a[* ]}
 ---
@@ -358,7 +358,7 @@ print ${a[ *]} ${a[* ]}
 ==================
 A reverse assignment subscript retains a literal closing brace
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 a[(r)x}]=value
 ---

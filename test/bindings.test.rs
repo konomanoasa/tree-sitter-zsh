@@ -3,7 +3,7 @@ use tree_sitter::{InputEdit, Node, Parser, Point, Query, Range};
 fn languages() -> [tree_sitter_language::LanguageFn; 2] {
   [
     konomanoasa_tree_sitter_zsh::LANGUAGE,
-    konomanoasa_tree_sitter_zsh::LANGUAGE_DEFAULT,
+    konomanoasa_tree_sitter_zsh::LANGUAGE_EXTENDED_GLOB,
   ]
 }
 
@@ -81,6 +81,21 @@ fn language_parses_a_command_with_named_arguments() {
       command.child_by_field_name("argument").unwrap().kind(),
       "word"
     );
+  }
+}
+
+#[test]
+fn language_selection_controls_extended_patterns_and_qualifiers() {
+  for (language, extended) in [
+    (konomanoasa_tree_sitter_zsh::LANGUAGE, false),
+    (konomanoasa_tree_sitter_zsh::LANGUAGE_EXTENDED_GLOB, true),
+  ] {
+    let mut parser = parser(language);
+    let tree = parser.parse("print a# *(P:a~b:)\n", None).unwrap();
+    assert!(!tree.root_node().has_error());
+    let structure = tree.root_node().to_sexp();
+    assert_eq!(structure.contains("extended_pattern"), extended);
+    assert_eq!(structure.contains("glob_qualifier"), !extended);
   }
 }
 

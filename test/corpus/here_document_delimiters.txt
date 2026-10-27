@@ -1,7 +1,7 @@
 ==================
 Unexpanded delimiter source does not validate flag options or global modifier positions
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<${(_:x:)x}${(g:x:)x}${(Z:x:)x}${x:G}
 ${(_:x:)x}${(g:x:)x}${(Z:x:)x}${x:G}
@@ -42,7 +42,7 @@ ${(_:x:)x}${(g:x:)x}${(Z:x:)x}${x:G}
 ==================
 Nested commands in delimiter source preserve unevaluated parameter options and modifiers
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(print ${(_:x:)x} ${x:G})
 $(print ${(_:x:)x} ${x:G})
@@ -72,7 +72,7 @@ $(print ${(_:x:)x} ${x:G})
 ==================
 Unexpanded parameter shaped delimiters retain ordinary quoted reference source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<${"$x"} <<${"x"} <<${"${x}text"}
 ONE
@@ -127,7 +127,7 @@ print AFTER
 ==================
 A delimiter substitution closes with an inner pending heredoc
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(cat <<E)
 body
@@ -165,7 +165,7 @@ print AFTER
 ==================
 A parameter shaped delimiter retains braces followed by whitespace
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<${x:-{ }x}
 body
@@ -194,7 +194,7 @@ ${x:-{ }x}
 ==================
 An escaped backquote remains inside the delimiter and quotes the body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<`E\`X`
 $value
@@ -226,7 +226,7 @@ print after
 ==================
 Escaped UTF-8 bytes match a literal heredoc terminator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$'\xC3\xA9'
 $value
@@ -260,7 +260,7 @@ print after
 ==================
 Non-UTF-8 delimiter bytes stay distinct from deleted or replaced bytes
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<a$'\xFF'b
 ab
@@ -289,7 +289,7 @@ print AFTER
 ==================
 Tab stripping applies after quote removal to the delimiter value
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<-$'\tE'
 $value
@@ -325,7 +325,7 @@ print after
 Ordinary delimiter braces do not protect whitespace from shell parsing
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<{a b}
 ---
@@ -333,7 +333,7 @@ cat <<{a b}
 ==================
 A bracket in the delimiter does not protect whitespace
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<x[a b]
 body
@@ -366,7 +366,7 @@ print after
 ==================
 An unclosed delimiter brace ends at whitespace
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<{a
 body
@@ -398,7 +398,7 @@ print after
 ==================
 A continuation directly after the delimiter ends the declaration
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<E\
 
@@ -424,7 +424,7 @@ E
 ==================
 A continuation inside the delimiter joins its remaining structure
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<E\
 $x
@@ -454,7 +454,7 @@ E$x
 A parameter shaped delimiter still requires its closing brace
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<${x
 ---
@@ -463,7 +463,7 @@ cat <<${x
 Square arithmetic shaped delimiters require their closing bracket
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$[x
 ---
@@ -471,7 +471,7 @@ cat <<$[x
 ==================
 Here document parameter spellings use the ordinary word structure without evaluation
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<${x}
 body
@@ -497,7 +497,7 @@ ${x}
 ==================
 A delimiter command substitution retains its semicolon-only list
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(;)
 body
@@ -523,7 +523,7 @@ $(;)
 ==================
 A case pattern terminator does not close a substitution in the delimiter
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(case x in x) :;; esac)
 body
@@ -585,7 +585,7 @@ print after
 ==================
 Comment parentheses and quotes do not delimit a substitution in a heredoc word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(print INNER # ) '
 # (
@@ -623,7 +623,7 @@ $foo
 ==================
 Quotes inside a delimiter substitution remain in its value and do not quote the outer body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(print 'E' `print X`)
 $foo
@@ -675,7 +675,7 @@ print after
 ==================
 Nested heredoc bodies in a delimiter keep their parentheses and quoting separate
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(cat <<'E'
 )
@@ -722,7 +722,7 @@ $foo
 ==================
 A heredoc terminator ends before the closing backquote without a newline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print `cat <<E
 body
@@ -762,7 +762,7 @@ print after
 ==================
 A quoted tab-stripped heredoc terminator preserves its enclosing backquote and double quote
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "`cat <<-'E'
 	body
@@ -804,7 +804,7 @@ print after
 ==================
 An unmatched parenthesis inside a braced expansion ends with the brace
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<${x:-(}
 body
@@ -838,7 +838,7 @@ after
 ==================
 An ordinary delimiter brace cannot close its inner pattern group at EOF
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : <<{a(}
 body
@@ -872,7 +872,7 @@ print after
 ==================
 An ordinary brace inside a delimiter pattern stays inside the parentheses
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : <<{a(}b)
 body
@@ -914,7 +914,7 @@ print after
 ==================
 Numeric ranges and process substitutions remain delimiter source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : <<x<1-2><(a;b)
 body
@@ -950,7 +950,7 @@ x<1-2><(a;b)
 ==================
 A delimiter shares the reserved boundary between a conditional and then
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(if [[ x ]] then case x in x) :;; esac; fi)
 BODY
@@ -1030,7 +1030,7 @@ print AFTER
 ==================
 A delimiter restores the reserved boundary after a redirection target
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(if [[ x ]] >out then case x in x) :;; esac; fi)
 BODY
@@ -1114,7 +1114,7 @@ print AFTER
 ==================
 A delimiter command beginning with adjacent double brackets remains a word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$([[x]] case)
 BODY
@@ -1163,7 +1163,7 @@ print AFTER
 ==================
 A delimiter loop header and ordinary body preserve the following case boundary
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<$(if for x (a) [[ x ]] then case x in x) :;; esac; fi)
 BODY

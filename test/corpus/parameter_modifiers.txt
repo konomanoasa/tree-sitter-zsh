@@ -1,7 +1,7 @@
 ==================
 Modifier controls own delimited source arguments before the controlled modifier
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x:W[,]u}
 ---
@@ -28,7 +28,7 @@ print ${x:W[,]u}
 ==================
 Unbraced modifier operands retain neutral text and groups
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s/(a|b)/*/
 ---
@@ -61,7 +61,7 @@ print $x:s/(a|b)/*/
 ==================
 A modifier operand boundary preserves the closing parenthesis and following word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s/a(/)y/ next
 ---
@@ -93,7 +93,7 @@ print $x:s/a(/)y/ next
 ==================
 A parenthesis after the final modifier separator belongs to the surrounding word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s/a(/y/)tail
 ---
@@ -125,7 +125,7 @@ print $x:s/a(/y/)tail
 ==================
 Nested candidate parentheses retain both closing characters across a modifier separator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s/a((/))y/
 ---
@@ -158,7 +158,7 @@ print $x:s/a((/))y/
 
 ==================
 A modifier separator takes priority over a pattern flag prefix
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print $x:s#a(#)y#
 ---
@@ -190,7 +190,7 @@ print $x:s#a(#)y#
 A quoted opening parenthesis cannot protect a modifier closing parenthesis
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s/a"("/)y/
 ---
@@ -198,7 +198,7 @@ print $x:s/a"("/)y/
 ==================
 Parentheses used as modifier delimiters preserve the following word boundary
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s(a(b(:s)b)c) next
 ---
@@ -239,7 +239,7 @@ print $x:s(a(b(:s)b)c) next
 An adjacent empty parenthesis pair still ends an unbraced modifier word
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s(a(b()))
 ---
@@ -248,7 +248,7 @@ print $x:s(a(b()))
 A modifier cannot consume an extra outer closing parenthesis
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s/a(/)y/)
 ---
@@ -256,7 +256,7 @@ print $x:s/a(/)y/)
 ==================
 A quoted modifier operand keeps a literal unmatched parenthesis within its quote
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$x:s/a/(b"
 ---
@@ -284,7 +284,7 @@ print "$x:s/a/(b"
 An unbraced substitution requires its pattern separator
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s/abc
 ---
@@ -292,7 +292,7 @@ print $x:s/abc
 ==================
 Unrecognized unbraced modifiers remain word source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:p $x:f $x:F:3
 ---
@@ -310,7 +310,7 @@ print $x:p $x:f $x:F:3
 ==================
 A modifier candidate cannot consume the bracket of a dynamic directory name
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ~[$name:s/a/b]
 ---

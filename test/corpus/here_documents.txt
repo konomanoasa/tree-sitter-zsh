@@ -1,7 +1,7 @@
 ==================
 Unquoted heredoc prefixes preserve literal fallback and independent expansions
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<E
 $+${x} $~{a,b}
@@ -30,7 +30,7 @@ E
 ==================
 Pending heredocs end with the command substitution without invented bodies
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$(<<E)" "$(cat <<F <<'G')"
 print AFTER
@@ -70,7 +70,7 @@ print AFTER
 ==================
 Backquote and process substitutions release their pending heredocs
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print `cat <<E` <(cat <<F) >(cat <<G) =(cat <<H)
 ---
@@ -121,7 +121,7 @@ print `cat <<E` <(cat <<F) >(cat <<G) =(cat <<H)
 ==================
 Closing an inner substitution preserves the pending outer document
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : <<OUT "$(cat <<E)"
 body
@@ -159,7 +159,7 @@ print AFTER
 ==================
 Closing a substitution in a document preserves the active outer body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<OUT
 before$(<<F)after
@@ -196,7 +196,7 @@ print AFTER
 ==================
 A subshell close leaves its heredoc pending until the next newline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 (cat <<E)
 body
@@ -240,7 +240,7 @@ print AFTER
 ==================
 A parenthesis after body start is document text before the real substitution close
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$(cat <<E
 )
@@ -274,7 +274,7 @@ E
 A pending heredoc does not supply a missing command substitution close
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$(cat <<E
 ---
@@ -283,7 +283,7 @@ print "$(cat <<E
 A parenthesis within an unterminated body does not close the command substitution
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$(cat <<E
 body)"
@@ -294,7 +294,7 @@ print AFTER
 An unclosed parameter opener in an unquoted heredoc is rejected
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<OUT
 ${
@@ -306,7 +306,7 @@ print AFTER
 An unclosed named parameter in an unquoted heredoc is rejected
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<OUT
 ${x
@@ -318,7 +318,7 @@ print AFTER
 An unclosed parameter subscript in an unquoted heredoc is rejected
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<OUT
 ${x[
@@ -330,7 +330,7 @@ print AFTER
 A quoted operand brace cannot close the surrounding heredoc parameter
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<OUT
 "${x:-"}"
@@ -341,7 +341,7 @@ print AFTER
 ==================
 Heredoc quotes outside a parameter remain text while operand quotes protect braces
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<OUT
 "${x:-"}"}"
@@ -370,7 +370,7 @@ OUT
 ==================
 An ordinary heredoc separates its body and terminator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<E
 body
@@ -395,7 +395,7 @@ E
 ==================
 Quoted heredoc content is not an expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<'E'
 $x $(print no) $((1 + 2)) $[3 + 4]
@@ -422,7 +422,7 @@ E
 ==================
 Arithmetic layout belongs to expansions inside an unquoted heredoc
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<Z
 pre $((1 + 2)) post
@@ -468,7 +468,7 @@ print after
 ==================
 Nested arithmetic preserves newlines inside a heredoc expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<Z
 $((1 +
@@ -511,7 +511,7 @@ print after
 ==================
 A split heredoc operator retains its document despite native rejection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : <\
 <E

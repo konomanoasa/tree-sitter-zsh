@@ -355,7 +355,7 @@ test("filename eligibility that depends on preceding values stays unresolved", (
   for (const source of ['x=a":"~+\n', "x=$prefix~+\n", "x=a\\:~+\n"]) {
     const output = valid(source);
     assert.doesNotMatch(output, /tilde_expansion/);
-    if (language.name === "zsh")
+    if (language.name === "zsh_extended_glob")
       assert.match(output, /operator: pattern_operator `~`/);
     else assert.doesNotMatch(output, /extended_pattern/);
   }
@@ -480,10 +480,10 @@ test("glob flags follow the language while bare qualifiers keep their arguments"
   );
   assert.equal(
     (output.match(/pattern_flags_prefix/g) ?? []).length,
-    language.name === "zsh" ? 2 : 0,
+    language.name === "zsh_extended_glob" ? 2 : 0,
   );
   for (const argument of [
-    ...(language.name === "zsh" ? ["2", "2,4"] : []),
+    ...(language.name === "zsh_extended_glob" ? ["2", "2,4"] : []),
     "k-50",
     "m+5",
     "m",
@@ -509,7 +509,7 @@ test("glob code arguments preserve shell quoting without parsing evaluated code"
 });
 
 test("glob modifiers own control arguments and counts", () => {
-  const prefix = language.name === "zsh" ? "#q" : "";
+  const prefix = language.name === "zsh_extended_glob" ? "#q" : "";
   const output = valid(`print *.c(${prefix}:s/c/$suffix/:h2) *(:F:2:s/a/b/)\n`);
   assert.equal((output.match(/glob_modifier/g) ?? []).length, 3);
   assert.match(output, /argument: modifier_count `2`/);
@@ -521,11 +521,13 @@ test("glob argument delimiters cannot replace enclosing shell boundaries", () =>
   const grouped = valid("print *(#qP:(a:b):)\n");
   assert.match(
     grouped,
-    language.name === "zsh" ? /glob_group/ : /pattern_group_source/,
+    language.name === "zsh_extended_glob"
+      ? /glob_group/
+      : /pattern_group_source/,
   );
   assert.equal(
     (grouped.match(/glob_argument_delimiter/g) ?? []).length,
-    language.name === "zsh" ? 2 : 0,
+    language.name === "zsh_extended_glob" ? 2 : 0,
   );
   const incomplete = valid("print *(e:unclosed)\n");
   assert.equal((incomplete.match(/glob_argument_delimiter/g) ?? []).length, 1);
@@ -1353,7 +1355,9 @@ test("parameter operand prefixes do not hide following pattern source", () => {
     );
     assert.match(
       valid(`print \${x:-${prefix}(#q)}\n`),
-      language.name === "zsh" ? /glob_qualifier/ : /pattern_group_source/,
+      language.name === "zsh_extended_glob"
+        ? /glob_qualifier/
+        : /pattern_group_source/,
     );
     assert.doesNotMatch(
       valid(`print "\${x:-${prefix}<1-2>}"\n`),
@@ -3172,11 +3176,11 @@ test("subscript pattern candidates follow language syntax and preserve explicit 
     nodes
       .filter(({ type }) => type === "pattern_candidate_operator")
       .map(({ text }) => text),
-    language.name === "zsh" ? ["^", "~", "#"] : [],
+    language.name === "zsh_extended_glob" ? ["^", "~", "#"] : [],
   );
   assert.equal(
     nodes.filter(({ type }) => type === "pattern_candidate_flags").length,
-    language.name === "zsh" ? 1 : 0,
+    language.name === "zsh_extended_glob" ? 1 : 0,
   );
   assert.equal(
     nodes.filter(
@@ -3189,7 +3193,7 @@ test("subscript pattern candidates follow language syntax and preserve explicit 
       ({ type, text }) =>
         type === "pattern_candidate_operator_source" && text === "#",
     ).length,
-    language.name === "zsh" ? 1 : 0,
+    language.name === "zsh_extended_glob" ? 1 : 0,
   );
   assert.equal(
     nodes.filter(({ type }) => type === "subscript_pattern_candidate").length,

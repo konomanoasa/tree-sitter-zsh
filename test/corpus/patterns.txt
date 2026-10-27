@@ -1,7 +1,7 @@
 ==================
 Bracket patterns preserve negation ranges and character classes
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [!a-z[:digit:]]
 ---
@@ -29,7 +29,7 @@ print [!a-z[:digit:]]
 ==================
 Character ranges own only their endpoints and leave expanded endpoints unresolved
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [ab-dx-z] [a-$x] [あ-お] [a-[:digit:]] []-z]
 ---
@@ -80,7 +80,7 @@ print [ab-dx-z] [a-$x] [あ-お] [a-[:digit:]] []-z]
 ==================
 Brace sequences own endpoints and optional steps while adjacent separators stay source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print {1..5..2} {あ..う} {a....c}
 ---
@@ -115,7 +115,7 @@ print {1..5..2} {あ..う} {a....c}
 ==================
 Pattern alternatives remain part of one shell word
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print pre(a|b)post
 ---
@@ -141,7 +141,7 @@ print pre(a|b)post
 ==================
 Bare glob qualifiers have definite flag ownership
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print foo(.N)
 ---
@@ -165,7 +165,7 @@ print foo(.N)
 ==================
 Numeric ranges retain omitted endpoints
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print <1->
 ---
@@ -184,7 +184,7 @@ print <1->
 ==================
 Brace choices retain empty alternatives without synthetic words
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print {,a,}
 ---
@@ -206,7 +206,7 @@ print {,a,}
 ==================
 A brace word can start with a nested pattern group
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print {(a|b)}
 ---
@@ -232,7 +232,7 @@ print {(a|b)}
 incomplete source reports standard recovery: "print [)]\n"
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [)]
 ---
@@ -241,7 +241,7 @@ print [)]
 incomplete source reports standard recovery: "print [(a; b)]\n"
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [(a; b)]
 ---
@@ -250,7 +250,7 @@ print [(a; b)]
 incomplete source reports standard recovery: "print {a, b}\n"
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print {a, b}
 ---
@@ -259,7 +259,7 @@ print {a, b}
 incomplete source reports standard recovery: "print a}\n"
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print a}
 ---
@@ -268,7 +268,7 @@ print a}
 incomplete source reports standard recovery: "[[ \"|\" == [a|b] ]]\n"
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 [[ "|" == [a|b] ]]
 ---
@@ -276,7 +276,7 @@ incomplete source reports standard recovery: "[[ \"|\" == [a|b] ]]\n"
 ==================
 A bare bracket does not protect a pipeline separator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [a|print b]
 ---
@@ -296,7 +296,7 @@ print [a|print b]
 ==================
 Crossing bracket and parenthesis boundaries retain the shell group
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [(a]b)]
 ---
@@ -319,7 +319,7 @@ print [(a]b)]
 ==================
 An unclosed word parenthesis ends at a list separator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print (a; print yes
 ---
@@ -348,7 +348,7 @@ print (a; print yes
 ==================
 Empty parentheses retain a function header even after an opening bracket
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [()]
 ---
@@ -371,7 +371,7 @@ print [()]
 ==================
 An unclosed brace preserves separate words without inventing a delimiter
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print {a,b c
 ---
@@ -395,7 +395,7 @@ print {a,b c
 
 ==================
 Parenthesized qualifiers preserve brace choices starting with whitespace
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print ({ ,a}x) (#q{ ,a}x)
 ---
@@ -436,7 +436,7 @@ print ({ ,a}x) (#q{ ,a}x)
 ==================
 Bracket lookahead and parameter parsing agree on a brace followed by whitespace
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x:-[a{ ,b}c]}
 ---
@@ -466,7 +466,7 @@ print ${x:-[a{ ,b}c]}
 ==================
 A pattern bracket preserves an explicit brace expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [a{b,c}d]
 ---
@@ -492,7 +492,7 @@ print [a{b,c}d]
 ==================
 A character class owns its delimiters and preserves a parameter expansion
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print [[:$class:]]
 ---
@@ -514,7 +514,7 @@ print [[:$class:]]
 ==================
 A brace opened inside a parenthesis retains its closing source outside it
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print (/{b)}
 ---
@@ -538,7 +538,7 @@ print (/{b)}
 ==================
 A closing brace in the replacement leaves the parameter closer outside the modifier
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x:s/a{/b}/}TAIL
 ---
@@ -566,7 +566,7 @@ print ${x:s/a{/b}/}TAIL
 An outstanding brace after a modifier does not close the parameter
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${x:s/a{/b/}
 ---
@@ -574,7 +574,7 @@ print ${x:s/a{/b/}
 ==================
 A bracket source keeps the crossed brace separator and closer before the parameter closer
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${u:-[({a)b,c}d]}
 ---
@@ -605,7 +605,7 @@ print ${u:-[({a)b,c}d]}
 
 ==================
 A qualifier argument retains its crossed brace and surrounding text
-:language(zsh)
+:language(zsh_extended_glob)
 ==================
 print (#qe:({a)b,c}d:)
 ---
@@ -642,7 +642,7 @@ print (#qe:({a)b,c}d:)
 ==================
 Unbraced modifier candidates keep the crossed brace separator and closer as text
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $x:s/a{/b,c}/
 ---
@@ -675,7 +675,7 @@ print $x:s/a{/b,c}/
 ==================
 A heredoc delimiter contains both the crossed brace and the complete parameter
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <<${x:s/a{/b}/}
 body

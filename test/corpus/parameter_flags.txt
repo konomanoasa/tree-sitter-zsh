@@ -1,7 +1,7 @@
 ==================
 Escape-processing flags own empty and paired option arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(g::)x} ${(g(oe))x}
 ---
@@ -35,7 +35,7 @@ print ${(g::)x} ${(g(oe))x}
 ==================
 Parameter flags retain their delimited arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(s.:.)value}
 ---
@@ -60,7 +60,7 @@ print ${(s.:.)value}
 ==================
 Subscript flags select neutral pattern candidates
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${a[(r)foo]}
 ---
@@ -83,7 +83,7 @@ print ${a[(r)foo]}
 ==================
 Balanced braces remain literal flag argument source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(s:{a,b}:)x}
 ---
@@ -110,7 +110,7 @@ print ${(s:{a,b}:)x}
 ==================
 Supported symbolic flags and q variants keep separate flag names
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(q+)x} ${(q-)x} ${(-~0%#@)x}
 ---
@@ -145,7 +145,7 @@ print ${(q+)x} ${(q-)x} ${(-~0%#@)x}
 ==================
 Padding flags own at most three argument pairs before the next flag
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(l[5][0][X]j:-:)x}
 ---
@@ -185,7 +185,7 @@ print ${(l[5][0][X]j:-:)x}
 Expansion prefixes are not parenthesized parameter flag names
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(^)x}
 ---
@@ -194,7 +194,7 @@ print ${(^)x}
 Modifier names are not implicitly parameter flag names
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(h)x}
 ---
@@ -203,7 +203,7 @@ print ${(h)x}
 The plus suffix requires a preceding q flag
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(+)x}
 ---
@@ -212,7 +212,7 @@ print ${(+)x}
 Parameter flag names do not accept non-ASCII characters
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(é)x}
 ---
@@ -221,7 +221,7 @@ print ${(é)x}
 A joining flag rejects an additional argument pair
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:,::X:)x}
 ---
@@ -230,7 +230,7 @@ print ${(j:,::X:)x}
 An escape-processing flag rejects an additional empty argument pair
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(g::::)x}
 ---
@@ -239,7 +239,7 @@ print ${(g::::)x}
 A padding flag rejects a fourth argument pair
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(l:5::0::X::Y:)x}
 ---
@@ -248,7 +248,7 @@ print ${(l:5::0::X::Y:)x}
 Optional padding arguments require the first delimiter pair
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(r[5]:0:)x}
 ---
@@ -257,7 +257,7 @@ print ${(r[5]:0:)x}
 A parameter flag with an argument requires its delimiter pair
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j)x}
 ---
@@ -265,7 +265,7 @@ print ${(j)x}
 ==================
 Fixed option flags allow empty arguments without source nodes
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(_::g::Z::)x}
 ---
@@ -284,7 +284,7 @@ print ${(_::g::Z::)x}
 ==================
 Fixed option flags retain combinations and repetitions with paired delimiters
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(pg<coce>Z[cCnn])x}
 ---
@@ -308,7 +308,7 @@ print ${(pg<coce>Z[cCnn])x}
 ==================
 String and arithmetic flag arguments remain unevaluated source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(pj:$opt:l:1/0:)x}
 ---
@@ -333,7 +333,7 @@ print ${(pj:$opt:l:1/0:)x}
 The reserved underscore flag rejects a nonempty argument
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(_:x:)x}
 ---
@@ -342,7 +342,7 @@ print ${(_:x:)x}
 Escape option flags reject letters outside their documented set
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(g:x:)x}
 ---
@@ -351,7 +351,7 @@ print ${(g:x:)x}
 Lexical option flags reject letters outside their documented set
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(Z:x:)x}
 ---
@@ -360,7 +360,7 @@ print ${(Z:x:)x}
 A preceding p flag does not evaluate the reserved flag argument
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(p_:$empty:)x}
 ---
@@ -369,7 +369,7 @@ print ${(p_:$empty:)x}
 A preceding p flag does not decode escape option letters
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(pg:\x6f:)x}
 ---
@@ -378,7 +378,7 @@ print ${(pg:\x6f:)x}
 A preceding p flag does not expand lexical option letters
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(pZ:$opt:)x}
 ---
@@ -386,7 +386,7 @@ print ${(pZ:$opt:)x}
 ==================
 A double quote spans two parameter flag arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:":j:":)x}
 ---
@@ -417,7 +417,7 @@ print ${(j:":j:":)x}
 ==================
 A single quote spans two parameter flag arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:':j:':)x}
 ---
@@ -448,7 +448,7 @@ print ${(j:':j:':)x}
 ==================
 A nested parameter boundary spans two raw flag arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:${sep:j:}:)x}
 ---
@@ -479,7 +479,7 @@ print ${(j:${sep:j:}:)x}
 ==================
 Crossed arithmetic brackets in a flag argument retain the complete source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(s:$[(1[)]]:)x}
 ---
@@ -504,7 +504,7 @@ print ${(s:$[(1[)]]:)x}
 ==================
 Command spelling in a joining argument stays literal source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:$(;):)x}
 ---
@@ -529,7 +529,7 @@ print ${(j:$(;):)x}
 ==================
 A p flag parameter reference stays in its string argument
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(pj:$sep:)x}
 ---
@@ -556,7 +556,7 @@ print ${(pj:$sep:)x}
 A quote does not protect a parameter flag argument delimiter
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:":":)x}
 ---
@@ -566,7 +566,7 @@ print ${(j:":":)x}
 A backslash does not protect a parameter flag argument delimiter
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:\::)x}
 ---
@@ -576,7 +576,7 @@ print ${(j:\::)x}
 An unmatched quote cannot finish inside the flag list
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:":)x}
 ---
@@ -586,7 +586,7 @@ print ${(j:":)x}
 An unmatched arithmetic bracket cannot finish inside the flag list
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:$[x:)x}
 ---
@@ -595,7 +595,7 @@ print ${(j:$[x:)x}
 ==================
 A single quoted raw flag argument preserves physical continuations
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:'a\
 b':)x}
@@ -621,7 +621,7 @@ b':)x}
 ==================
 A dollar single quoted raw flag argument preserves physical continuations
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:$'a\
 b':)x}
@@ -647,7 +647,7 @@ b':)x}
 ==================
 A double quoted raw flag argument records removed continuations
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"a\
 b":)x}
@@ -673,7 +673,7 @@ b":)x}
 ==================
 A parameter owns a quote ending after its flag list
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x}"}
 ---
@@ -699,7 +699,7 @@ print ${(j:"x:)x}"}
 ==================
 A parameter owns a brace ending after its flag list
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:${x:)x}TAIL}
 ---
@@ -725,7 +725,7 @@ print ${(j:${x:)x}TAIL}
 ==================
 A carried quote ends before the following word suffix
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x}Q"}SUF
 ---
@@ -752,7 +752,7 @@ print ${(j:"x:)x}Q"}SUF
 ==================
 A carried brace ends before the following word suffix
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:${x:)x}TAIL}SUF
 ---
@@ -779,7 +779,7 @@ print ${(j:${x:)x}TAIL}SUF
 ==================
 A carried quote retains a structured array subscript
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x[1]}"}
 ---
@@ -806,7 +806,7 @@ print ${(j:"x:)x[1]}"}
 ==================
 A carried quote retains a structured value operator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x:-Z}"}
 ---
@@ -834,7 +834,7 @@ print ${(j:"x:)x:-Z}"}
 ==================
 A carried quote preserves a nested parameter reference
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)${x}}"}
 ---
@@ -860,7 +860,7 @@ print ${(j:"x:)${x}}"}
 ==================
 A carried quote preserves a nested flag scope
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)${(q)x}}"}
 ---
@@ -886,7 +886,7 @@ print ${(j:"x:)${(q)x}}"}
 ==================
 Command spelling after the value boundary remains closing source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x}Q$(;)"}
 ---
@@ -912,7 +912,7 @@ print ${(j:"x:)x}Q$(;)"}
 ==================
 A carried single quote preserves physical continuations
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:'x:)x}Q\
 '}
@@ -939,7 +939,7 @@ print ${(j:'x:)x}Q\
 ==================
 A carried double quote records removed continuations
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x}Q\
 "}
@@ -967,7 +967,7 @@ print ${(j:"x:)x}Q\
 Closing a carried quote still requires the parameter closing brace
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x}"
 ---
@@ -977,7 +977,7 @@ print ${(j:"x:)x}"
 A carried nested parameter still requires the outer closing brace
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:${x:)x}
 ---
@@ -987,7 +987,7 @@ print ${(j:${x:)x}
 Closing a quote cannot replace the value closing boundary
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x"}
 ---
@@ -995,7 +995,7 @@ print ${(j:"x:)x"}
 ==================
 Dollar delimiters preserve quoted dollar characters
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j$'X$Y'$)x}
 ---
@@ -1014,7 +1014,7 @@ parameter: (variable_name)))))))))
 ==================
 An escaped special delimiter remains in the argument source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j*X\*Y*)x}
 ---
@@ -1033,7 +1033,7 @@ parameter: (variable_name)))))))))
 ==================
 Braced comma source does not close a plain comma delimiter
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j,{X,Y},)x}
 ---
@@ -1052,7 +1052,7 @@ parameter: (variable_name)))))))))
 ==================
 Command source in a flag preserves case terminators
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j*$(case x in x) print * ;; esac)*)x}
 ---
@@ -1071,7 +1071,7 @@ parameter: (variable_name)))))))))
 ==================
 Command source in a flag preserves physical continuations
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:$(a\
 b):)x}
@@ -1091,7 +1091,7 @@ parameter: (variable_name)))))))))
 ==================
 Command source in a flag preserves heredoc parentheses
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:$(cat <<'INNER'
 )
@@ -1114,7 +1114,7 @@ parameter: (variable_name)))))))))
 ==================
 A carried quote retains an ordinary modifier despite the native rejection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x:h}"}
 ---
@@ -1133,7 +1133,7 @@ parameter: (variable_name)
 ==================
 A value command parses its own flags independently of outer argument quotes
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:"x:)x:-$(print ${(j*"*"*)x})}"}
 ---
@@ -1162,7 +1162,7 @@ parameter: (variable_name))))))))))
 A command source opened by a dollar delimiter still needs its matching parenthesis
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j$(X$)x}
 ---
@@ -1171,7 +1171,7 @@ print ${(j$(X$)x}
 Arithmetic source in a flag requires balanced parentheses
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j:$[X)Y]:)x}
 ---
@@ -1180,7 +1180,7 @@ print ${(j:$[X)Y]:)x}
 Quoted outer parameters do not protect ordinary star delimiters
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "${(j*'X*Y'*)x}"
 ---
@@ -1188,7 +1188,7 @@ print "${(j*'X*Y'*)x}"
 ==================
 A flag command boundary allows nested flags to carry quotes past their list
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j*$(print ${(j:"x:)x}"})*)x}
 ---
@@ -1206,7 +1206,7 @@ print ${(j*$(print ${(j:"x:)x}"})*)x}
 ==================
 A raw flag command source shares the conditional and case boundaries
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j.$(if [[ x ]] then case x in x) :;; esac; fi).)x}
 ---
@@ -1231,7 +1231,7 @@ print ${(j.$(if [[ x ]] then case x in x) :;; esac; fi).)x}
 ==================
 Anonymous brace arguments in raw source do not recognize case as a keyword
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j.$(() { :; } then case x in x).)x}
 ---
@@ -1256,7 +1256,7 @@ print ${(j.$(() { :; } then case x in x).)x}
 ==================
 Keyword anonymous brace arguments keep raw case spelling as words
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j.$(function () { :; } then case x in x).)x}
 ---
@@ -1282,7 +1282,7 @@ print ${(j.$(function () { :; } then case x in x).)x}
 A raw command case still requires a closing case boundary
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print ${(j.$(repeat 1 { :; } then case x in x).)x}
 ---

@@ -1,6 +1,6 @@
 {
   "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
-  "name": "zsh_default",
+  "name": "zsh_extended_glob",
   "rules": {
     "program": {
       "type": "SEQ",

@@ -1,7 +1,7 @@
 ==================
 Anonymous arguments within a loop cannot become the enclosing if body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if for x; () { :; } :
 ---
@@ -42,7 +42,7 @@ if for x; () { :; } :
 ==================
 A simple function body does not split its arguments into an if body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if f() : :
 ---
@@ -73,7 +73,7 @@ if f() : :
 ==================
 Anonymous function arguments do not become an implicit if body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if () { :; } :
 ---
@@ -107,7 +107,7 @@ if () { :; } :
 A long loop body needs a separator before the enclosing fi
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if true; then while false; do :; done fi
 ---
@@ -116,7 +116,7 @@ if true; then while false; do :; done fi
 A long if body needs a separator before the enclosing fi
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if true; then if true; then :; fi fi
 ---
@@ -125,7 +125,7 @@ if true; then if true; then :; fi fi
 A brace short loop body needs a separator before the enclosing fi
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if true; then repeat 0 { :; } fi
 ---
@@ -133,7 +133,7 @@ if true; then repeat 0 { :; } fi
 ==================
 A redirect remains attached to its compound condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if >file (:) print yes
 ---
@@ -175,7 +175,7 @@ if >file (:) print yes
 ==================
 A trailing comment without a newline after a terminated list belongs to the program
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print x
 #c
@@ -194,7 +194,7 @@ print x
 ==================
 Adjacent closing braces at a word boundary close nested commands
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { { :; }}
 ---
@@ -223,7 +223,7 @@ Adjacent closing braces at a word boundary close nested commands
 An extra closing brace cannot become a literal argument
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { print }}
 ---
@@ -231,7 +231,7 @@ An extra closing brace cannot become a literal argument
 ==================
 A word ending in adjacent braces retains all but its final closing delimiter
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { print a}}
 ---
@@ -255,7 +255,7 @@ A word ending in adjacent braces retains all but its final closing delimiter
 ==================
 Adjacent braces followed by a word character remain one argument
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { print }}a }
 ---
@@ -279,7 +279,7 @@ Adjacent braces followed by a word character remain one argument
 ==================
 A case at the end of a pipeline terminates a short if condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if : | case x in x) :;; esac :
 ---
@@ -330,7 +330,7 @@ if : | case x in x) :;; esac :
 ==================
 A completed long if can end a condition before an ordinary short body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if if :; then :; fi :
 ---
@@ -377,7 +377,7 @@ if if :; then :; fi :
 ==================
 An always clause terminates a short while condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 while { :; } always { :; } { break; }
 ---
@@ -428,7 +428,7 @@ while { :; } always { :; } { break; }
 ==================
 An anonymous ordinary body leaves the next reserved brace outside its arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if () [[ x ]] { :; };
 ---
@@ -464,7 +464,7 @@ if () [[ x ]] { :; };
 ==================
 Time inherits the final command boundary of a short condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if time case x in x) :;; esac :
 ---
@@ -516,7 +516,7 @@ if time case x in x) :;; esac :
 ==================
 An empty parenthesized word list with layout ends a loop condition
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if for x ( ) { :; } :
 ---
@@ -561,7 +561,7 @@ if for x ( ) { :; } :
 A completed long if does not restore reserved brace recognition
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if if :; then :; fi { :; }
 ---
@@ -570,7 +570,7 @@ if if :; then :; fi { :; }
 A direct short loop brace does not restore reserved brace recognition
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if repeat 1 { :; } { :; }
 ---
@@ -578,7 +578,7 @@ if repeat 1 { :; } { :; }
 ==================
 A short condition cannot split ordinary command arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if : :
 ---
@@ -604,7 +604,7 @@ if : :
 ==================
 A brace word after a completed condition is not a reserved brace body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if if :; then :; fi {x}
 ---

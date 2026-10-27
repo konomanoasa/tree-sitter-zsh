@@ -1,7 +1,7 @@
 ==================
 Standalone nocorrect retains its modifier without a synthetic command name
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 nocorrect
 ---
@@ -11,7 +11,7 @@ nocorrect
 ==================
 Separators and comments do not require a command after nocorrect
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 nocorrect; nocorrect # trailing
 nocorrect
@@ -29,7 +29,7 @@ nocorrect
 ==================
 Groups retain standalone nocorrect with or without an explicit separator
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { nocorrect }; (nocorrect;)
 ---
@@ -63,7 +63,7 @@ Groups retain standalone nocorrect with or without an explicit separator
 ==================
 Standalone nocorrect belongs to the condition or body before control keywords
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 if nocorrect; then nocorrect fi
 ---
@@ -96,7 +96,7 @@ if nocorrect; then nocorrect fi
 ==================
 Both substitution forms retain standalone nocorrect in their own bodies
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print $(nocorrect) `nocorrect`
 ---
@@ -112,7 +112,7 @@ print $(nocorrect) `nocorrect`
 ==================
 Nocorrect keeps assignments and redirections while exec makes the following spelling a command name
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 nocorrect x=1; nocorrect >out; exec nocorrect
 ---
@@ -134,7 +134,7 @@ nocorrect x=1; nocorrect >out; exec nocorrect
 ==================
 Empty source
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 
 ---
@@ -144,7 +144,7 @@ Empty source
 ==================
 Standalone semicolons form a list without synthetic commands
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ; ;
 ---
@@ -153,7 +153,7 @@ Standalone semicolons form a list without synthetic commands
 ==================
 Leading and repeated semicolons preserve the two real commands
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ; first; ; second; ;
 ---
@@ -165,7 +165,7 @@ Leading and repeated semicolons preserve the two real commands
 ==================
 Comments between standalone semicolons remain in the list
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ; # before
 ; :; # after
@@ -180,7 +180,7 @@ Comments between standalone semicolons remain in the list
 ==================
 A brace group owns a list containing only semicolons
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 { ; ; }
 ---
@@ -196,7 +196,7 @@ A brace group owns a list containing only semicolons
 ==================
 A subshell owns a list containing only semicolons
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 (; ;)
 ---
@@ -212,7 +212,7 @@ A subshell owns a list containing only semicolons
 ==================
 Command substitution retains standalone semicolons in its body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print "$(; ;)"
 ---
@@ -230,7 +230,7 @@ print "$(; ;)"
 ==================
 Backquote substitution retains standalone semicolons in its body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print `; ;`
 ---
@@ -247,7 +247,7 @@ print `; ;`
 ==================
 Process substitution retains standalone semicolons in its body
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 cat <(; ;)
 ---
@@ -265,7 +265,7 @@ cat <(; ;)
 A case terminator outside case cannot become two semicolons
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : ;; :
 ---
@@ -274,7 +274,7 @@ A case terminator outside case cannot become two semicolons
 Standalone semicolons cannot supply a command for a background separator
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ; & :
 ---
@@ -282,7 +282,7 @@ Standalone semicolons cannot supply a command for a background separator
 ==================
 Simple command and arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print hello world
 ---
@@ -299,7 +299,7 @@ print hello world
 ==================
 Modifier spellings after the command name are arguments
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 print command exec builtin noglob nocorrect -
 ---
@@ -321,7 +321,7 @@ print command exec builtin noglob nocorrect -
 ==================
 Builtin makes a declaration spelling an ordinary command name
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 builtin typeset x=1
 ---
@@ -338,7 +338,7 @@ builtin typeset x=1
 ==================
 Exec owns options and the explicit argv zero operand
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 exec -cl -a name print x
 ---
@@ -358,7 +358,7 @@ exec -cl -a name print x
 ==================
 Quoted modifier options keep word source and ownership
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 exec "-a" name print x
 ---
@@ -378,7 +378,7 @@ exec "-a" name print x
 ==================
 Declaration owns assignments and redirections before its keyword
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 nocorrect x=1 >/dev/null typeset y=(one two)
 ---
@@ -413,7 +413,7 @@ nocorrect x=1 >/dev/null typeset y=(one two)
 ==================
 Exec retains its pending operand across redirection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 exec -a 2>/dev/null name print x
 ---
@@ -437,7 +437,7 @@ exec -a 2>/dev/null name print x
 ==================
 An attached exec option argument preserves the command name
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 exec -a}x /bin/echo output
 ---
@@ -459,7 +459,7 @@ exec -a}x /bin/echo output
 ==================
 A command brace group opens without a separating space
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 {print x}
 ---
@@ -483,7 +483,7 @@ A command brace group opens without a separating space
 ==================
 A final AND retains its operator without a synthetic right pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : &&
 ---
@@ -496,7 +496,7 @@ A final AND retains its operator without a synthetic right pipeline
 ==================
 A semicolon after AND belongs to the same sublist as its following pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : && ; print AFTER
 ---
@@ -514,7 +514,7 @@ A semicolon after AND belongs to the same sublist as its following pipeline
 ==================
 A semicolon after OR belongs to the same sublist as its following pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 false || ; print AFTER
 ---
@@ -532,7 +532,7 @@ false || ; print AFTER
 ==================
 A semicolon after a stderr pipe precedes its real right command
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : |& ; print AFTER
 ---
@@ -551,7 +551,7 @@ A semicolon after a stderr pipe precedes its real right command
 A standalone negation pipeline contains its source without a synthetic command
 :cst
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 !
 ---
@@ -564,7 +564,7 @@ A standalone negation pipeline contains its source without a synthetic command
 ==================
 Standalone negation supplies either pipeline in an AND or OR list
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 !&& ! || !
 ---
@@ -580,7 +580,7 @@ Standalone negation supplies either pipeline in an AND or OR list
 ==================
 A newline after negation starts an independent command
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 !
 false
@@ -595,7 +595,7 @@ false
 ==================
 A comment after standalone negation ends at the newline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ! # comment
 false
@@ -611,7 +611,7 @@ false
 ==================
 A continued line keeps the following command under negation
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ! \
 false
@@ -626,7 +626,7 @@ false
 ==================
 Time owns a standalone negation pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time !
 ---
@@ -643,7 +643,7 @@ time !
 ==================
 A subshell closes directly after a standalone negation pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 (!)
 ---
@@ -662,7 +662,7 @@ A subshell closes directly after a standalone negation pipeline
 Standalone negation cannot supply a command before a pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ! | :
 ---
@@ -671,7 +671,7 @@ Standalone negation cannot supply a command before a pipe
 Standalone negation cannot supply a command after a pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : | !
 ---
@@ -680,7 +680,7 @@ Standalone negation cannot supply a command after a pipe
 Standalone negation cannot supply a command before a stderr pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ! |& :
 ---
@@ -689,7 +689,7 @@ Standalone negation cannot supply a command before a stderr pipe
 Standalone negation cannot supply a command after a stderr pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : |& !
 ---
@@ -698,7 +698,7 @@ Standalone negation cannot supply a command after a stderr pipe
 Coproc cannot precede pipeline negation
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 coproc !
 ---
@@ -707,7 +707,7 @@ coproc !
 Pipeline negation cannot precede coproc
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ! coproc
 ---
@@ -715,7 +715,7 @@ Pipeline negation cannot precede coproc
 ==================
 A standalone coproc pipeline retains its keyword without a synthetic command
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 coproc
 ---
@@ -724,7 +724,7 @@ coproc
 ==================
 Standalone coproc supplies either pipeline in an AND or OR list
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 coproc&& coproc || coproc
 ---
@@ -740,7 +740,7 @@ coproc&& coproc || coproc
 ==================
 A newline and comment after coproc start an independent command
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 coproc # comment
 false
@@ -756,7 +756,7 @@ false
 ==================
 A continued line keeps the following command under coproc
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 coproc \
 false
@@ -772,7 +772,7 @@ false
 ==================
 A standalone coproc keyword retains its internal line continuation
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 co\
 proc
@@ -785,7 +785,7 @@ proc
 ==================
 Time owns a standalone coproc pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 time coproc
 ---
@@ -803,7 +803,7 @@ time coproc
 ==================
 A subshell closes directly after a standalone coproc pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 (coproc)
 ---
@@ -822,7 +822,7 @@ A subshell closes directly after a standalone coproc pipeline
 ==================
 Asynchronous separators retain prefix-only pipelines despite native rejection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 ! &
 coproc &
@@ -848,7 +848,7 @@ coproc &
 Standalone coproc cannot supply a command before a pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 coproc | :
 ---
@@ -857,7 +857,7 @@ coproc | :
 Standalone coproc cannot supply a command after a pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : | coproc
 ---
@@ -866,7 +866,7 @@ Standalone coproc cannot supply a command after a pipe
 Standalone coproc cannot supply a command before a stderr pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 coproc |& :
 ---
@@ -875,7 +875,7 @@ coproc |& :
 Standalone coproc cannot supply a command after a stderr pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : |& coproc
 ---
@@ -884,7 +884,7 @@ Standalone coproc cannot supply a command after a stderr pipe
 Coproc cannot repeat before a command
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 coproc coproc :
 ---
@@ -892,7 +892,7 @@ coproc coproc :
 ==================
 A semicolon after a pipe precedes its real right command
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : | ; :
 ---
@@ -906,7 +906,7 @@ A semicolon after a pipe precedes its real right command
 ==================
 A split AND operator retains both pipelines despite native rejection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : &\
 & :
@@ -921,7 +921,7 @@ A split AND operator retains both pipelines despite native rejection
 ==================
 A split OR operator retains both pipelines despite native rejection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : |\
 | :
@@ -936,7 +936,7 @@ A split OR operator retains both pipelines despite native rejection
 ==================
 A split stderr pipe retains both commands despite native rejection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : |\
 & :
@@ -952,7 +952,7 @@ A split stderr pipe retains both commands despite native rejection
 ==================
 A continued final logical operator retains its source without a right pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : &\
 &
@@ -967,7 +967,7 @@ A continued final logical operator retains its source without a right pipeline
 A final OR owns its following semicolon without a synthetic pipeline
 :cst
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : || ;
 ---
@@ -985,7 +985,7 @@ A final OR owns its following semicolon without a synthetic pipeline
 ==================
 An EOF comment after a final logical operator remains at program level
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : && # comment
 ---
@@ -999,7 +999,7 @@ An EOF comment after a final logical operator remains at program level
 ==================
 Logical operator layout keeps comments newlines and separated semicolons before its right pipeline
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 false && ; # layout
 ; : ||
@@ -1024,7 +1024,7 @@ false && ; # layout
 ==================
 Pipe layout belongs to its pipeline while logical operators retain their own operands
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : | ; # pipe
 ; : && ; : |& ; : || ;
@@ -1046,7 +1046,7 @@ Pipe layout belongs to its pipeline while logical operators retain their own ope
 ==================
 A subshell closes after a final logical operator and its layout
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 (: && ; )
 ---
@@ -1069,7 +1069,7 @@ A subshell closes after a final logical operator and its layout
 ==================
 Asynchronous separators follow final logical operators despite native rejection
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : && &
 : || ; &!
@@ -1093,7 +1093,7 @@ Asynchronous separators follow final logical operators despite native rejection
 A final pipe cannot omit its right command
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : |
 ---
@@ -1102,7 +1102,7 @@ A final pipe cannot omit its right command
 Semicolon layout cannot supply the missing command after a final stderr pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : |& ;
 ---
@@ -1111,7 +1111,7 @@ Semicolon layout cannot supply the missing command after a final stderr pipe
 A group closer cannot supply the missing command after a pipe
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 (: | ; )
 ---
@@ -1120,7 +1120,7 @@ A group closer cannot supply the missing command after a pipe
 A logical operator cannot start a sublist without its left pipeline
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 && :
 ---
@@ -1129,7 +1129,7 @@ A logical operator cannot start a sublist without its left pipeline
 Consecutive logical operators cannot omit an intermediate pipeline
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : && || :
 ---
@@ -1138,7 +1138,7 @@ Consecutive logical operators cannot omit an intermediate pipeline
 Semicolon layout cannot supply a pipeline between logical operators
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : || ; && :
 ---
@@ -1147,7 +1147,7 @@ Semicolon layout cannot supply a pipeline between logical operators
 A pipe cannot start the missing right pipeline after a logical operator
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : && | :
 ---
@@ -1156,7 +1156,7 @@ A pipe cannot start the missing right pipeline after a logical operator
 A case terminator outside case cannot split into operator layout
 :error
 :language(zsh)
-:language(zsh_default)
+:language(zsh_extended_glob)
 ==================
 : && ;; :
 ---
