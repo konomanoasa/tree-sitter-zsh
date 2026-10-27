@@ -1,6 +1,6 @@
 {
   "name": "@konomanoasa/tree-sitter-zsh",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "type": "module",
   "description": "Tree-sitter grammars for zsh.",
   "license": "MIT",
