@@ -1872,6 +1872,8 @@ test("editing optional header separators preserves fresh and incremental agreeme
     { source: "repeat 2 do :; done\n", byte: 8 },
     { source: "foreach x (a) { :; }\n", byte: 13 },
     { source: "foreach x (a) do :; done\n", byte: 13 },
+    { source: "foreach x { :; }\n", byte: 10 },
+    { source: "foreach x do :; done\n", byte: 10 },
     { source: "case x { }\n", byte: 6 },
     { source: "case x { }\n", byte: 8 },
     { source: "case x in esac\n", byte: 6 },
@@ -1891,12 +1893,15 @@ test("editing optional header separators preserves fresh and incremental agreeme
 });
 
 test("foreach body and terminator edits preserve ownership through nesting", () => {
-  for (const [prefix, suffix] of [
-    ["", "\nprint AFTER\n"],
-    ["foreach outer (a)\n", "\nend\n"],
-    ['print "$(', ')"\n'],
+  for (const [prefix, opening, suffix] of [
+    ["", "foreach inner (b) ", "\nprint AFTER\n"],
+    ["foreach outer (a)\n", "foreach inner (b) ", "\nend\n"],
+    ['print "$(', "foreach inner (b) ", ')"\n'],
+    ["", "foreach inner; ", "\nprint AFTER\n"],
+    ["foreach outer;\n", "foreach inner; ", "\nend\n"],
+    ['print "$(', "foreach inner; ", ')"\n'],
   ]) {
-    const header = `${prefix}foreach inner (b) `;
+    const header = prefix + opening;
     for (const { beforeBody, afterBody, byte, removed, inserted } of [
       {
         beforeBody: "{ :; }",
@@ -3025,6 +3030,9 @@ test("editing the word after a command prefix into another prefix element or a c
 test("arithmetic edits switch between native expression structure and unresolved source", () => {
   for (const [before, after] of [
     ["1 + 2 * 3", "1 + $x * 3"],
+    ["a=0+1", "a=0+$x"],
+    ["a++ + 1", "a++ + $x"],
+    ["-1+2", "-1+$x"],
     ["1 + $x * 3", "1 + (2 * 3)"],
     ["1 + 2 * 3", "1 + 2 & 3"],
     ["1 + 2 * 3", "1 + 2 * 3 +"],
@@ -3064,6 +3072,9 @@ test("editing subscript flags operands and ranges restores candidate structure i
     ["(r)foo*", "(r)foo*,(R)bar?"],
     ["(r)^foo~bar#", `(r)^foo~\${part}#`],
     ["1+2", "1+$x"],
+    ["a=0+1", "a=0+$x"],
+    ["a++ + 1", "a++ + $x"],
+    ["-1+2", "-1+$x"],
     ["1+(2*3)", "1+(2*$x)"],
     ["*", "(e)*"],
     ["x[2]", "x[2,3]"],

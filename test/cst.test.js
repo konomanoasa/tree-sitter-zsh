@@ -4,6 +4,7 @@ import { sourceNodes } from "./support/cst.js";
 import { language } from "./support/language.js";
 import { parseSummary, valid } from "./support/parser.js";
 import {
+  nestedForSubstitutions,
   representativeSource,
   scaleFactors,
   scalingWorkloads,
@@ -105,6 +106,7 @@ test("language selection fixes extended glob while explicit substitution flags s
 });
 
 const substitutionDepth = 256;
+const forSubstitutionDepth = 512;
 const arithmeticDepth = 2048;
 const failingArithmeticDepth = 32;
 const delimiterBytes = 4096;
@@ -115,6 +117,10 @@ const limitWorkloads = [
   {
     name: "deep substitutions",
     source: `print ${"$(print ".repeat(substitutionDepth)}x${")".repeat(substitutionDepth)}\n`,
+  },
+  {
+    name: "deep for substitutions",
+    source: nestedForSubstitutions(forSubstitutionDepth),
   },
   {
     name: "deep arithmetic lookahead",

@@ -435,7 +435,7 @@ const arithmeticRules = (prefix = "arithmetic") => {
       ),
     [`${prefix}_sequence_expression`]: ($) =>
       prec.left(
-        1,
+        "arithmetic_sequence",
         seq(
           field("left", expression($)),
           field("operator", operator($, "comma")),
@@ -444,7 +444,7 @@ const arithmeticRules = (prefix = "arithmetic") => {
       ),
     [`${prefix}_assignment_expression`]: ($) =>
       prec.right(
-        2,
+        "arithmetic_assignment",
         seq(
           field("left", reference($)),
           field("operator", operator($, "assignment")),
@@ -453,7 +453,7 @@ const arithmeticRules = (prefix = "arithmetic") => {
       ),
     [`${prefix}_conditional_expression`]: ($) =>
       prec.right(
-        3,
+        "arithmetic_conditional",
         seq(
           field("condition", expression($)),
           field("operator", operator($, "question")),
@@ -464,9 +464,9 @@ const arithmeticRules = (prefix = "arithmetic") => {
       ),
     [`${prefix}_binary_expression`]: ($) =>
       choice(
-        ...arithmeticBinaryLevels.map((kind, index) =>
+        ...arithmeticBinaryLevels.map((kind) =>
           (kind === "power" ? prec.right : prec.left)(
-            index + 4,
+            `arithmetic_${kind}`,
             seq(
               field("left", expression($)),
               field("operator", operator($, kind)),
@@ -477,7 +477,7 @@ const arithmeticRules = (prefix = "arithmetic") => {
       ),
     [`${prefix}_unary_expression`]: ($) =>
       prec.right(
-        15,
+        "arithmetic_unary",
         seq(
           field(
             "operator",
@@ -488,7 +488,7 @@ const arithmeticRules = (prefix = "arithmetic") => {
       ),
     [`${prefix}_update_expression`]: ($) =>
       prec(
-        16,
+        "arithmetic_update",
         choice(
           seq(
             field("operator", operator($, "update")),
@@ -676,6 +676,18 @@ export default (name) =>
       $._parameter_header,
       $._parameter_control_prefixes,
     ],
+    precedences: () => [
+      [
+        "arithmetic_update",
+        "arithmetic_unary",
+        ...arithmeticBinaryLevels
+          .toReversed()
+          .map((kind) => `arithmetic_${kind}`),
+        "arithmetic_conditional",
+        "arithmetic_assignment",
+        "arithmetic_sequence",
+      ],
+    ],
     conflicts: ($) => [
       [$.simple_command, $._parenthesized_function_names],
       [$.precommand_modifier, $._precommand_function_first_word],
@@ -691,6 +703,23 @@ export default (name) =>
       [$._arithmetic_expression, $._arithmetic_part],
       [$._arithmetic_expression, $.arithmetic_source],
       [$._arithmetic_candidate_expression, $._arithmetic_candidate_part],
+      [$.arithmetic_assignment_expression, $._arithmetic_part],
+      [$.arithmetic_update_expression, $._arithmetic_part],
+      [$.arithmetic_update_expression, $.arithmetic_operator],
+      [$.arithmetic_unary_expression, $.arithmetic_operator],
+      [
+        $.arithmetic_candidate_assignment_expression,
+        $._arithmetic_candidate_part,
+      ],
+      [$.arithmetic_candidate_update_expression, $._arithmetic_candidate_part],
+      [
+        $.arithmetic_candidate_update_expression,
+        $.arithmetic_candidate_operator,
+      ],
+      [
+        $.arithmetic_candidate_unary_expression,
+        $.arithmetic_candidate_operator,
+      ],
     ],
     rules: withPatternCandidates({
       program: ($) =>
@@ -912,6 +941,7 @@ export default (name) =>
           choice(
             field("words", alias($._foreach_words, $.loop_words)),
             seq($._loop_in_words, headerSeparator($)),
+            headerSeparator($),
           ),
         ),
       _foreach_group_header: ($) =>
@@ -924,6 +954,7 @@ export default (name) =>
                 optional(headerSeparator($)),
               ),
               seq($._loop_in_words, $._foreach_group_header_separator),
+              optional($._foreach_group_header_separator),
             ),
           ),
         ),

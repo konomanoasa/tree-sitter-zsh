@@ -837,6 +837,34 @@ static void boundary_lookahead_restores_input_after_success_and_failure(void) {
   }
 }
 
+static void command_substitution_opening_keeps_lookahead_local(void) {
+  const char text[] = "($(print abcdefghijklmnopqrstuvwxyz))";
+  int32_t source[sizeof(text) - 1];
+  for (size_t i = 0; i < sizeof(source) / sizeof(*source); ++i)
+    source[i] = text[i];
+  struct RecoveryInput input = {
+    .lexer =
+      {
+        .lookahead = source[0],
+        .advance = recovery_advance,
+        .mark_end = recovery_mark_end,
+        .eof = recovery_eof,
+      },
+    .source = source,
+    .length = sizeof(source) / sizeof(*source),
+  };
+  struct Scanner state = {0};
+  assert(init_source(&state));
+  assert(push(&state, WORD_BEGIN));
+  bool valid[TOKEN_COUNT] = {0};
+  valid[COMMAND_OPEN] = true;
+  assert(zsh_scanner_scan(&state, &input.lexer, valid));
+  assert(input.lexer.result_symbol == COMMAND_OPEN);
+  assert(state.remaining == 1 && input.marked == 0);
+  assert(input.position <= 2 + LOOKAHEAD_EXTENSION);
+  clear(&state);
+}
+
 static void failed_state_restoration_refuses_tokens_until_the_next_one(void) {
   const int32_t source[] = {'x', '\n'};
   struct RecoveryInput input = {
@@ -929,6 +957,7 @@ int main(void) {
   glob_argument_state_keeps_its_source_delimiter_after_restoration();
   redirect_substitution_restores_keyword_position_after_round_trip();
   boundary_lookahead_restores_input_after_success_and_failure();
+  command_substitution_opening_keeps_lookahead_local();
   failed_state_restoration_refuses_tokens_until_the_next_one();
   return 0;
 }

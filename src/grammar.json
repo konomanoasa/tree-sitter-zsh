@@ -2362,6 +2362,14 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "FIELD",
+              "name": "separator",
+              "content": {
+                "type": "SYMBOL",
+                "name": "term"
+              }
             }
           ]
         }
@@ -2424,6 +2432,18 @@
                   {
                     "type": "SYMBOL",
                     "name": "_foreach_group_header_separator"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_foreach_group_header_separator"
+                  },
+                  {
+                    "type": "BLANK"
                   }
                 ]
               }
@@ -4609,7 +4629,7 @@
     },
     "arithmetic_sequence_expression": {
       "type": "PREC_LEFT",
-      "value": 1,
+      "value": "arithmetic_sequence",
       "content": {
         "type": "SEQ",
         "members": [
@@ -4647,7 +4667,7 @@
     },
     "arithmetic_assignment_expression": {
       "type": "PREC_RIGHT",
-      "value": 2,
+      "value": "arithmetic_assignment",
       "content": {
         "type": "SEQ",
         "members": [
@@ -4694,7 +4714,7 @@
     },
     "arithmetic_conditional_expression": {
       "type": "PREC_RIGHT",
-      "value": 3,
+      "value": "arithmetic_conditional",
       "content": {
         "type": "SEQ",
         "members": [
@@ -4756,7 +4776,7 @@
       "members": [
         {
           "type": "PREC_LEFT",
-          "value": 4,
+          "value": "arithmetic_logical_or",
           "content": {
             "type": "SEQ",
             "members": [
@@ -4794,7 +4814,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 5,
+          "value": "arithmetic_logical_and",
           "content": {
             "type": "SEQ",
             "members": [
@@ -4832,7 +4852,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 6,
+          "value": "arithmetic_equality",
           "content": {
             "type": "SEQ",
             "members": [
@@ -4870,7 +4890,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 7,
+          "value": "arithmetic_comparison",
           "content": {
             "type": "SEQ",
             "members": [
@@ -4908,7 +4928,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 8,
+          "value": "arithmetic_additive",
           "content": {
             "type": "SEQ",
             "members": [
@@ -4946,7 +4966,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 9,
+          "value": "arithmetic_multiplicative",
           "content": {
             "type": "SEQ",
             "members": [
@@ -4984,7 +5004,7 @@
         },
         {
           "type": "PREC_RIGHT",
-          "value": 10,
+          "value": "arithmetic_power",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5022,7 +5042,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 11,
+          "value": "arithmetic_bitwise_or",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5060,7 +5080,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 12,
+          "value": "arithmetic_bitwise_xor",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5098,7 +5118,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 13,
+          "value": "arithmetic_bitwise_and",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5136,7 +5156,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 14,
+          "value": "arithmetic_shift",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5176,7 +5196,7 @@
     },
     "arithmetic_unary_expression": {
       "type": "PREC_RIGHT",
-      "value": 15,
+      "value": "arithmetic_unary",
       "content": {
         "type": "SEQ",
         "members": [
@@ -5220,7 +5240,7 @@
     },
     "arithmetic_update_expression": {
       "type": "PREC",
-      "value": 16,
+      "value": "arithmetic_update",
       "content": {
         "type": "CHOICE",
         "members": [
@@ -5382,7 +5402,7 @@
     },
     "arithmetic_candidate_sequence_expression": {
       "type": "PREC_LEFT",
-      "value": 1,
+      "value": "arithmetic_sequence",
       "content": {
         "type": "SEQ",
         "members": [
@@ -5420,7 +5440,7 @@
     },
     "arithmetic_candidate_assignment_expression": {
       "type": "PREC_RIGHT",
-      "value": 2,
+      "value": "arithmetic_assignment",
       "content": {
         "type": "SEQ",
         "members": [
@@ -5467,7 +5487,7 @@
     },
     "arithmetic_candidate_conditional_expression": {
       "type": "PREC_RIGHT",
-      "value": 3,
+      "value": "arithmetic_conditional",
       "content": {
         "type": "SEQ",
         "members": [
@@ -5529,7 +5549,7 @@
       "members": [
         {
           "type": "PREC_LEFT",
-          "value": 4,
+          "value": "arithmetic_logical_or",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5567,7 +5587,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 5,
+          "value": "arithmetic_logical_and",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5605,7 +5625,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 6,
+          "value": "arithmetic_equality",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5643,7 +5663,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 7,
+          "value": "arithmetic_comparison",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5681,7 +5701,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 8,
+          "value": "arithmetic_additive",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5719,7 +5739,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 9,
+          "value": "arithmetic_multiplicative",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5757,7 +5777,7 @@
         },
         {
           "type": "PREC_RIGHT",
-          "value": 10,
+          "value": "arithmetic_power",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5795,7 +5815,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 11,
+          "value": "arithmetic_bitwise_or",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5833,7 +5853,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 12,
+          "value": "arithmetic_bitwise_xor",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5871,7 +5891,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 13,
+          "value": "arithmetic_bitwise_and",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5909,7 +5929,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 14,
+          "value": "arithmetic_shift",
           "content": {
             "type": "SEQ",
             "members": [
@@ -5949,7 +5969,7 @@
     },
     "arithmetic_candidate_unary_expression": {
       "type": "PREC_RIGHT",
-      "value": 15,
+      "value": "arithmetic_unary",
       "content": {
         "type": "SEQ",
         "members": [
@@ -5993,7 +6013,7 @@
     },
     "arithmetic_candidate_update_expression": {
       "type": "PREC",
-      "value": 16,
+      "value": "arithmetic_update",
       "content": {
         "type": "CHOICE",
         "members": [
@@ -21844,9 +21864,108 @@
     [
       "_arithmetic_candidate_expression",
       "_arithmetic_candidate_part"
+    ],
+    [
+      "arithmetic_assignment_expression",
+      "_arithmetic_part"
+    ],
+    [
+      "arithmetic_update_expression",
+      "_arithmetic_part"
+    ],
+    [
+      "arithmetic_update_expression",
+      "arithmetic_operator"
+    ],
+    [
+      "arithmetic_unary_expression",
+      "arithmetic_operator"
+    ],
+    [
+      "arithmetic_candidate_assignment_expression",
+      "_arithmetic_candidate_part"
+    ],
+    [
+      "arithmetic_candidate_update_expression",
+      "_arithmetic_candidate_part"
+    ],
+    [
+      "arithmetic_candidate_update_expression",
+      "arithmetic_candidate_operator"
+    ],
+    [
+      "arithmetic_candidate_unary_expression",
+      "arithmetic_candidate_operator"
     ]
   ],
-  "precedences": [],
+  "precedences": [
+    [
+      {
+        "type": "STRING",
+        "value": "arithmetic_update"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_unary"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_shift"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_bitwise_and"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_bitwise_xor"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_bitwise_or"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_power"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_multiplicative"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_additive"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_comparison"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_equality"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_logical_and"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_logical_or"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_conditional"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_assignment"
+      },
+      {
+        "type": "STRING",
+        "value": "arithmetic_sequence"
+      }
+    ]
+  ],
   "externals": [
     {
       "type": "SYMBOL",

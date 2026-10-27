@@ -2748,6 +2748,30 @@ test("foreach header edits preserve body forms across command sources", () => {
         after: "foreach x in a b; do :; done",
       },
       {
+        before: "foreach x in a b; :; end",
+        removed: " in a b",
+        inserted: "",
+        after: "foreach x; :; end",
+      },
+      {
+        before: "foreach x (a b) { :; }",
+        removed: "(a b) ",
+        inserted: "",
+        after: "foreach x { :; }",
+      },
+      {
+        before: "foreach x (a b) do :; done",
+        removed: "(a b) ",
+        inserted: "",
+        after: "foreach x do :; done",
+      },
+      {
+        before: "foreach x # header\nin a b; :; end",
+        removed: "x # header",
+        inserted: "x; # header",
+        after: "foreach x; # header\nin a b; :; end",
+      },
+      {
         before: "foreach x (a) case x in x) :;; esac; end",
         removed: "(a)",
         inserted: "in a;",
@@ -2950,6 +2974,9 @@ test("compound body closer removal and repair preserve delimiter requirements", 
     ["foreach x in a; :;", " end"],
     ["foreach x in a; do :;", " done"],
     ["foreach x in a; { :;", " }"],
+    ["foreach x; :;", " end"],
+    ["foreach x do :;", " done"],
+    ["foreach x { :;", " }"],
   ]) {
     const complete = source + closing;
     assert.equal(parse(source).hasError, true, source);
@@ -3082,6 +3109,9 @@ test("subscript candidates retain native expression fields without inferring dec
 test("explicit key candidate edits preserve first bracket boundaries and shell substitutions", () => {
   for (const [before, after] of [
     ["1+2", "1+2*3"],
+    ["a=0+1", "a=0+$x"],
+    ["a+++1", "a+++$x"],
+    ["-1+2", "-1+$x"],
     ["1+(2*3)", "1+(2*$x)"],
     ["x[2", "x[3+1"],
     ["(r)x", "(r)$x"],
@@ -3124,6 +3154,9 @@ test("arithmetic argument candidate edits preserve call boundaries and explicit 
   for (const [before, after] of [
     ["1+2", "1+2&3,4"],
     ["1+2", "1+$x"],
+    ["a=0+1", "a=0+$x"],
+    ["a++ + 1", "a++ + $x"],
+    ["-1+2", "-1+$x"],
     ["1+(2*3)", "1+(2*$x)"],
     ["1+2", "1+$((2*3))"],
     ["1+2", "g(1+2)"],

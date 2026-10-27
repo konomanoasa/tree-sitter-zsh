@@ -167,6 +167,40 @@ time
               (time_keyword))))))))
 
 ==================
+A targetless time keeps asynchronous separators in the list without a synthetic target
+:cst
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+time &
+time &!
+time &|
+---
+0:0 - 2:7   program
+0:0 - 2:7     list
+0:0 - 0:5       sublist
+0:0 - 0:5         pipeline
+0:0 - 0:5           command
+0:0 - 0:5             complex_command
+0:0 - 0:5               time_command
+0:0 - 0:4                 time_keyword `time`
+0:5 - 0:6       "&"
+1:0 - 1:5       sublist
+1:0 - 1:5         pipeline
+1:0 - 1:5           command
+1:0 - 1:5             complex_command
+1:0 - 1:5               time_command
+1:0 - 1:4                 time_keyword `time`
+1:5 - 1:7       async_disown `&!`
+2:0 - 2:5       sublist
+2:0 - 2:5         pipeline
+2:0 - 2:5           command
+2:0 - 2:5             complex_command
+2:0 - 2:5               time_command
+2:0 - 2:4                 time_keyword `time`
+2:5 - 2:7       async_disown `&|`
+
+==================
 A command named time cannot take an unseparated brace command as an argument
 :error
 :language(zsh)

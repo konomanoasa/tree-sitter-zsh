@@ -1,0 +1,286 @@
+==================
+Arithmetic source fallback preserves assignment followed by a parameter expansion
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+((a=0+$x))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_variable)
+                (arithmetic_operator)
+                (arithmetic_number)
+                (arithmetic_operator)
+                (parameter_expansion
+                  parameter: (variable_name))))))))))
+
+==================
+Arithmetic source fallback preserves both arithmetic expansion delimiters
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $((a=0+$x)) $[a=0+$x]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_variable)
+                  (arithmetic_operator)
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (parameter_expansion
+                    parameter: (variable_name)))))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_variable)
+                  (arithmetic_operator)
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (parameter_expansion
+                    parameter: (variable_name)))))))))))
+
+==================
+Arithmetic source fallback preserves an unbraced subscript candidate
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $items[a=0+$x]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (array_subscript
+                    source: (subscript_source
+                      (arithmetic_candidate_variable)
+                      (arithmetic_candidate_operator)
+                      (arithmetic_candidate_number)
+                      (arithmetic_candidate_operator)
+                      (parameter_expansion
+                        parameter: (variable_name)))))))))))))
+
+==================
+Arithmetic source fallback preserves an explicit array key candidate
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+items=([a=0+$x]=value)
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (array_assignment
+                (array_element_assignment
+                  key: (array_element_key
+                    source: (array_key_source
+                      (arithmetic_candidate_variable)
+                      (arithmetic_candidate_operator)
+                      (arithmetic_candidate_number)
+                      (arithmetic_candidate_operator)
+                      (parameter_expansion
+                        parameter: (variable_name))))
+                  (assignment_operator)
+                  value: (assignment_value
+                    (literal)))))))))))
+
+==================
+Arithmetic source fallback preserves a function argument candidate
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+((f(a=0+$x)))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                expression: (arithmetic_function_source
+                  name: (arithmetic_function_name)
+                  arguments: (arithmetic_argument_source
+                    (arithmetic_candidate_variable)
+                    (arithmetic_candidate_operator)
+                    (arithmetic_candidate_number)
+                    (arithmetic_candidate_operator)
+                    (parameter_expansion
+                      parameter: (variable_name))))))))))))
+
+==================
+Arithmetic source fallback preserves an assignment followed by an unclassified fragment
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+((a=0;1))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_variable)
+                (arithmetic_operator)
+                (arithmetic_number)
+                (arithmetic_source_fragment)
+                (arithmetic_number)))))))))
+
+==================
+Arithmetic source fallback preserves a postfix update followed by an unclassified fragment
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+((a++;1))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_variable)
+                (arithmetic_operator)
+                (arithmetic_source_fragment)
+                (arithmetic_number)))))))))
+
+==================
+Arithmetic source fallback preserves unary and prefix update operators before expansions
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+((-1+$x)); ((++a+$x))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_operator)
+                (arithmetic_number)
+                (arithmetic_operator)
+                (parameter_expansion
+                  parameter: (variable_name))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (arithmetic_operator)
+                (arithmetic_variable)
+                (arithmetic_operator)
+                (parameter_expansion
+                  parameter: (variable_name))))))))))
+
+==================
+Arithmetic source fallback preserves assignment and comma precedence in both expression families
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+((a=1,2)); ((f(a=1,2)))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                expression: (arithmetic_sequence_expression
+                  left: (arithmetic_assignment_expression
+                    left: (arithmetic_variable)
+                    operator: (arithmetic_operator)
+                    right: (arithmetic_number))
+                  operator: (arithmetic_operator)
+                  right: (arithmetic_number))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                expression: (arithmetic_function_source
+                  name: (arithmetic_function_name)
+                  arguments: (arithmetic_argument_source
+                    candidate: (arithmetic_candidate_sequence_expression
+                      left: (arithmetic_candidate_assignment_expression
+                        left: (arithmetic_candidate_variable)
+                        operator: (arithmetic_candidate_operator)
+                        right: (arithmetic_candidate_number))
+                      operator: (arithmetic_candidate_operator)
+                      right: (arithmetic_candidate_number))))))))))))
+
+==================
+Arithmetic source fallback preserves an initializer before arithmetic for separators
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+for ((a=0+$x;0;)) do :; done
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_for_clause
+              (for_keyword)
+              header: (arithmetic_for_header
+                initializer: (arithmetic_source
+                  (arithmetic_variable)
+                  (arithmetic_operator)
+                  (arithmetic_number)
+                  (arithmetic_operator)
+                  (parameter_expansion
+                    parameter: (variable_name)))
+                condition: (arithmetic_source
+                  expression: (arithmetic_number)))
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword)))))))))

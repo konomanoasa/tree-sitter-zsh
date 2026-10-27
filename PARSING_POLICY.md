@@ -13,17 +13,26 @@ recognizes these commands but does not apply their effects.
 | `disable`, `enable`                    | Changes to the availability of reserved words or pattern syntax. |
 | `emulate`, `set`, `setopt`, `unsetopt` | Changes to shell option settings or emulation.                   |
 
-## Unresolved Syntax
+## Type-Dependent Syntax
 
-The following parts depend on variable types, values, flags, functions, or
-expansion results. Their surrounding syntax boundaries can still be determined,
-so the parser analyzes the structure available from source and preserves the rest
-as unresolved.
+Array assignments preserve words without deciding whether they are array elements
+or associative array key-value pairs.
 
-| Construct                     | Unresolved interpretation                                                           |
-| ----------------------------- | ----------------------------------------------------------------------------------- |
-| Array assignments             | Key-value pairing and key interpretation based on array type.                       |
-| Subscripts                    | Interpretation based on type and flags, including the role of commas.               |
-| Arithmetic regions            | Token boundaries and expression structure dependent on expansion results.           |
-| Arithmetic function arguments | Whether arguments are strings or arithmetic expressions, depending on the function. |
-| Right-hand side of `=~`       | Regular expression structure determined by combining expansion results.             |
+```zsh
+items=(a b c d)
+```
+
+Subscripts preserve arithmetic, range, and pattern candidates without assuming a
+variable type. An arithmetic candidate may represent an index or an associative
+array key.
+
+```zsh
+${items[1+2]}
+```
+
+Arithmetic function arguments preserve arithmetic candidates without deciding
+whether the function takes numeric or string arguments.
+
+```zsh
+$((f(1+2)))
+```

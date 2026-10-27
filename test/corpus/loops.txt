@@ -880,13 +880,13 @@ foreach x (a) { :; } always { :; }; end
               (end_keyword))))))))
 
 ==================
-Nested foreach brace and do bodies leave end to the outer foreach
+Nested positional foreach brace and do bodies leave end to the outer foreach
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
 foreach outer (a)
-  foreach inner (b) { :; }
-  foreach inner (c) do :; done
+  foreach inner; { :; }
+  foreach inner; do :; done
 end
 ---
 (program
@@ -909,9 +909,7 @@ end
                         (for_clause
                           (foreach_keyword)
                           name: (name)
-                          words: (loop_words
-                            word: (word
-                              (literal)))
+                          separator: (term)
                           body: (sublist
                             (pipeline
                               (command
@@ -931,9 +929,7 @@ end
                         (for_clause
                           (foreach_keyword)
                           name: (name)
-                          words: (loop_words
-                            word: (word
-                              (literal)))
+                          separator: (term)
                           body: (do_group
                             (do_keyword)
                             body: (list
@@ -2679,6 +2675,213 @@ foreach x in a; { :; }; end
                                     name: (word
                                       (literal)))))))))))))
               (end_keyword))))))))
+
+==================
+Positional foreach retains multiple names and owns the header newline and comment
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x y # header
+:; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              name: (name)
+              separator: (term
+                (comment
+                  (comment_text)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))))
+              (end_keyword))))))))
+
+==================
+Positional foreach keeps in after a semicolon in the body as a command
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x; # header
+in a b; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              separator: (term
+                (comment
+                  (comment_text)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal))
+                        argument: (word
+                          (literal)))))))
+              (end_keyword))))))))
+
+==================
+Positional foreach accepts a direct brace body and owns the following redirect
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x { :; } >out && :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal))))))))))))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal)))))))
+      (and_if)
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+Positional foreach accepts a direct do body and leaves the following pipe outside
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x do :; done >out | cat
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              body: (do_group
+                (do_keyword)
+                body: (list
+                  (sublist
+                    (pipeline
+                      (command
+                        (simple_command
+                          name: (word
+                            (literal)))))))
+                (done_keyword))
+              (io_file
+                (redirect_operator)
+                filename: (word
+                  (literal))))))
+        (command
+          (simple_command
+            name: (word
+              (literal))))))))
+
+==================
+Positional foreach accepts empty bodies only with their explicit delimiters
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x { }
+foreach x do done
+foreach x; end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              body: (do_group
+                (do_keyword)
+                (done_keyword)))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              separator: (term)
+              (end_keyword))))))))
+
+==================
+Positional foreach does not omit its body at the source end
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x
+---
+
+==================
+Positional foreach requires a separator before an ordinary list body
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x :; end
+---
+
+==================
+Positional foreach requires end after an ordinary list body
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x; :
+---
 
 ==================
 Foreach in requires a separator before its list body

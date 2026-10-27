@@ -11,6 +11,10 @@ $(print "\${item:-none}")
 OUT
 `;
 
+export function nestedForSubstitutions(depth) {
+  return `${"for x in $(".repeat(depth)}:${"); do :; done".repeat(depth)}\n`;
+}
+
 export const scalingWorkloads = [
   {
     name: "command lists",
@@ -48,6 +52,11 @@ export const scalingWorkloads = [
     source: (n) => `print ${"$((".repeat(n)}1${"))".repeat(n)}\n`,
   },
   {
+    name: "nested for substitutions",
+    units: 8,
+    source: nestedForSubstitutions,
+  },
+  {
     name: "static arithmetic expressions",
     units: 256,
     source: (n) => `print $((1${" + 2 * 3".repeat(n)}))\n`,
@@ -78,6 +87,26 @@ export const scalingWorkloads = [
     source: (n) => `print $((1${" + 2 * 3".repeat(n)} + $x))\n`,
   },
   {
+    name: "arithmetic assignments with a dynamic tail",
+    units: 256,
+    source: (n) => `(( ${"a=".repeat(n)}$x ))\n`,
+  },
+  {
+    name: "arithmetic updates with a dynamic tail",
+    units: 256,
+    source: (n) => `(( ${"a++ + ".repeat(n)}$x ))\n`,
+  },
+  {
+    name: "arithmetic unary expressions with a dynamic tail",
+    units: 256,
+    source: (n) => `(( ${"-1 + ".repeat(n)}$x ))\n`,
+  },
+  {
+    name: "arithmetic argument assignments with a dynamic tail",
+    units: 256,
+    source: (n) => `((f(${"a=".repeat(n)}$x)))\n`,
+  },
+  {
     name: "extended pattern exclusions",
     units: 256,
     source: (n) => `print *${"~a#".repeat(n)}\n`,
@@ -91,5 +120,15 @@ export const scalingWorkloads = [
     name: "nested loop bodies",
     units: 128,
     source: (n) => `${"while ((0)) { ".repeat(n)}:${"; }".repeat(n)}\n`,
+  },
+  {
+    name: "nested positional foreach brace bodies",
+    units: 128,
+    source: (n) => `${"foreach x { ".repeat(n)}:${"; }".repeat(n)}\n`,
+  },
+  {
+    name: "nested positional foreach list bodies",
+    units: 128,
+    source: (n) => `${"foreach x; ".repeat(n)}:${"; end".repeat(n)}\n`,
   },
 ];

@@ -1639,8 +1639,8 @@ static bool emit(struct Scanner *s, TSLexer *lexer, const bool *valid) {
 static void advance(struct LogicalLexer *input) {
   input->lexer.advance(&input->lexer, false);
 }
-// Read past the longest keyword and its boundary so keyword-to-word edits
-// invalidate reused reductions closed by zero-width list markers.
+// Cover the longest keyword and boundary to invalidate zero-width list markers
+// when a keyword becomes a word.
 enum { LOOKAHEAD_EXTENSION = 16 };
 static void extend_lookahead(struct LogicalLexer *in) {
   struct LogicalPosition saved = logical_position(in);
@@ -6074,7 +6074,13 @@ static enum Token scan_pattern(struct Scan *scan) {
       return PATTERN_REPEAT_CHARACTER;
     }
   }
-  if (c == '(' && !valid[ARRAY_OPEN]) {
+  if (
+    c == '(' &&
+    !valid[ARRAY_OPEN] &&
+    (valid[PATTERN_GROUP_OPEN] ||
+      valid[PATTERN_FLAGS_OPEN] ||
+      valid[GLOB_QUALIFIER_OPEN])
+  ) {
     bool bracket =
       context == PATTERN_BRACKET_OPEN || context == PATTERN_CLASS_OPEN;
     bool nested = context == PATTERN_FLAGS_OPEN ||
