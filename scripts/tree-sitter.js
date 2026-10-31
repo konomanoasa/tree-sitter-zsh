@@ -385,28 +385,8 @@ function checkQueries() {
   return 0;
 }
 
-function testJavaScript(arguments_) {
-  for (const grammar of grammars) {
-    console.log(`${grammar.name}: JavaScript tests`);
-    const status = resultStatus(
-      spawnSync(
-        process.execPath,
-        ["--test", "--test-concurrency=1", ...arguments_],
-        {
-          cwd: root,
-          stdio: "inherit",
-          env: { ...process.env, TREE_SITTER_TEST_LANGUAGE: grammar.name },
-        },
-      ),
-    );
-    if (status !== 0) return status;
-  }
-  return 0;
-}
-
 function main(arguments_) {
   const [command, ...rest] = arguments_;
-  if (command === "test-js") return testJavaScript(rest);
   if (command === "generate-all") {
     if (rest.length !== 0) {
       throw new Error("Usage: node scripts/tree-sitter.js generate-all");

@@ -1811,7 +1811,27 @@
           "named": true
         },
         {
+          "type": "dollar_single_quoted",
+          "named": true
+        },
+        {
+          "type": "double_quoted",
+          "named": true
+        },
+        {
           "type": "escaped_character",
+          "named": true
+        },
+        {
+          "type": "here_document_delimiter_quoted",
+          "named": true
+        },
+        {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
           "named": true
         },
         {
@@ -1820,6 +1840,14 @@
         },
         {
           "type": "parenthesized_arithmetic",
+          "named": true
+        },
+        {
+          "type": "process_substitution",
+          "named": true
+        },
+        {
+          "type": "single_quoted",
           "named": true
         }
       ]
@@ -2130,6 +2158,18 @@
           "named": true
         },
         {
+          "type": "here_document_delimiter_quoted",
+          "named": true
+        },
+        {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
+          "named": true
+        },
+        {
           "type": "parameter_expansion",
           "named": true
         },
@@ -2244,6 +2284,14 @@
         },
         {
           "type": "here_document_delimiter_quoted",
+          "named": true
+        },
+        {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
           "named": true
         },
         {
@@ -3507,6 +3555,14 @@
           "named": true
         },
         {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
+          "named": true
+        },
+        {
           "type": "literal",
           "named": true
         },
@@ -3865,6 +3921,18 @@
         },
         {
           "type": "double_quote_text",
+          "named": true
+        },
+        {
+          "type": "here_document_delimiter_quoted",
+          "named": true
+        },
+        {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
           "named": true
         },
         {
@@ -5143,6 +5211,62 @@
     "fields": {}
   },
   {
+    "type": "here_end_group",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "backquote_substitution",
+          "named": true
+        },
+        {
+          "type": "command_substitution",
+          "named": true
+        },
+        {
+          "type": "dollar_single_quoted",
+          "named": true
+        },
+        {
+          "type": "double_quoted",
+          "named": true
+        },
+        {
+          "type": "escaped_character",
+          "named": true
+        },
+        {
+          "type": "here_document_delimiter_quoted",
+          "named": true
+        },
+        {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
+          "named": true
+        },
+        {
+          "type": "process_substitution",
+          "named": true
+        },
+        {
+          "type": "single_quoted",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "here_end_text",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "here_string",
     "named": true,
     "fields": {
@@ -6098,6 +6222,14 @@
           "named": true
         },
         {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
+          "named": true
+        },
+        {
           "type": "literal",
           "named": true
         },
@@ -6374,6 +6506,14 @@
           "named": true
         },
         {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
+          "named": true
+        },
+        {
           "type": "literal",
           "named": true
         },
@@ -6577,6 +6717,14 @@
         },
         {
           "type": "here_document_delimiter_quoted",
+          "named": true
+        },
+        {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
           "named": true
         },
         {
@@ -8221,6 +8369,10 @@
           {
             "type": "regex_source_expression",
             "named": true
+          },
+          {
+            "type": "word",
+            "named": true
           }
         ]
       }
@@ -8956,6 +9108,18 @@
           "named": true
         },
         {
+          "type": "here_document_delimiter_quoted",
+          "named": true
+        },
+        {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
+          "named": true
+        },
+        {
           "type": "parameter_expansion",
           "named": true
         },
@@ -9325,6 +9489,14 @@
         },
         {
           "type": "here_document_delimiter_quoted",
+          "named": true
+        },
+        {
+          "type": "here_end_group",
+          "named": true
+        },
+        {
+          "type": "here_end_text",
           "named": true
         },
         {

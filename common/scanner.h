@@ -382,6 +382,8 @@ static bool process_start(const struct Scanner *s, struct LogicalLexer *in) {
     enum Token token = s->contexts[i - 1].opener;
     if (
       pattern_context(token) ||
+      token == UNEXPANDED_WORD_BEGIN ||
+      token == UNEXPANDED_PAREN_OPEN ||
       key_context(token) ||
       token == SUBSCRIPT_PREFIX_OPEN ||
       token == UNBRACED_MODIFIER_BEGIN ||
@@ -393,15 +395,15 @@ static bool process_start(const struct Scanner *s, struct LogicalLexer *in) {
   }
   if (!argument_source(owner)) return false;
   if (c != '=') return true;
-  if (!s->count || s->contexts[s->count - 1].opener == TIME_KEYWORD)
-    return true;
+  if (!owner || s->contexts[s->count - 1].opener == TIME_KEYWORD) return true;
   const struct Context *top = &s->contexts[s->count - 1];
-  return (top->word_start ||
-           (top->opener == CASE_PATTERN_BEGIN && top->initial)) &&
-    (word_context(top->opener) ||
-      top->opener == CASE_PATTERN_BEGIN ||
-      top->opener == REGEX_BEGIN ||
-      assignment_context(top->opener));
+  enum Token context =
+    top->opener == UNEXPANDED_WORD_BEGIN ? owner->opener : top->opener;
+  return (top->word_start || (context == CASE_PATTERN_BEGIN && top->initial)) &&
+    (word_context(context) ||
+      context == CASE_PATTERN_BEGIN ||
+      context == REGEX_BEGIN ||
+      assignment_context(context));
 }
 
 static bool word_source_grouped(const struct Scanner *s) {
@@ -429,6 +431,13 @@ static bool word_source_end(
   int32_t c = current(in);
   if (owner) {
     switch (owner->opener) {
+      case UNEXPANDED_BRACE_OPEN:
+        return c == '}' && !owner->braces;
+      case UNEXPANDED_SQUARE_OPEN:
+        return c == ']';
+      case UNEXPANDED_ARITHMETIC_OPEN:
+      case UNEXPANDED_PAREN_OPEN:
+        return c == ')';
       case PARAMETER_OPEN:
         return c == '}';
       case PARAMETER_REPLACEMENT_OPERATOR:
@@ -485,6 +494,7 @@ static bool enclosing_source_end(
         if (c == context->delimiter && logical_peek(in) == ']') return true;
         break;
       case PATTERN_GROUP_OPEN:
+      case UNEXPANDED_PAREN_OPEN:
       case PATTERN_FLAGS_OPEN:
       case GLOB_QUALIFIER_OPEN:
       case ARRAY_KEY_GROUP_OPEN:
@@ -552,6 +562,15 @@ static bool physical(enum Token token) {
     case DOLLAR_SQ_QUOTE:
     case DOLLAR:
     case PARAMETER_DOLLAR:
+    case UNEXPANDED_DOLLAR:
+    case UNEXPANDED_ARITHMETIC_DOLLAR:
+    case UNEXPANDED_BRACE_OPEN:
+    case UNEXPANDED_BRACE_CLOSE:
+    case UNEXPANDED_SQUARE_OPEN:
+    case UNEXPANDED_SQUARE_CLOSE:
+    case UNEXPANDED_ARITHMETIC_OPEN:
+    case UNEXPANDED_PAREN_OPEN:
+    case UNEXPANDED_PAREN_CLOSE:
     case COMMAND_OPEN:
     case COMMAND_CLOSE:
     case BACKQUOTE_OPEN:
@@ -648,12 +667,21 @@ static bool init_source(struct Scanner *s) {
   return true;
 }
 
+static bool quote_start(enum SourceQuoting quoting, int32_t c) {
+  return (c == '\'' && !quoting) ||
+    (c == '"' && (!quoting || quoting == SOURCE_PARAMETER_QUOTED));
+}
+
 static enum SourceQuoting
 context_quoting(const struct Scanner *s, enum Token token) {
   enum SourceQuoting quoting = source_quoting(s);
-  if (token == PARAMETER_OPEN)
+  if (token == PARAMETER_OPEN || token == UNEXPANDED_BRACE_OPEN)
     return quoting ? SOURCE_PARAMETER_QUOTED : SOURCE_UNQUOTED;
-  return pattern_context(token) ||
+  if (token == UNEXPANDED_SQUARE_OPEN || token == UNEXPANDED_ARITHMETIC_OPEN)
+    return SOURCE_ARITHMETIC;
+  return token == UNEXPANDED_WORD_BEGIN ||
+      token == UNEXPANDED_PAREN_OPEN ||
+      pattern_context(token) ||
       subscript_context(token) ||
       modifier_context(token) ||
       token == PARAMETER_FLAGS_OPEN ||
@@ -988,6 +1016,11 @@ static bool context_opener(enum Token token) {
     case ASSIGNMENT_BEGIN:
     case DECLARATION_ASSIGNMENT_BEGIN:
     case ARRAY_OPEN:
+    case UNEXPANDED_WORD_BEGIN:
+    case UNEXPANDED_BRACE_OPEN:
+    case UNEXPANDED_SQUARE_OPEN:
+    case UNEXPANDED_ARITHMETIC_OPEN:
+    case UNEXPANDED_PAREN_OPEN:
     case PARAMETER_OPEN:
     case SUBSCRIPT_OPEN:
     case SUBSCRIPT_PREFIX_OPEN:
@@ -1045,6 +1078,11 @@ static bool context_closer(enum Token token) {
     case ARRAY_ELEMENT_END:
     case ASSIGNMENT_END:
     case ARRAY_CLOSE:
+    case UNEXPANDED_WORD_END:
+    case UNEXPANDED_GROUP_END:
+    case UNEXPANDED_BRACE_CLOSE:
+    case UNEXPANDED_SQUARE_CLOSE:
+    case UNEXPANDED_PAREN_CLOSE:
     case PARAMETER_CLOSE:
     case SUBSCRIPT_CLOSE:
     case SUBSCRIPT_PREFIX_END:
@@ -1146,8 +1184,7 @@ static struct Context *group_source_owner(struct Scanner *s, enum Token group) {
 }
 
 static bool commit(struct Scanner *s, enum Token token) {
-  if (token == REMOVED_SOURCE || token == DELIMITER_PARAMETER_REFERENCE)
-    return true;
+  if (token == REMOVED_SOURCE) return true;
   if (token == BRACE_EXPANSION_END) {
     if (!s->count || s->contexts[s->count - 1].opener != BRACE_EXPANSION_OPEN)
       return false;
@@ -1309,7 +1346,10 @@ static bool encode(const struct Scanner *s, uint8_t *buffer, size_t *length) {
     PUT(s->contexts[i].pattern_excluded);
     if (s->contexts[i].opener == SUBSCRIPT_OPEN)
       PUT(s->contexts[i].subscript_flags);
-    if (s->contexts[i].opener == ARITHMETIC_SQUARE_OPEN)
+    if (
+      s->contexts[i].opener == ARITHMETIC_SQUARE_OPEN ||
+      s->contexts[i].opener == UNEXPANDED_WORD_BEGIN
+    )
       PUT(s->contexts[i].brackets);
     if (s->contexts[i].opener == PARAMETER_FLAGS_OPEN)
       PUT(s->contexts[i].flag_name);
@@ -1408,7 +1448,10 @@ static bool decode(struct Scanner *s, const uint8_t *buffer, size_t length) {
     GET(s->contexts[i].pattern_excluded);
     if (s->contexts[i].opener == SUBSCRIPT_OPEN)
       GET(s->contexts[i].subscript_flags);
-    if (s->contexts[i].opener == ARITHMETIC_SQUARE_OPEN)
+    if (
+      s->contexts[i].opener == ARITHMETIC_SQUARE_OPEN ||
+      s->contexts[i].opener == UNEXPANDED_WORD_BEGIN
+    )
       GET(s->contexts[i].brackets);
     if (s->contexts[i].opener == PARAMETER_FLAGS_OPEN)
       GET(s->contexts[i].flag_name);
@@ -2698,11 +2741,13 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
   struct DelimiterGroup {
     int32_t closer;
     int32_t quote;
+    enum SourceQuoting quoting;
     size_t braces;
     bool pattern;
   } *groups = NULL;
   size_t braces = 0;
   int32_t quote = 0;
+  enum SourceQuoting quoting = SOURCE_UNQUOTED;
   bool dollar = false, saw_source = false, success = true, range = false;
   while (in->result == SOURCE_CHARACTER) {
     int32_t c = current(in);
@@ -2745,13 +2790,13 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
         continue;
       }
     }
-    if (!quote && c == '$' && logical_peek(in) == '\'') {
+    if (!quote && !quoting && c == '$' && logical_peek(in) == '\'') {
       advance(in);
       c = current(in);
       dollar = true;
     }
     if (
-      (!quote && (c == '\'' || c == '"' || c == '`')) || (quote && c == quote)
+      (!quote && (quote_start(quoting, c) || c == '`')) || (quote && c == quote)
     ) {
       if (c != '`') d.quoted = true;
       else if (!delimiter_append(&d, &capacity, c)) {
@@ -2790,7 +2835,7 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
       }
       c = current(in);
       if (
-        quote &&
+        (quote || quoting) &&
         !double_quote_escape(c) &&
         !delimiter_append(&d, &capacity, '\\')
       ) {
@@ -2807,6 +2852,7 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
       } else if (open && c == groups[open - 1].closer) {
         count = open - 1;
         quote = groups[count].quote;
+        quoting = groups[count].quoting;
       } else if (!count && c == '}' && braces) {
         braces--;
       } else if (c == '(' || (expansion && (c == '{' || c == '['))) {
@@ -2820,8 +2866,13 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
         groups[count++] = (struct DelimiterGroup){
           .closer = closing_delimiter(c),
           .quote = quote,
+          .quoting = quoting,
           .pattern = !expansion,
         };
+        if (expansion)
+          quoting = c == '['   ? SOURCE_ARITHMETIC
+            : quote || quoting ? SOURCE_PARAMETER_QUOTED
+                               : SOURCE_UNQUOTED;
         quote = 0;
       } else if (!count && c == '{') braces++;
     }
@@ -4126,7 +4177,12 @@ struct Scan {
 };
 
 static bool word_part_context(enum Token token) {
-  return word_context(token) ||
+  return token == UNEXPANDED_WORD_BEGIN ||
+    token == UNEXPANDED_BRACE_OPEN ||
+    token == UNEXPANDED_SQUARE_OPEN ||
+    token == UNEXPANDED_ARITHMETIC_OPEN ||
+    token == UNEXPANDED_PAREN_OPEN ||
+    word_context(token) ||
     assignment_context(token) ||
     subscript_context(token) ||
     pattern_context(token) ||
@@ -4142,11 +4198,6 @@ static bool word_part_context(enum Token token) {
     token == REGEX_BEGIN ||
     token == CASE_PATTERN_BEGIN ||
     token == NUMERIC_RANGE_OPEN;
-}
-
-static bool quote_start(enum SourceQuoting quoting, int32_t c) {
-  return (c == '\'' && !quoting) ||
-    (c == '"' && (!quoting || quoting == SOURCE_PARAMETER_QUOTED));
 }
 
 static bool here_escape(const struct Document *doc, int32_t next) {
@@ -4466,16 +4517,88 @@ static enum Token scan_word_end(struct Scan *scan) {
   return TOKEN_COUNT;
 }
 
+static struct Context *unexpanded_owner(struct Scan *scan) {
+  return scan->context == UNEXPANDED_WORD_BEGIN && scan->s->count > 1
+    ? &scan->s->contexts[scan->s->count - 2]
+    : scan->top;
+}
+
+static bool unexpanded_word_end(struct Scan *scan) {
+  struct LogicalLexer *in = scan->in;
+  if (in->result != SOURCE_CHARACTER || logical_backquote_end(in)) return true;
+  struct Context *owner = unexpanded_owner(scan);
+  int32_t c = current(in);
+  switch (owner->opener) {
+    case SUBSCRIPT_OPEN:
+    case ARRAY_KEY_OPEN:
+      return c == ']' && !scan->top->brackets;
+    case ARITHMETIC_BEGIN:
+      return c == ')' || c == ';';
+    case REGEX_BEGIN:
+      return c != '(' && regex_boundary(scan->s, in, owner);
+    default:
+      break;
+  }
+  if (
+    (c == '(' &&
+      (declaring_document(scan->s) || owner->opener == CASE_PATTERN_BEGIN)) ||
+    (c == '}' && owner->braces)
+  )
+    return false;
+  return word_source_end(in, owner, scan->grouped) && command_word_end(in);
+}
+
+static enum Token scan_unexpanded(struct Scan *scan) {
+  struct LogicalLexer *in = scan->in;
+  const bool *valid = scan->valid;
+  int32_t c = scan->c;
+  if (
+    valid[UNEXPANDED_WORD_BEGIN] &&
+    within_here_delimiter(scan->s) &&
+    !unexpanded_word_end(scan)
+  )
+    return UNEXPANDED_WORD_BEGIN;
+  if (valid[UNEXPANDED_WORD_END] && unexpanded_word_end(scan))
+    return UNEXPANDED_WORD_END;
+  if (
+    valid[UNEXPANDED_GROUP_END] &&
+    c != '(' &&
+    c != ')' &&
+    !scan->continues &&
+    enclosing_source_end(scan->s, in, scan->s->count - 1, true)
+  )
+    return UNEXPANDED_GROUP_END;
+  if (c == '$') {
+    int32_t next = logical_peek(in);
+    enum Token token = TOKEN_COUNT;
+    if (next == '{' || next == '[') token = UNEXPANDED_DOLLAR;
+    else if (next == '(' && valid[UNEXPANDED_ARITHMETIC_DOLLAR]) {
+      struct LogicalPosition saved = logical_position(in);
+      advance(in);
+      bool arithmetic = arithmetic_start(in, NULL);
+      logical_restore_position(in, &saved);
+      if (arithmetic) token = UNEXPANDED_ARITHMETIC_DOLLAR;
+    }
+    if (token != TOKEN_COUNT && valid[token]) {
+      advance(in);
+      return token;
+    }
+  }
+  return TOKEN_COUNT;
+}
+
 static enum Token scan_here_body(struct Scan *scan) {
   struct LogicalLexer *in = scan->in;
   const bool *valid = scan->valid;
   if (
-    valid[DELIMITER_PARAMETER_REFERENCE] &&
-    declaring_document(scan->s) &&
-    in->result == SOURCE_CHARACTER &&
-    scan->c != '"'
-  )
-    return DELIMITER_PARAMETER_REFERENCE;
+    scan->in_body &&
+    !scan->doc->quoted &&
+    within_here_delimiter(scan->s) &&
+    valid[HERE_DOCUMENT_TEXT]
+  ) {
+    while (in->result == SOURCE_CHARACTER) advance(in);
+    return in->consumed ? HERE_DOCUMENT_TEXT : reject(scan);
+  }
   if (scan->in_body && scan->doc->quoted && valid[QUOTED_HERE_DOCUMENT_TEXT]) {
     while (in->result == SOURCE_CHARACTER) advance(in);
     if (in->consumed) return QUOTED_HERE_DOCUMENT_TEXT;
@@ -4892,11 +5015,10 @@ static enum Token scan_flag_argument(struct Scan *scan) {
     size_t start = in->consumed;
     bool literal = parameter_source_literal(s);
     int32_t flag = s->contexts[s->count - 2].flag_name;
-    const char *options = within_here_delimiter(s) ? NULL
-      : flag == '_'                                ? ""
-      : flag == 'g'                                ? "oce"
-      : flag == 'Z'                                ? "cCn"
-                                                   : NULL;
+    const char *options = flag == '_' ? ""
+      : flag == 'g'                   ? "oce"
+      : flag == 'Z'                   ? "cCn"
+                                      : NULL;
     while (in->result == SOURCE_CHARACTER && !parameter_delimiter(scan)) {
       if (options && !in_set(current(in), options)) return reject(scan);
       if (!advance_parameter_source(scan)) return TOKEN_COUNT;
@@ -5024,7 +5146,7 @@ static enum Token scan_modifier(struct Scan *scan) {
     if (
       context == MODIFIER_BEGIN &&
       !in_set(letter, "aAcehlPqQrstu&") &&
-      !(letter == 'G' && (global || within_here_delimiter(s)))
+      !(letter == 'G' && global)
     )
       return reject(scan);
     enum Token name = global ? MODIFIER_GLOBAL_NAME
@@ -6167,6 +6289,13 @@ static const struct {
   {SUBSCRIPT_BRACKET_CLOSE, ']'},
   {SUBSCRIPT_BRACE_OPEN, '{'},
   {SUBSCRIPT_BRACE_CLOSE, '}'},
+  {UNEXPANDED_BRACE_OPEN, '{'},
+  {UNEXPANDED_BRACE_CLOSE, '}'},
+  {UNEXPANDED_SQUARE_OPEN, '['},
+  {UNEXPANDED_SQUARE_CLOSE, ']'},
+  {UNEXPANDED_ARITHMETIC_OPEN, '('},
+  {UNEXPANDED_PAREN_OPEN, '('},
+  {UNEXPANDED_PAREN_CLOSE, ')'},
   {PARAMETER_OPEN, '{'},
   {PARAMETER_CLOSE, '}'},
   {ARRAY_OPEN, '('},
@@ -6219,6 +6348,10 @@ static bool punctuation_allowed(const struct Scan *scan, enum Token token) {
   struct LogicalLexer *in = scan->in;
   enum SourceQuoting quoting = scan->quoting;
   switch (token) {
+    case UNEXPANDED_BRACE_CLOSE:
+      return !scan->top->braces;
+    case UNEXPANDED_PAREN_OPEN:
+      return quoting != SOURCE_DOUBLE_QUOTED;
     case PARAMETER_CLOSE:
       return !group_source_owner(scan->s, BRACE_EXPANSION_OPEN);
     case RIGHT_BRACE:
@@ -6406,6 +6539,7 @@ static enum Token text_kind(const struct Scan *scan) {
     return subscript_pattern(scan->s) && valid[LITERAL] ? LITERAL
                                                         : SUBSCRIPT_TEXT;
   bool quoted_body = scan->in_body && scan->doc->quoted;
+  if (valid[HERE_END_TEXT]) return HERE_END_TEXT;
   return valid[PATTERN_BRACKET_TEXT]               ? PATTERN_BRACKET_TEXT
     : valid[GLOB_ARGUMENT_TEXT]                    ? GLOB_ARGUMENT_TEXT
     : valid[PATTERN_CLASS_TEXT]                    ? PATTERN_CLASS_TEXT
@@ -6525,7 +6659,7 @@ static enum Token scan_text(struct Scan *scan) {
     text == ERE_FRAGMENT_BEGIN;
   while (in->result == SOURCE_CHARACTER && !logical_backquote_end(in)) {
     int32_t c = current(in);
-    if (brace_source_token(scan) != TOKEN_COUNT) break;
+    if (text != HERE_END_TEXT && brace_source_token(scan) != TOKEN_COUNT) break;
     if (ranged && c == '<' && numeric_range_start(in)) {
       skip_numeric_range(in);
       continue;
@@ -6642,6 +6776,45 @@ static enum Token scan_text(struct Scan *scan) {
           quote_start(quoting, c) ||
           c == '`';
         break;
+      case HERE_END_TEXT: {
+        struct Context *owner = unexpanded_owner(scan);
+        if (
+          context == UNEXPANDED_WORD_BEGIN &&
+          c == '<' &&
+          numeric_range_start(in)
+        ) {
+          skip_numeric_range(in);
+          continue;
+        }
+        end = (context == UNEXPANDED_WORD_BEGIN && unexpanded_word_end(scan)) ||
+          (context == UNEXPANDED_BRACE_OPEN && c == '}' && !top->braces) ||
+          (context == UNEXPANDED_SQUARE_OPEN && c == ']') ||
+          ((context == UNEXPANDED_PAREN_OPEN ||
+             context == UNEXPANDED_ARITHMETIC_OPEN) &&
+            c == ')') ||
+          (context == DQ_OPEN && c == '"') ||
+          (c == '(' && quoting != SOURCE_DOUBLE_QUOTED) ||
+          quote_start(quoting, c) ||
+          c == '`' ||
+          (c == '\\' &&
+            (context != DQ_OPEN || double_quote_escape(logical_peek(in)))) ||
+          (c == '$' &&
+            (dollar_group(logical_peek(in)) ||
+              (logical_peek(in) == '\'' && !quoting))) ||
+          (!quoting && process_start(s, in));
+        if (!end && context != DQ_OPEN) {
+          if (c == '{') owner->braces++;
+          else if (c == '}' && owner->braces) owner->braces--;
+          if (
+            context == UNEXPANDED_WORD_BEGIN &&
+            (owner->opener == SUBSCRIPT_OPEN || owner->opener == ARRAY_KEY_OPEN)
+          ) {
+            if (c == '[') top->brackets++;
+            else if (c == ']' && top->brackets) top->brackets--;
+          }
+        }
+        break;
+      }
       case HERE_DOCUMENT_TEXT:
         end = (expansion_start(in) && !dollar_quote_start(in)) ||
           c == '`' ||
@@ -6685,6 +6858,7 @@ classify(struct Scanner *s, struct LogicalLexer *in, const bool *valid) {
     scan_brace_source,
     scan_structure,
     scan_word_end,
+    scan_unexpanded,
     scan_here_body,
     scan_source_end,
     scan_parameter_source,
@@ -6894,6 +7068,15 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
   valid[DOLLAR_SINGLE_QUOTE_TEXT] = context == DOLLAR_SQ_OPEN;
   valid[DOLLAR_SINGLE_QUOTE_ESCAPE] = context == DOLLAR_SQ_OPEN;
   valid[PARAMETER_CLOSE] = context == PARAMETER_OPEN;
+  valid[UNEXPANDED_BRACE_CLOSE] = context == UNEXPANDED_BRACE_OPEN;
+  valid[UNEXPANDED_SQUARE_CLOSE] = context == UNEXPANDED_SQUARE_OPEN;
+  valid[UNEXPANDED_PAREN_CLOSE] =
+    context == UNEXPANDED_PAREN_OPEN || context == UNEXPANDED_ARITHMETIC_OPEN;
+  valid[UNEXPANDED_WORD_END] = context == UNEXPANDED_WORD_BEGIN;
+  valid[HERE_END_TEXT] = valid[UNEXPANDED_BRACE_CLOSE] ||
+    valid[UNEXPANDED_SQUARE_CLOSE] ||
+    valid[UNEXPANDED_PAREN_CLOSE] ||
+    valid[UNEXPANDED_WORD_END];
   valid[SUBSCRIPT_TEXT] = doc && subscript_context(context);
   valid[REGEX_OPEN] = context == REGEX_BEGIN;
   valid[REGEX_CLOSE] = context == REGEX_BEGIN;

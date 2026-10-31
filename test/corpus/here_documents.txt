@@ -14,7 +14,7 @@ E
         (command
           (simple_command
             name: (word (literal))
-            (io_here (dless) here_end: (word (literal)))))))
+            (io_here (dless) here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -50,7 +50,7 @@ print AFTER
                       (pipeline
                         (command
                           (simple_command
-                            (io_here (dless) here_end: (word (literal)))))))))))
+                            (io_here (dless) here_end: (word (here_end_text)))))))))))
             argument: (word
               (double_quoted
                 (command_substitution
@@ -60,7 +60,7 @@ print AFTER
                         (command
                           (simple_command
                             name: (word (literal))
-                            (io_here (dless) here_end: (word (literal)))
+                            (io_here (dless) here_end: (word (here_end_text)))
                             (io_here (dless) here_end: (word (single_quoted (single_quote_content))))))))))))))))
     (sublist
       (pipeline
@@ -89,7 +89,7 @@ print `cat <<E` <(cat <<F) >(cat <<G) =(cat <<H)
                       (command
                         (simple_command
                           name: (word (literal))
-                          (io_here (dless) here_end: (word (literal))))))))))
+                          (io_here (dless) here_end: (word (here_end_text))))))))))
             argument: (word
               (process_substitution
                 body: (list
@@ -98,7 +98,7 @@ print `cat <<E` <(cat <<F) >(cat <<G) =(cat <<H)
                       (command
                         (simple_command
                           name: (word (literal))
-                          (io_here (dless) here_end: (word (literal))))))))))
+                          (io_here (dless) here_end: (word (here_end_text))))))))))
             argument: (word
               (process_substitution
                 body: (list
@@ -107,7 +107,7 @@ print `cat <<E` <(cat <<F) >(cat <<G) =(cat <<H)
                       (command
                         (simple_command
                           name: (word (literal))
-                          (io_here (dless) here_end: (word (literal))))))))))
+                          (io_here (dless) here_end: (word (here_end_text))))))))))
             argument: (word
               (process_substitution
                 body: (list
@@ -116,7 +116,7 @@ print `cat <<E` <(cat <<F) >(cat <<G) =(cat <<H)
                       (command
                         (simple_command
                           name: (word (literal))
-                          (io_here (dless) here_end: (word (literal))))))))))))))))
+                          (io_here (dless) here_end: (word (here_end_text))))))))))))))))
 
 ==================
 Closing an inner substitution preserves the pending outer document
@@ -135,7 +135,7 @@ print AFTER
         (command
           (simple_command
             name: (word (literal))
-            (io_here (dless) here_end: (word (literal)))
+            (io_here (dless) here_end: (word (here_end_text)))
             argument: (word
               (double_quoted
                 (command_substitution
@@ -145,7 +145,7 @@ print AFTER
                         (command
                           (simple_command
                             name: (word (literal))
-                            (io_here (dless) here_end: (word (literal)))))))))))))))
+                            (io_here (dless) here_end: (word (here_end_text)))))))))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -173,7 +173,7 @@ print AFTER
         (command
           (simple_command
             name: (word (literal))
-            (io_here (dless) here_end: (word (literal)))))))
+            (io_here (dless) here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -185,7 +185,7 @@ print AFTER
                 (pipeline
                   (command
                     (simple_command
-                      (io_here (dless) here_end: (word (literal)))))))))
+                      (io_here (dless) here_end: (word (here_end_text)))))))))
           (here_document_text))
         (here_document_end (here_document_end_text))))
     (sublist
@@ -220,7 +220,7 @@ print AFTER
                         (io_here
                           (dless)
                           here_end: (word
-                            (literal)))))))))))))
+                            (here_end_text)))))))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -263,7 +263,7 @@ E
                         (command
                           (simple_command
                             name: (word (literal))
-                            (io_here (dless) here_end: (word (literal)))))))
+                            (io_here (dless) here_end: (word (here_end_text)))))))
                     (here_document_sequence
                       line_end: (here_document_line_end)
                       document: (here_document
@@ -354,7 +354,7 @@ OUT
         (command
           (simple_command
             name: (word (literal))
-            (io_here (dless) here_end: (word (literal)))))))
+            (io_here (dless) here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -385,7 +385,7 @@ E
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word (literal)))))))
+              here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -437,7 +437,7 @@ print after
         (command
           (simple_command
             name: (word (literal))
-            (io_here (dless) here_end: (word (literal)))))))
+            (io_here (dless) here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -483,7 +483,7 @@ print after
         (command
           (simple_command
             name: (word (literal))
-            (io_here (dless) here_end: (word (literal)))))))
+            (io_here (dless) here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -527,7 +527,7 @@ E
             name: (word (literal))
             (io_here
               (dless (line_continuation))
-              here_end: (word (literal)))))))
+              here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document

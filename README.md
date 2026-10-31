@@ -36,7 +36,3 @@ npm test
 ## License
 
 [MIT](LICENSE)
-
-## Used By
-
-[zsh-ts-mode](https://github.com/konomanoasa/zsh-ts-mode)

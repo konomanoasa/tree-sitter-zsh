@@ -690,17 +690,7 @@ ${x:s/a{/b}/}
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word
-                (parameter_expansion
-                  parameter: (variable_name)
-                  (parameter_modifier
-                    (modifier_prefix)
-                    name: (modifier_name)
-                    (modifier_separator)
-                    pattern: (parameter_word (literal) (brace_expansion))
-                    (modifier_separator)
-                    replacement: (parameter_word (literal) (brace_closing_source))
-                    (modifier_separator)))))))))
+              here_end: (word (here_end_group (here_end_text))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document

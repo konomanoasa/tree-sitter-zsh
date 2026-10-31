@@ -260,9 +260,9 @@ print AFTER
                                 (command
                                   (simple_command
                                     name: (word
-                                      (literal))
+                                      (here_end_text))
                                     argument: (word
-                                      (literal))))))))))))))))))
+                                      (here_end_text))))))))))))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document

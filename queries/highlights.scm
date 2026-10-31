@@ -770,13 +770,23 @@
 ]
 
 [
+  (here_end_text)
   (here_document_delimiter_quoted)
   (here_document_end_text)
 ] @label
 
-(io_here
-  here_end: (word
-    (literal) @label))
+(here_end_group
+  "$" @label)
+
+(here_end_group
+  [
+    "{"
+    "}"
+    "["
+    "]"
+    "("
+    ")"
+  ] @punctuation.bracket)
 
 [
   (io_here

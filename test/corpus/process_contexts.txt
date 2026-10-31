@@ -197,8 +197,8 @@ BODY
                     (sublist
                       (pipeline
                         (command
-                          (simple_command name: (word (literal))))))))
-                (literal)))))))
+                          (simple_command name: (word (here_end_text))))))))
+                (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document

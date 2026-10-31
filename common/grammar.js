@@ -1249,6 +1249,7 @@ export default (name) =>
       ),
       arithmetic_source: ($) =>
         choice(
+          $._unexpanded_word_source,
           prec.dynamic(1, field("expression", $._arithmetic_expression)),
           prec.dynamic(
             -1,
@@ -1469,7 +1470,13 @@ export default (name) =>
       regex_operand: ($) =>
         seq(
           $._regex_begin,
-          field("expression", $._regex_expression),
+          field(
+            "expression",
+            choice(
+              alias($._unexpanded_word_source, $.word),
+              $._regex_expression,
+            ),
+          ),
           $._regex_end,
         ),
       _regex_expression: ($) =>
@@ -1854,7 +1861,8 @@ export default (name) =>
           $._array_element_end,
         ),
       array_element_key: ($) => bracketName($, $.array_key_source),
-      array_key_source: ($) => $._arithmetic_candidate_content,
+      array_key_source: ($) =>
+        choice($._unexpanded_word_source, $._arithmetic_candidate_content),
       array_key_text: ($) => lexeme($, "array_key_text"),
       _array_key_open_source: ($) => punctuation($, "array_key_open", "["),
       _array_key_close_source: ($) => punctuation($, "array_key_close", "]"),
@@ -1865,6 +1873,7 @@ export default (name) =>
       array_subscript: ($) => arraySubscript($, $._subscript_open_source),
       subscript_source: ($) =>
         choice(
+          $._unexpanded_word_source,
           prec.dynamic(2, field("candidate", $.subscript_range_candidate)),
           $._subscript_endpoint,
           seq(
@@ -1980,6 +1989,7 @@ export default (name) =>
         seq(
           $._redirect_word_begin,
           choice(
+            $._unexpanded_word_source,
             $.process_substitution,
             seq(
               $._file_pattern_exclusion,
@@ -1990,7 +2000,76 @@ export default (name) =>
         ),
       _count_word: ($) => seq($._count_word_begin, $._word_source, $._word_end),
       _word_source: ($) =>
-        sourceSequence($._pattern_exclusion, $.brace_separator),
+        choice(
+          $._unexpanded_word_source,
+          sourceSequence($._pattern_exclusion, $.brace_separator),
+        ),
+      _unexpanded_word_source: ($) =>
+        seq(
+          $._unexpanded_word_begin,
+          repeat1($._unexpanded_part),
+          $._unexpanded_word_end,
+        ),
+      _unexpanded_part: ($) =>
+        choice(
+          $.here_end_text,
+          $.here_end_group,
+          $.escaped_character,
+          $.single_quoted,
+          $.dollar_single_quoted,
+          alias($._unexpanded_double_quoted, $.double_quoted),
+          $.here_document_delimiter_quoted,
+          $.command_substitution,
+          $.backquote_substitution,
+          $.process_substitution,
+        ),
+      _unexpanded_double_quoted: ($) =>
+        seq(
+          $._dq_open_source,
+          repeat(
+            choice(
+              $.here_end_text,
+              $.double_quote_escape,
+              $.here_end_group,
+              $.here_document_delimiter_quoted,
+              $.command_substitution,
+              $.backquote_substitution,
+            ),
+          ),
+          $._dq_close_source,
+        ),
+      here_end_text: ($) => lexeme($, "here_end_text"),
+      here_end_group: ($) =>
+        choice(
+          seq(
+            punctuation($, "unexpanded_dollar", "$"),
+            punctuation($, "unexpanded_brace_open", "{"),
+            repeat($._unexpanded_part),
+            punctuation($, "unexpanded_brace_close", "}"),
+          ),
+          seq(
+            punctuation($, "unexpanded_dollar", "$"),
+            punctuation($, "unexpanded_square_open", "["),
+            repeat($._unexpanded_part),
+            punctuation($, "unexpanded_square_close", "]"),
+          ),
+          seq(
+            punctuation($, "unexpanded_arithmetic_dollar", "$"),
+            punctuation($, "unexpanded_arithmetic_open", "("),
+            punctuation($, "unexpanded_paren_open", "("),
+            repeat($._unexpanded_part),
+            punctuation($, "unexpanded_paren_close", ")"),
+            punctuation($, "unexpanded_paren_close", ")"),
+          ),
+          seq(
+            punctuation($, "unexpanded_paren_open", "("),
+            repeat($._unexpanded_part),
+            choice(
+              punctuation($, "unexpanded_paren_close", ")"),
+              $._unexpanded_group_end,
+            ),
+          ),
+        ),
       ...patternRules("_pattern", "_pattern_part"),
       ...patternRules("_file_pattern", "_ordinary_word_part"),
       _pattern_part: ($) =>
@@ -2321,7 +2400,6 @@ export default (name) =>
           $._dq_open_source,
           seq($._double_quote_prefix, $._double_quote_part),
         ),
-      _double_quote_content: ($) => repeat1($._double_quote_part),
       _double_quote_part: ($) =>
         choice($.double_quote_text, $.double_quote_escape, ...expansions($)),
       dollar_single_quoted: ($) =>
@@ -2429,10 +2507,7 @@ export default (name) =>
       _quoted_parameter_reference: ($) =>
         seq(
           $._dq_open_source,
-          choice(
-            $._nested_parameter_reference,
-            seq($._delimiter_parameter_reference, $._double_quote_content),
-          ),
+          $._nested_parameter_reference,
           $._dq_close_source,
         ),
       _empty_double_quoted: ($) => seq($._dq_open_source, $._dq_close_source),

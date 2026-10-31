@@ -55,7 +55,7 @@ E
             (io_here
               (io_variable name: (variable_name))
               (dless)
-              here_end: (word (literal)))))))
+              here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document

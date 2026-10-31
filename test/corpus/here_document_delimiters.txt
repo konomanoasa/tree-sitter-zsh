@@ -1,4 +1,95 @@
 ==================
+Nonexpanding names retain byte ranges, queued document ends, and the following command
+:cst
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<${a.b} <<${é}
+ONE
+${a.b}
+TWO
+${é}
+print AFTER
+---
+0:0  - 5:11   program
+0:0  - 5:11     list
+0:0  - 0:20       sublist
+0:0  - 0:20         pipeline
+0:0  - 0:20           command
+0:0  - 0:20             simple_command
+0:0  - 0:3                name: word
+0:0  - 0:3                  literal `cat`
+0:4  - 0:12               io_here
+0:4  - 0:6                  dless `<<`
+0:6  - 0:12                 here_end: word
+0:6  - 0:12                   here_end_group
+0:6  - 0:7                      "$"
+0:7  - 0:8                      "{"
+0:8  - 0:11                     here_end_text `a.b`
+0:11 - 0:12                     "}"
+0:13 - 0:20               io_here
+0:13 - 0:15                 dless `<<`
+0:15 - 0:20                 here_end: word
+0:15 - 0:20                   here_end_group
+0:15 - 0:16                     "$"
+0:16 - 0:17                     "{"
+0:17 - 0:19                     here_end_text `é`
+0:19 - 0:20                     "}"
+0:20 - 5:0        here_document_sequence
+0:20 - 1:0          line_end: here_document_line_end
+0:20 - 0:21           `\n`
+1:0  - 3:0          document: here_document
+1:0  - 2:0            here_document_body
+1:0  - 2:0              here_document_text
+1:0  - 1:4                `ONE\n`
+2:0  - 3:0            here_document_end
+2:0  - 2:6              here_document_end_text `${a.b}`
+3:0  - 5:0          document: here_document
+3:0  - 4:0            here_document_body
+3:0  - 4:0              here_document_text
+3:0  - 3:4                `TWO\n`
+4:0  - 5:0            here_document_end
+4:0  - 4:5              here_document_end_text `${é}`
+5:0  - 5:11       sublist
+5:0  - 5:11         pipeline
+5:0  - 5:11           command
+5:0  - 5:11             simple_command
+5:0  - 5:5                name: word
+5:0  - 5:5                  literal `print`
+5:6  - 5:11               argument: word
+5:6  - 5:11                 literal `AFTER`
+
+==================
+An unevaluated delimiter command keeps its unquoted heredoc body literal
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<$(cat <<E
+${a.b}
+E
+)
+BODY
+---
+(program
+  (list
+    (sublist (pipeline (command (simple_command
+      name: (word (literal))
+      (io_here (dless) here_end: (word (command_substitution
+        body: (list
+          (sublist (pipeline (command (simple_command
+            name: (word (here_end_text))
+            (io_here (dless) here_end: (word (here_end_text)))))))
+          (here_document_sequence
+            line_end: (here_document_line_end)
+            document: (here_document
+              (here_document_body (here_document_text))
+              (here_document_end (here_document_end_text))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))))))
+
+==================
 Unexpanded delimiter source does not validate flag options or global modifier positions
 :language(zsh)
 :language(zsh_extended_glob)
@@ -11,29 +102,10 @@ ${(_:x:)x}${(g:x:)x}${(Z:x:)x}${x:G}
     (sublist (pipeline (command (simple_command
       name: (word (literal))
       (io_here (dless) here_end: (word
-        (parameter_expansion
-          (parameter_flags (parameter_flag (parameter_flag_name)
-            argument: (flag_argument
-              (flag_argument_delimiter)
-              (flag_argument_source (flag_argument_text))
-              (flag_argument_delimiter))))
-          parameter: (variable_name))
-        (parameter_expansion
-          (parameter_flags (parameter_flag (parameter_flag_name)
-            argument: (flag_argument
-              (flag_argument_delimiter)
-              (flag_argument_source (flag_argument_text))
-              (flag_argument_delimiter))))
-          parameter: (variable_name))
-        (parameter_expansion
-          (parameter_flags (parameter_flag (parameter_flag_name)
-            argument: (flag_argument
-              (flag_argument_delimiter)
-              (flag_argument_source (flag_argument_text))
-              (flag_argument_delimiter))))
-          parameter: (variable_name))
-        (parameter_expansion parameter: (variable_name)
-          (parameter_modifier (modifier_prefix) name: (modifier_name)))))))))
+        (here_end_group (here_end_group (here_end_text)) (here_end_text))
+        (here_end_group (here_end_group (here_end_text)) (here_end_text))
+        (here_end_group (here_end_group (here_end_text)) (here_end_text))
+        (here_end_group (here_end_text))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -53,17 +125,9 @@ $(print ${(_:x:)x} ${x:G})
       name: (word (literal))
       (io_here (dless) here_end: (word (command_substitution
         body: (list (sublist (pipeline (command (simple_command
-          name: (word (literal))
-          argument: (word (parameter_expansion
-            (parameter_flags (parameter_flag (parameter_flag_name)
-              argument: (flag_argument
-                (flag_argument_delimiter)
-                (flag_argument_source (flag_argument_text))
-                (flag_argument_delimiter))))
-            parameter: (variable_name)))
-          argument: (word (parameter_expansion
-            parameter: (variable_name)
-            (parameter_modifier (modifier_prefix) name: (modifier_name))))))))))))))))
+          name: (word (here_end_text))
+          argument: (word (here_end_group (here_end_group (here_end_text)) (here_end_text)))
+          argument: (word (here_end_group (here_end_text)))))))))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -92,22 +156,13 @@ print AFTER
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word
-                (parameter_expansion
-                  parameter: (double_quoted
-                    (parameter_expansion parameter: (variable_name))))))
+              here_end: (word (here_end_group (double_quoted (here_end_text)))))
             (io_here
               (dless)
-              here_end: (word
-                (parameter_expansion
-                  parameter: (double_quoted (double_quote_text)))))
+              here_end: (word (here_end_group (double_quoted (here_end_text)))))
             (io_here
               (dless)
-              here_end: (word
-                (parameter_expansion
-                  parameter: (double_quoted
-                    (parameter_expansion parameter: (variable_name))
-                    (double_quote_text)))))))))
+              here_end: (word (here_end_group (double_quoted (here_end_group (here_end_text)) (here_end_text)))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -150,8 +205,8 @@ print AFTER
                       (pipeline
                         (command
                           (simple_command
-                            name: (word (literal))
-                            (io_here (dless) here_end: (word (literal)))))))))))))))
+                            name: (word (here_end_text))
+                            (io_here (dless) here_end: (word (here_end_text)))))))))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -180,11 +235,7 @@ ${x:-{ }x}
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word
-                (parameter_expansion
-                  parameter: (variable_name)
-                  (parameter_value_operator)
-                  (parameter_word (brace_expansion (literal)) (literal)))))))))
+              here_end: (word (here_end_group (here_end_text))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -278,9 +329,9 @@ print AFTER
             (io_here
               (dless)
               here_end: (word
-                (literal)
+                (here_end_text)
                 (dollar_single_quoted (dollar_single_quote_escape))
-                (literal)))))))
+                (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -349,7 +400,7 @@ print after
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word (literal)))
+              here_end: (word (here_end_text)))
             argument: (word (literal))))))
     (here_document_sequence
       line_end: (here_document_line_end)
@@ -382,7 +433,7 @@ print after
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word (brace_expansion (literal))))))))
+              here_end: (word (here_end_text)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -414,7 +465,7 @@ E
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word (literal) (line_continuation)))))))
+              here_end: (word (here_end_text) (line_continuation)))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -440,10 +491,7 @@ E$x
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word
-                (literal)
-                (line_continuation)
-                (parameter_expansion parameter: (variable_name))))))))
+              here_end: (word (here_end_text (line_continuation))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -469,7 +517,7 @@ cat <<$[x
 ---
 
 ==================
-Here document parameter spellings use the ordinary word structure without evaluation
+Parameter shaped delimiter source retains lexical groups without evaluation
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
@@ -486,8 +534,7 @@ ${x}
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word
-                (parameter_expansion parameter: (variable_name))))))))
+              here_end: (word (here_end_group (here_end_text))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -550,20 +597,20 @@ print after
                             (case_clause
                               (case_keyword)
                               word: (word
-                                (literal))
+                                (here_end_text))
                               (in_keyword)
                               (case_item
                                 (pattern_list
                                   (pattern_alternatives
                                     (pattern_alternative
-                                      (literal))))
+                                      (here_end_text))))
                                 body: (list
                                   (sublist
                                     (pipeline
                                       (command
                                         (simple_command
                                           name: (word
-                                            (literal)))))))
+                                            (here_end_text)))))))
                                 (case_break))
                               (esac_keyword))))))))))))))
     (here_document_sequence
@@ -609,8 +656,8 @@ $foo
                       (pipeline
                         (command
                           (simple_command
-                            name: (word (literal))
-                            argument: (word (literal))))))
+                            name: (word (here_end_text))
+                            argument: (word (here_end_text))))))
                     (comment (comment_text))
                     (comment (comment_text))))))))))
     (here_document_sequence
@@ -646,7 +693,7 @@ print after
                       (pipeline
                         (command
                           (simple_command
-                            name: (word (literal))
+                            name: (word (here_end_text))
                             argument: (word
                               (single_quoted (single_quote_content)))
                             argument: (word
@@ -656,8 +703,8 @@ print after
                                     (pipeline
                                       (command
                                         (simple_command
-                                          name: (word (literal))
-                                          argument: (word (literal)))))))))))))))))))))
+                                          name: (word (here_end_text))
+                                          argument: (word (here_end_text)))))))))))))))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -701,7 +748,7 @@ $foo
                       (pipeline
                         (command
                           (simple_command
-                            name: (word (literal))
+                            name: (word (here_end_text))
                             (io_here
                               (dless)
                               here_end: (word
@@ -746,7 +793,7 @@ print after
                           name: (word (literal))
                           (io_here
                             (dless)
-                            here_end: (word (literal)))))))
+                            here_end: (word (here_end_text)))))))
                   (here_document_sequence
                     line_end: (here_document_line_end)
                     document: (here_document
@@ -820,11 +867,7 @@ after
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word
-                (parameter_expansion
-                  parameter: (variable_name)
-                  (parameter_value_operator)
-                  (parameter_word (pattern_group_source)))))))))
+              here_end: (word (here_end_group (here_end_text) (here_end_group))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -855,19 +898,7 @@ print after
               (literal))
             (io_here
               (dless)
-              here_end: (word
-                (brace_expansion
-                  (literal)
-                  (pattern_group_source
-                    (pattern_alternatives
-                      (pattern_alternative
-                        (literal)
-                        (brace_expansion
-                          (literal)
-                          (pattern_group_source
-                            (pattern_alternatives
-                              (pattern_alternative
-                                (literal)))))))))))))))))
+              here_end: (word (here_end_text) (here_end_group (here_end_text) (here_end_group (here_end_text)))))))))))
 
 ==================
 An ordinary brace inside a delimiter pattern stays inside the parentheses
@@ -889,12 +920,7 @@ print after
               (literal))
             (io_here
               (dless)
-              here_end: (word
-                (brace_expansion
-                  (literal)
-                  (glob_qualifier
-                    (glob_qualifier_list
-                      (glob_text))))))))))
+              here_end: (word (here_end_text) (here_end_group (here_end_text))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -916,9 +942,9 @@ Numeric ranges and process substitutions remain delimiter source
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
-: <<x<1-2><(a;b)
+: <<x<1-2><(a <1-2> after;b)
 body
-x<1-2><(a;b)
+x<1-2><(a <1-2> after;b)
 ---
 (program
   (list
@@ -929,18 +955,13 @@ x<1-2><(a;b)
             name: (word (literal))
             (io_here
               (dless)
-              here_end: (word
-                (literal)
-                (pattern_numeric_range_source
-                  start: (pattern_number)
-                  (pattern_range_operator)
-                  end: (pattern_number))
-                (process_substitution
-                  body: (list
-                    (sublist
-                      (pipeline (command (simple_command name: (word (literal))))))
-                    (sublist
-                      (pipeline (command (simple_command name: (word (literal))))))))))))))
+              here_end: (word (here_end_text)
+                (process_substitution body: (list
+                  (sublist (pipeline (command (simple_command
+                    name: (word (here_end_text))
+                    argument: (word (here_end_text))
+                    argument: (word (here_end_text))))))
+                  (sublist (pipeline (command (simple_command name: (word (here_end_text))))))))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -984,7 +1005,7 @@ print AFTER
                                         (complex_command
                                           (conditional_command
                                             condition: (word
-                                              (literal))))))))
+                                              (here_end_text))))))))
                                 (then_keyword)
                                 body: (list
                                   (sublist
@@ -994,20 +1015,20 @@ print AFTER
                                           (case_clause
                                             (case_keyword)
                                             word: (word
-                                              (literal))
+                                              (here_end_text))
                                             (in_keyword)
                                             (case_item
                                               (pattern_list
                                                 (pattern_alternatives
                                                   (pattern_alternative
-                                                    (literal))))
+                                                    (here_end_text))))
                                               body: (list
                                                 (sublist
                                                   (pipeline
                                                     (command
                                                       (simple_command
                                                         name: (word
-                                                          (literal)))))))
+                                                          (here_end_text)))))))
                                               (case_break))
                                             (esac_keyword))))))))
                               (fi_keyword))))))))))))))
@@ -1064,11 +1085,11 @@ print AFTER
                                         (complex_command
                                           (conditional_command
                                             condition: (word
-                                              (literal))
+                                              (here_end_text))
                                             (io_file
                                               (redirect_operator)
                                               filename: (word
-                                                (literal)))))))))
+                                                (here_end_text)))))))))
                                 (then_keyword)
                                 body: (list
                                   (sublist
@@ -1078,20 +1099,20 @@ print AFTER
                                           (case_clause
                                             (case_keyword)
                                             word: (word
-                                              (literal))
+                                              (here_end_text))
                                             (in_keyword)
                                             (case_item
                                               (pattern_list
                                                 (pattern_alternatives
                                                   (pattern_alternative
-                                                    (literal))))
+                                                    (here_end_text))))
                                               body: (list
                                                 (sublist
                                                   (pipeline
                                                     (command
                                                       (simple_command
                                                         name: (word
-                                                          (literal)))))))
+                                                          (here_end_text)))))))
                                               (case_break))
                                             (esac_keyword))))))))
                               (fi_keyword))))))))))))))
@@ -1131,19 +1152,8 @@ print AFTER
               (literal))
             (io_here
               (dless)
-              here_end: (word
-                (command_substitution
-                  body: (list
-                    (sublist
-                      (pipeline
-                        (command
-                          (simple_command
-                            name: (word
-                              (pattern_bracket_source
-                                (pattern_bracket_text))
-                              (literal))
-                            argument: (word
-                              (literal))))))))))))))
+              here_end: (word (command_substitution body: (list (sublist (pipeline (command
+                  (simple_command name: (word (here_end_text)) argument: (word (here_end_text))))))))))))))
     (here_document_sequence
       line_end: (here_document_line_end)
       document: (here_document
@@ -1200,14 +1210,14 @@ print AFTER
                                             name: (name)
                                             words: (loop_words
                                               word: (word
-                                                (literal)))
+                                                (here_end_text)))
                                             body: (sublist
                                               (pipeline
                                                 (command
                                                   (complex_command
                                                     (conditional_command
                                                       condition: (word
-                                                        (literal)))))))))))))
+                                                        (here_end_text)))))))))))))
                                 (then_keyword)
                                 body: (list
                                   (sublist
@@ -1217,20 +1227,20 @@ print AFTER
                                           (case_clause
                                             (case_keyword)
                                             word: (word
-                                              (literal))
+                                              (here_end_text))
                                             (in_keyword)
                                             (case_item
                                               (pattern_list
                                                 (pattern_alternatives
                                                   (pattern_alternative
-                                                    (literal))))
+                                                    (here_end_text))))
                                               body: (list
                                                 (sublist
                                                   (pipeline
                                                     (command
                                                       (simple_command
                                                         name: (word
-                                                          (literal)))))))
+                                                          (here_end_text)))))))
                                               (case_break))
                                             (esac_keyword))))))))
                               (fi_keyword))))))))))))))

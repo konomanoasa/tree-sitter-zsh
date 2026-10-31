@@ -1,5 +1,50 @@
 #include "scanner.c"
 #include <assert.h>
+#include <locale.h>
+
+static void identifier_characters_do_not_depend_on_the_process_locale(void) {
+  const struct {
+    int32_t character;
+    bool start;
+    bool continuation;
+  } cases[] = {
+    {-1, false, false},
+    {0, false, false},
+    {'/', false, false},
+    {'0', false, true},
+    {'9', false, true},
+    {':', false, false},
+    {'A', true, true},
+    {'Z', true, true},
+    {'_', true, true},
+    {'a', true, true},
+    {'z', true, true},
+    {'@', false, false},
+    {'[', false, false},
+    {'`', false, false},
+    {'{', false, false},
+    {0x00e9, false, false},
+    {0x0301, false, false},
+    {0x03b1, false, false},
+    {0x0661, false, false},
+    {0x65e5, false, false},
+    {0x1f600, false, false},
+    {0x20000, false, false},
+    {0x110000, false, false},
+  };
+  const char *locales[] = {"C", "C.UTF-8", "en_US.UTF-8"};
+  for (size_t i = 0; i < sizeof(locales) / sizeof(*locales); ++i) {
+    if (!setlocale(LC_CTYPE, locales[i])) {
+      assert(i != 0);
+      continue;
+    }
+    for (size_t j = 0; j < sizeof(cases) / sizeof(*cases); ++j) {
+      assert(name_start(cases[j].character) == cases[j].start);
+      assert(name_character(cases[j].character) == cases[j].continuation);
+    }
+  }
+  assert(setlocale(LC_CTYPE, "C"));
+}
 
 #ifdef TREE_SITTER_REUSE_ALLOCATOR
 void *(*ts_current_malloc)(size_t) = malloc;
@@ -939,6 +984,7 @@ timing_scope_survives_restoration_and_independent_command_sources(void) {
 }
 
 int main(void) {
+  identifier_characters_do_not_depend_on_the_process_locale();
   timing_scope_survives_restoration_and_independent_command_sources();
   unrecognized_recovery_source_preserves_context();
   recovery_tokens_preserve_boundaries_and_survive_restoration();
