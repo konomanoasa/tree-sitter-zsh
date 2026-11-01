@@ -10,11 +10,11 @@
       "injection-regex": "^zsh$",
       "highlights": "queries/highlights.scm",
       "external-files": [
+        "common/input.h",
         "common/scanner.h",
         "common/source.h",
-        "common/input.h",
-        "src/tokens.h",
-        "common/tokens.json"
+        "common/tokens.json",
+        "src/tokens.h"
       ]
     },
     {
@@ -26,13 +26,13 @@
       "injection-regex": "^zsh_extended_glob$",
       "highlights": "queries/highlights.scm",
       "external-files": [
+        "common/input.h",
         "common/scanner.h",
         "common/source.h",
-        "common/input.h",
         "common/tokens.json",
-        "zsh_extended_glob/src/tokens.h",
         "src/parser.c",
-        "src/tree_sitter/parser.h"
+        "src/tree_sitter/parser.h",
+        "zsh_extended_glob/src/tokens.h"
       ]
     }
   ],
@@ -47,7 +47,7 @@
   "bindings": {
     "c": false,
     "go": false,
-    "node": false,
+    "node": true,
     "python": true,
     "rust": true,
     "swift": false
