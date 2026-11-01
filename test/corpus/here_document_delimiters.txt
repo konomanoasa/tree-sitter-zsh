@@ -60,6 +60,57 @@ print AFTER
 5:6  - 5:11                 literal `AFTER`
 
 ==================
+Empty parentheses after a heredoc delimiter belong to the function definition
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<a() { :; }
+BODY
+a
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (function_definition
+              name: (word (literal))
+              (io_here
+                (dless)
+                here_end: (word (here_end_text)))
+              body: (command
+                (complex_command
+                  (brace_group
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word (literal)))))))))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+Function parentheses after a heredoc delimiter still require a body
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<a()
+---
+
+==================
 An unevaluated delimiter command keeps its unquoted heredoc body literal
 :language(zsh)
 :language(zsh_extended_glob)
@@ -515,6 +566,157 @@ Square arithmetic shaped delimiters require their closing bracket
 ==================
 cat <<$[x
 ---
+
+==================
+Square arithmetic shaped delimiters nest brackets across parentheses and quotes
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<$[x[1]]$[(x[1)]]"$[y[1]"]"
+body
+$[x[1]]$[(x[1)]]$[y[1]"]
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (here_end_group (here_end_text))
+                (here_end_group (here_end_group (here_end_text)) (here_end_text))
+                (double_quoted (here_end_group (here_end_text)))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (quoted_here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal)) argument: (word (literal))))))))
+
+==================
+A nested bracket keeps a square arithmetic shaped delimiter open
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<$[x[1]
+$[x[1]
+---
+
+==================
+A square arithmetic shaped delimiter rejects an unmatched closing parenthesis
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<$[x)]
+$[x)]
+---
+
+==================
+A square arithmetic shaped delimiter rejects a closing bracket inside parentheses
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<$[(x])]
+$[(x])]
+---
+
+==================
+A separator inside an unclosed delimiter group ends the delimiter
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<a(b;c
+hello
+a(b
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) (io_here (dless) here_end: (word (here_end_text) (here_end_group (here_end_text)))))))) (sublist (pipeline (command (simple_command name: (word (literal)))))) (here_document_sequence line_end: (here_document_line_end) document: (here_document (here_document_body (here_document_text)) (here_document_end (here_document_end_text))))))
+
+==================
+A closing brace inside a delimiter group stays before a space
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<a(b} c)
+hello
+a(b} c)
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) (io_here (dless) here_end: (word (here_end_text) (here_end_group (here_end_text)))))))) (here_document_sequence line_end: (here_document_line_end) document: (here_document (here_document_body (here_document_text)) (here_document_end (here_document_end_text))))))
+
+==================
+Pattern groups inside expansions keep separators and braces until the enclosing closer
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<${x:-(a;b}${y:-{(c}}$[(d;)]
+body
+${x:-(a;b}${y:-{(c}}$[(d;)]
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (here_end_group (here_end_text) (here_end_group (here_end_text)))
+                (here_end_group (here_end_text) (here_end_group (here_end_text)))
+                (here_end_group (here_end_group (here_end_text)))))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal)) argument: (word (literal))))))))
+
+==================
+A brace inside a delimiter pattern group keeps the following closing brace in the word
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+cat <<x({a)}
+body
+x({a)}
+print after
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            (io_here
+              (dless)
+              here_end: (word
+                (here_end_text)
+                (here_end_group (here_end_text))
+                (here_end_text)))))))
+    (here_document_sequence
+      line_end: (here_document_line_end)
+      document: (here_document
+        (here_document_body (here_document_text))
+        (here_document_end (here_document_end_text))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command name: (word (literal)) argument: (word (literal))))))))
 
 ==================
 Parameter shaped delimiter source retains lexical groups without evaluation

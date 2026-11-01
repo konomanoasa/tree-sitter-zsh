@@ -279,6 +279,64 @@ for (const language of grammars) {
       );
     });
 
+    test("numeric loop names preserve source and reject mixed digit prefixes across command sources", () => {
+      for (const [prefix, suffix] of [
+        ["", "\nprint AFTER\n"],
+        ["f() { ", "; }\n"],
+        ['print "$(', ')"\n'],
+        ["a[$(", ")]=x\n"],
+        ["cat <<$(", ")\nBODY\n"],
+      ]) {
+        for (const [keyword, body] of [
+          ["for", "do :; done"],
+          ["foreach", ":; end"],
+          ["select", ":"],
+        ]) {
+          for (const name of ["0", "00", "01", "12", "1\\\n2", "a9", "_9"]) {
+            const source = `${prefix}${keyword} ${name} in a; ${body}${suffix}`;
+            const output = valid(source);
+            assert.deepEqual(
+              sourceNodes(output, source)
+                .filter(({ type }) => type === "name")
+                .map(({ field, text }) => [field, text]),
+              [["name", name]],
+              source,
+            );
+            assert.doesNotMatch(
+              output,
+              /positional_parameter|arithmetic_number/,
+            );
+          }
+          for (const name of [
+            "1a",
+            "1_",
+            "1\\\na",
+            "-1",
+            "1.0",
+            '"1"',
+            "\\1",
+            "١",
+          ]) {
+            const source = `${prefix}${keyword} ${name} in a; ${body}${suffix}`;
+            assert.equal(parse(source).hasError, true, source);
+          }
+        }
+      }
+    });
+
+    test("glob qualifier function names retain leading digits independently of variable names", () => {
+      for (const flag of ["+", "o+", "O+"]) {
+        const source = `print /dev/null(${flag}1f_2)\n`;
+        assert.deepEqual(
+          sourceNodes(valid(source), source)
+            .filter(({ type }) => type === "glob_argument_text")
+            .map(({ text }) => text),
+          ["1f_2"],
+          source,
+        );
+      }
+    });
+
     test("quoted heredoc inside a command substitution retains its own continuation policy", () => {
       const output = valid("print $(cat <<'E'\nbody\\\nE\n)\nprint after\n");
       assert.match(output, /1:0 +- +2:0 +quoted_here_document_text/);
@@ -1946,6 +2004,135 @@ for (const language of grammars) {
       }
     });
 
+    test("arithmetic unbraced subscripts retain operators and shell separators", () => {
+      for (const content of [
+        "1",
+        "a<b",
+        "a>b",
+        "a<(b)",
+        "a b",
+        "a|b",
+        "a&b",
+        "a;b",
+        "a\nb",
+        "a{b}<c",
+        "a(())",
+        "a([])",
+      ]) {
+        for (const [prefix, suffix] of [
+          ["print $[", "]\n"],
+          ["print $((", "))\n"],
+          ["((", "))\n"],
+          ["print $(((", ")))\n"],
+          ["print $((abs(", ")))\n"],
+          ["for ((i=", ";i<1;i++)) :\n"],
+        ]) {
+          const source = `${prefix}$x[${content}]${suffix}`;
+          const output = valid(source);
+          const nodes = sourceNodes(output, source);
+          assert.deepEqual(
+            nodes
+              .filter(({ type }) => type === "array_subscript")
+              .map(({ text }) => text),
+            [`[${content}]`],
+            source,
+          );
+          assert.doesNotMatch(output, /io_file|process_substitution/, source);
+          assert.deepEqual(
+            nodes
+              .filter(({ type }) => type === "parameter_expansion")
+              .map(({ text }) => text),
+            [`$x[${content}]`],
+            source,
+          );
+        }
+      }
+    });
+
+    test("unbalanced arithmetic subscripts cannot end as word prefixes", () => {
+      for (const content of [
+        "a([)",
+        "a(()",
+        "a((()",
+        "a(b",
+        "a[b",
+        "a{b",
+        "a(])",
+      ]) {
+        const parameter = `$x[${content}]`;
+        const expression = `$[${parameter}]`;
+        for (const source of [
+          `print ${expression}\n`,
+          `print "${expression}"\n`,
+          `print $((1+${expression}))\n`,
+          `cat <<END\n${expression}\nEND\n`,
+          `print $[(${parameter})]\n`,
+          `print $[abs(${parameter})]\n`,
+          `print $[$y[${parameter}]]\n`,
+        ]) {
+          assert.ok(parse(source).hasError, source);
+        }
+      }
+      for (const source of ["a[$[$x[a([)]]]=x\n", "a[$[$x[a(()]]]=x\n"]) {
+        assert.ok(parse(source).hasError, source);
+      }
+    });
+
+    test("nested arithmetic lookahead preserves subscript and expansion closers", () => {
+      for (const expression of ["$[$x[a<b]]", "$[$x[a<(b)]]"]) {
+        for (const [prefix, suffix] of [
+          ["print ", "\n"],
+          ["print $((1+", "))\n"],
+          ["a[", "]=x\n"],
+          ["cat <<END\n", "\nEND\n"],
+        ]) {
+          const source = prefix + expression + suffix;
+          const output = valid(source);
+          const nodes = sourceNodes(output, source);
+          assert.deepEqual(
+            nodes
+              .filter(({ type }) => type === "array_subscript")
+              .map(({ text }) => text),
+            prefix === "a["
+              ? [`[${expression}]`, expression.slice(4, -1)]
+              : [expression.slice(4, -1)],
+            source,
+          );
+          assert.ok(
+            nodes.some(
+              ({ type, text }) =>
+                type === "arithmetic_expansion" && text === expression,
+            ),
+            source,
+          );
+          assert.doesNotMatch(output, /io_file|process_substitution/, source);
+        }
+        for (const source of [
+          `print ${expression.slice(0, -1)}\n`,
+          `print $((1+${expression.slice(0, -1)}))\n`,
+          `cat <<END\n${expression.slice(0, -1)}\nEND\n`,
+        ]) {
+          assert.ok(parse(source).hasError, source);
+        }
+      }
+    });
+
+    test("commands inside arithmetic restore ordinary unbraced subscript boundaries", () => {
+      for (const source of [
+        "print $x[a<(b)]\n",
+        "print $[$(print $x[a<(b)])]\n",
+      ]) {
+        const output = valid(source);
+        assert.deepEqual(
+          sourceNodes(output, source)
+            .filter(({ type }) => type === "process_substitution")
+            .map(({ text }) => text),
+          ["<(b)"],
+          source,
+        );
+      }
+    });
+
     test("arithmetic fragments preserve every for header separator", () => {
       for (const fragment of ["@", ".", "$", "'", '"', "([1)]"]) {
         const output = valid(`for ((${fragment};0;)) do :; done\n`);
@@ -2010,6 +2197,115 @@ for (const language of grammars) {
       assert.match(tree, /0:9 +- +0:10 +line_continuation/);
       assert.match(tree, /3:0 +- +3:5 +here_document_end_text/);
       assert.match(tree, /literal `after`/);
+    });
+
+    test("empty single reference quotes follow the enclosing lexical quoting context", () => {
+      for (const reference of [
+        `\${''}`,
+        `\${''x}`,
+        `\${''''x}`,
+        `\${''""x}`,
+        `\${(U)^''x}`,
+        `\${''#x}`,
+        `\${'':-fallback}`,
+        `\${''[1]}`,
+        `\${(q)''}`,
+        `\${\${''}}`,
+        `\${\${x}''}`,
+        `\${"\${x}"''}`,
+        `\${$(print x)''}`,
+        `\${$((1+2))''}`,
+        `\${''\${x}''[1]:l}`,
+        `\${''\\\nx}`,
+      ]) {
+        for (const [prefix, suffix, accepted] of [
+          ["print ", "\nprint AFTER\n", true],
+          ['print "$(print ', ')"\nprint AFTER\n', true],
+          ['print "', '"\n', false],
+          ["cat <<END\n", "\nEND\n", false],
+          ["print $[", "]\n", false],
+        ]) {
+          const source = prefix + reference + suffix;
+          if (!accepted) {
+            assert.ok(parse(source).hasError, source);
+            continue;
+          }
+          const nodes = sourceNodes(valid(source), source);
+          assert.ok(
+            nodes.some(
+              ({ type, text }) =>
+                type === "parameter_expansion" && text === reference,
+            ),
+            source,
+          );
+          assert.ok(
+            nodes.some(
+              ({ type, text }) =>
+                type === "simple_command" && text === "print AFTER",
+            ),
+            source,
+          );
+        }
+      }
+      for (const reference of [
+        `\${'x'}`,
+        `\${x''}`,
+        `\${'\${x}'}`,
+        `\${$''}`,
+        `\${#''x}`,
+        `\${''(U)x}`,
+        `\${''-fallback}`,
+        `\${'\\\n'x}`,
+      ]) {
+        assert.ok(parse(`print ${reference}\n`).hasError, reference);
+      }
+    });
+
+    test("empty reference quote nodes remain outside the actual parameter field", () => {
+      for (const { reference, quotes, parameters } of [
+        { reference: `\${''}`, quotes: ["single_quoted"], parameters: [] },
+        {
+          reference: `\${''x}`,
+          quotes: ["single_quoted"],
+          parameters: [["variable_name", "x"]],
+        },
+        {
+          reference: `\${''\${x}''}`,
+          quotes: ["single_quoted", "single_quoted"],
+          parameters: [
+            ["parameter_expansion", `\${x}`],
+            ["variable_name", "x"],
+          ],
+        },
+        {
+          reference: `\${''""x}`,
+          quotes: ["single_quoted", "double_quoted"],
+          parameters: [["variable_name", "x"]],
+        },
+      ]) {
+        const source = `: ${reference}\n`;
+        const nodes = sourceNodes(valid(source), source);
+        assert.deepEqual(
+          nodes
+            .filter(
+              ({ type }) =>
+                type === "single_quoted" || type === "double_quoted",
+            )
+            .map(({ type, field, text }) => [type, field, text]),
+          quotes.map((type) => [
+            type,
+            undefined,
+            type === "single_quoted" ? "''" : '""',
+          ]),
+        );
+        assert.deepEqual(
+          nodes
+            .filter(({ field }) => field === "parameter")
+            .map(({ type, text }) => [type, text]),
+          parameters,
+        );
+        assert.ok(!nodes.some(({ type }) => type === "single_quote_content"));
+      }
     });
 
     test("editing quoted references repairs nested values independently of the enclosing context", () => {
@@ -2362,6 +2658,18 @@ for (const language of grammars) {
     test("delimiter edits preserve nonexpanding groups, matching ends, and following commands", () => {
       for (const { before, endBefore, after, endAfter } of [
         {
+          before: "a( )",
+          endBefore: "a( )",
+          after: "a() { :; }",
+          endAfter: "a",
+        },
+        {
+          before: '"a()"',
+          endBefore: "a()",
+          after: "a()x",
+          endAfter: "a",
+        },
+        {
           before: `\${a.b}`,
           endBefore: `\${a.b}`,
           after: `\${é}`,
@@ -2443,6 +2751,7 @@ for (const language of grammars) {
         for (const [prefix, suffix] of [
           ["", ""],
           ["print $(\n", ")\n"],
+          ["cat <<$(\n", ")\n"],
         ]) {
           const declaration = `${prefix}cat <<`;
           const body = "\nBODY\n";
@@ -2482,9 +2791,11 @@ for (const language of grammars) {
             [endAfter],
             changed,
           );
-          assert.equal(
-            nodes.filter(({ type }) => type === "literal").at(-1)?.text,
-            "AFTER",
+          assert.ok(
+            nodes.some(
+              ({ type, text }) =>
+                type === "simple_command" && text === "print AFTER",
+            ),
             changed,
           );
           assert.equal(
@@ -2837,7 +3148,7 @@ for (const language of grammars) {
         },
         {
           source: "f() :\n",
-          byte: 2,
+          byte: 1,
           node: "function_definition",
         },
         {
@@ -3008,6 +3319,52 @@ for (const language of grammars) {
       });
     }
 
+    test("positional short for preserves structural bodies and in-list separators across command sources", () => {
+      for (const [prefix, suffix] of [
+        ["", "\nprint AFTER\n"],
+        ["f() { ", "; }\n"],
+        ['print "$(', ')"\n'],
+        ["print `", "`\n"],
+        ["a[$(", ")]=x\n"],
+        ["cat <<$(", ")\nBODY\n"],
+        ["cat <<E\n$(", ")\nE\nprint AFTER\n"],
+      ]) {
+        for (const body of [
+          "{ :; }",
+          "((++i))",
+          "() :",
+          "[[ x ]]",
+          "if :; then :; fi",
+          "x=1",
+          "> /dev/null",
+        ]) {
+          const source = `${prefix}for x ${body}${suffix}`;
+          const nodes = sourceNodes(valid(source), source);
+          const loop = nodes.find(({ type }) => type === "for_clause");
+          assert.ok(loop, source);
+          assert.equal(loop.text, `for x ${body}`, source);
+          assert.equal(
+            nodes.find(
+              ({ field, depth }) =>
+                field === "body" && depth === loop.depth + 2,
+            )?.text,
+            body,
+            source,
+          );
+          assert.equal(
+            nodes.some(({ type }) => type === "loop_words"),
+            false,
+            source,
+          );
+          valid(`${prefix}for x in a; ${body}${suffix}`);
+        }
+        const withIn = `${prefix}for x in a { :; }${suffix}`;
+        assert.equal(parse(withIn).hasError, true, withIn);
+      }
+      for (const source of ["for x :", 'for x print "$x"', 'for x "name"'])
+        assert.equal(parse(source).hasError, true, source);
+    });
+
     test("select header and body edits preserve classification across command sources", () => {
       for (const [prefix, suffix] of [
         ["", ""],
@@ -3133,6 +3490,147 @@ for (const language of grammars) {
       }
     });
 
+    test("loop parentheses preserve word lists and anonymous function bodies across command sources", () => {
+      for (const [prefix, suffix, outerContinuation] of [
+        ["", "\nprint AFTER\n", false],
+        ["f() { ", "; }\nprint AFTER\n", false],
+        ['echo "$(', ')"\nprint AFTER\n', false],
+        ["echo `", "`\nprint AFTER\n", true],
+        ["a[$(", ")]=x\nprint AFTER\n", false],
+        ["cat <<$(", ")\nBODY\n", false],
+        ["cat <<E\n$(", ")\nE\nprint AFTER\n", true],
+      ]) {
+        for (const { head, tail, separated } of [
+          { head: "for x", tail: " :", separated: false },
+          { head: "for x;", tail: " :", separated: true },
+          { head: "foreach x", tail: " :; end", separated: false },
+          { head: "select x", tail: " :", separated: false },
+        ]) {
+          for (const gap of ["", " ", "\n", "\\\n"]) {
+            if (separated && gap !== "") continue;
+            const source = `${prefix}${head} (${gap})${tail}${suffix}`;
+            const adjacent =
+              gap === "" || (gap === "\\\n" && outerContinuation);
+            const result = parse(source);
+            assert.equal(result.status, 0, result.output + source);
+            assert.equal(result.hasError, false, result.output + source);
+            const nodes = sourceNodes(result.output, source);
+            const loop = nodes.find(
+              ({ type }) => type === "for_clause" || type === "select_clause",
+            );
+            assert.ok(loop, source);
+            const children = nodes.filter(
+              ({ start, end, depth }) =>
+                start >= loop.start && end <= loop.end && depth > loop.depth,
+            );
+            assert.equal(
+              children.some(({ type }) => type === "loop_words"),
+              !separated && !adjacent,
+              source,
+            );
+            assert.equal(
+              children.some(({ type }) => type === "function_definition"),
+              adjacent,
+              source,
+            );
+            assert.equal(
+              children.some(({ type }) => type === "subshell"),
+              separated && !adjacent,
+              source,
+            );
+            if (head === "foreach x")
+              assert.ok(
+                children.some(({ type }) => type === "end_keyword"),
+                source,
+              );
+          }
+        }
+      }
+    });
+
+    test("positional foreach keeps the maximal name list before a structural body", () => {
+      for (const { loop, names, body } of [
+        { loop: "foreach x y end", names: ["x", "y"], body: null },
+        {
+          loop: "foreach x print BODY; end",
+          names: ["x", "print", "BODY"],
+          body: null,
+        },
+        {
+          loop: "foreach x; print BODY; end",
+          names: ["x"],
+          body: "print BODY;",
+        },
+        {
+          loop: "foreach x ((++i)) end",
+          names: ["x"],
+          body: "((++i))",
+        },
+        {
+          loop: "foreach x [[ x ]] end",
+          names: ["x"],
+          body: "[[ x ]]",
+        },
+        {
+          loop: "foreach x if :; then :; fi; end",
+          names: ["x"],
+          body: "if :; then :; fi;",
+        },
+        {
+          loop: "foreach x x=1; end",
+          names: ["x"],
+          body: "x=1;",
+        },
+        {
+          loop: "foreach x > /dev/null; end",
+          names: ["x"],
+          body: "> /dev/null;",
+        },
+      ]) {
+        const source = `${loop}\nprint AFTER\n`;
+        const nodes = sourceNodes(valid(source), source);
+        assert.deepEqual(
+          nodes.filter(({ type }) => type === "name").map(({ text }) => text),
+          names,
+          source,
+        );
+        assert.equal(
+          nodes.find(({ field }) => field === "body")?.text.trim() ?? null,
+          body,
+          source,
+        );
+        assert.equal(
+          nodes.find(({ type }) => type === "for_clause")?.text,
+          loop,
+          source,
+        );
+        assert.equal(
+          nodes.some(({ field }) => field === "words"),
+          false,
+        );
+        assert.equal(
+          nodes.filter(({ type }) => type === "end_keyword").length,
+          1,
+        );
+        assert.ok(
+          nodes.some(
+            ({ type, text }) =>
+              type === "simple_command" && text === "print AFTER",
+          ),
+          source,
+        );
+      }
+      for (const source of [
+        "foreach x :; end",
+        'foreach x "name"; end',
+        "foreach x name-x; end",
+        "foreach x noglob :; end",
+        "foreach x ((++i))",
+        "foreach x end end",
+      ])
+        assert.equal(parse(source).hasError, true, source);
+    });
+
     test("foreach header edits preserve body forms across command sources", () => {
       for (const [prefix, suffix] of [
         ["", "\n"],
@@ -3143,6 +3641,30 @@ for (const language of grammars) {
         ["cat <<$(", ")\nBODY\n"],
       ]) {
         for (const { before, removed, inserted, after } of [
+          {
+            before: "foreach x; end",
+            removed: ";",
+            inserted: "",
+            after: "foreach x end",
+          },
+          {
+            before: "foreach x; ((++i)); end",
+            removed: ";",
+            inserted: "",
+            after: "foreach x ((++i)); end",
+          },
+          {
+            before: "foreach x; if :; then :; fi; end",
+            removed: ";",
+            inserted: "",
+            after: "foreach x if :; then :; fi; end",
+          },
+          {
+            before: "foreach x; print BODY; end",
+            removed: ";",
+            inserted: "",
+            after: "foreach x print BODY; end",
+          },
           {
             before: "foreach x (a b) :; end",
             removed: "(a b)",
@@ -3399,6 +3921,9 @@ for (const language of grammars) {
         ["foreach x in a; do :;", " done"],
         ["foreach x in a; { :;", " }"],
         ["foreach x; :;", " end"],
+        ["foreach x", " end"],
+        ["foreach x ((++i))", " end"],
+        ["foreach x if :; then :; fi;", " end"],
         ["foreach x do :;", " done"],
         ["foreach x { :;", " }"],
       ]) {
@@ -3510,6 +4035,160 @@ for (const language of grammars) {
         assert.equal(parse(source).hasError, true);
       });
     }
+
+    test("subscripts pair braces across parenthesis boundaries in each candidate mode", () => {
+      for (const key of [
+        "a{(b})",
+        "a({b)}",
+        "a{((b}))",
+        "a(({b))}",
+        "a{(b,c})",
+        "a({b,c)}",
+        "a{(b}c)d",
+        "a({b)c}d",
+        "a{b(c})",
+        "a{(b)}",
+        "a({b})",
+        'a{(b"}"c})',
+        "a{(b\\}c})",
+        'a{(b$(print -r -- "}")})',
+        `a{(b\${y:-"}"}})`,
+      ]) {
+        for (const flag of ["", "(r)", "(re)"]) {
+          for (const [prefix, suffix] of [
+            ["print $x[", "]"],
+            ["print ${x[", "]}"],
+            ['print "${x[', ']}"'],
+            ["[[ ${x[", "]} == 11 ]]"],
+            ["print $[${x[", "]}]"],
+          ]) {
+            const source = `${prefix}${flag}${key}${suffix}\nprint AFTER\n`;
+            const nodes = sourceNodes(valid(source), source);
+            assert.deepEqual(
+              nodes
+                .filter(({ type }) => type === "array_subscript")
+                .map(({ text }) => text),
+              [`[${flag}${key}]`],
+              source,
+            );
+            assert.ok(
+              nodes.some(
+                ({ type, text }) =>
+                  type === "simple_command" && text === "print AFTER",
+              ),
+              source,
+            );
+          }
+        }
+      }
+    });
+
+    test("crossed subscript groups preserve source ownership without invented closers", () => {
+      for (const key of ["a{(b})", "a({b)}", "a{(b}c)d", "a({b)c}d"]) {
+        for (const flag of ["", "(r)", "(re)"]) {
+          const source = `print "$x[${flag}${key}]"\n`;
+          assert.deepEqual(
+            sourceNodes(valid(source), source)
+              .filter(({ type }) => type === "array_subscript")
+              .map(({ text }) => text),
+            [`[${flag}${key}]`],
+          );
+        }
+      }
+      for (const { key, expected } of [
+        {
+          key: "a{(b})",
+          expected: [
+            ["subscript_group", "{(b}"],
+            ["parenthesized_arithmetic_candidate_source", "(b"],
+            ["subscript_text", ")"],
+          ],
+        },
+        {
+          key: "a({b)}",
+          expected: [
+            ["arithmetic_candidate_function_source", "a({b)"],
+            ["subscript_group", "{b"],
+            ["subscript_text", "}"],
+          ],
+        },
+      ]) {
+        const source = `print \${x[${key}]}\n`;
+        const nodes = sourceNodes(valid(source), source);
+        const types = new Set(expected.map(([type]) => type));
+        assert.deepEqual(
+          nodes
+            .filter(({ type }) => types.has(type))
+            .map(({ type, text }) => [type, text]),
+          expected,
+        );
+      }
+    });
+
+    test("subscript brace pairs cannot borrow quoted escaped or substituted closers", () => {
+      for (const key of [
+        "a{(b}}",
+        "a{(b",
+        "a({b)",
+        "a({b)\\}",
+        'a({b)"}"',
+        'a({b)$(print -r -- "}")',
+        `a({b)\${y:-"}"}`,
+      ]) {
+        for (const flag of ["", "(r)", "(re)"]) {
+          for (const [prefix, suffix] of [
+            ["print ${x[", "]}"],
+            ['print "${x[', ']}"'],
+            ["print $[${x[", "]}]"],
+          ]) {
+            const source = `${prefix}${flag}${key}${suffix}\n`;
+            assert.notEqual(parse(source).status, 0, source);
+          }
+        }
+      }
+      for (const source of [
+        "print $x[a{(b}}]\n",
+        "print $x[a({)]\n",
+        'print "$x[a({)]"\n',
+        "(( x[a({)] ))\n",
+      ]) {
+        assert.notEqual(parse(source).status, 0, source);
+      }
+    });
+
+    test("a word brace closes across parenthesized source before a surplus shell closer", () => {
+      for (const prefix of ["print ", "noglob print "]) {
+        assert.notEqual(parse(`${prefix}a{(b}}`).status, 0);
+        assert.notEqual(parse(`${prefix}a{(b}};`).status, 0);
+        valid(`${prefix}a{(b})\nprint AFTER\n`);
+        valid(`${prefix}a({b)}\nprint AFTER\n`);
+        for (const word of [
+          "a{(b}})",
+          "a{(b}}x",
+          "a{(b}} x)",
+          "a{(b}}|x)",
+          "a{(b}}\n",
+          "a{(b}(c})",
+          "a{(b}(c} ))",
+          "a{(b}c})",
+        ]) {
+          valid(prefix + word);
+        }
+      }
+      const source = "print a{(b})\n";
+      assert.deepEqual(
+        sourceNodes(valid(source), source)
+          .filter(
+            ({ type }) =>
+              type === "brace_expansion" || type === "glob_qualifier",
+          )
+          .map(({ type, text }) => [type, text]),
+        [
+          ["brace_expansion", "{(b}"],
+          ["glob_qualifier", "(b"],
+        ],
+      );
+    });
 
     test("subscript candidates retain native expression fields without inferring declarations", () => {
       for (const declaration of ["", "typeset -a a; ", "typeset -A a; "]) {

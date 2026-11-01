@@ -277,6 +277,131 @@ Adjacent braces followed by a word character remain one argument
                           (literal))))))))))))))
 
 ==================
+A word-final brace followed by a glob qualifier remains one argument
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+{ print a}(x) }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal)
+                          (glob_qualifier
+                            (glob_qualifier_list
+                              (glob_flag
+                                name: (glob_flag_name)))))))))))))))))
+
+==================
+A word-final brace followed by a process substitution remains one argument
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+{ print a}<(:) }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal)
+                          (process_substitution
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))))))))))))))))
+
+==================
+A word-final brace followed by a numeric range remains one argument
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+{ print a}<1-2> }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal)
+                          (pattern_numeric_range_source
+                            start: (pattern_number)
+                            (pattern_range_operator)
+                            end: (pattern_number)))))))))))))))
+
+==================
+Adjacent braces followed by a pattern parenthesis begin an argument
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+{ print }}(x) }
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (brace_group
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal))
+                        argument: (word
+                          (literal)
+                          (glob_qualifier
+                            (glob_qualifier_list
+                              (glob_flag
+                                name: (glob_flag_name)))))))))))))))))
+
+==================
+Adjacent function parentheses end a word-final brace
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print a}()
+---
+
+==================
 A case at the end of a pipeline terminates a short if condition
 :language(zsh)
 :language(zsh_extended_glob)

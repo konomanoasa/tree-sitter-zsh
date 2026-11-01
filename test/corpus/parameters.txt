@@ -71,6 +71,95 @@ print ${""x} ${""${x}""} ${"${x}"""} ${""""}
                 (double_quoted)))))))))
 
 ==================
+Empty single reference quotes retain source before names and after nested references
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+: ${''} ${''x} ${''${x}''} ${''""x}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion (single_quoted)))
+            argument: (word
+              (parameter_expansion
+                (single_quoted)
+                parameter: (variable_name)))
+            argument: (word
+              (parameter_expansion
+                (single_quoted)
+                parameter: (parameter_expansion parameter: (variable_name))
+                (single_quoted)))
+            argument: (word
+              (parameter_expansion
+                (single_quoted)
+                (double_quoted)
+                parameter: (variable_name)))))))))
+
+==================
+Empty single reference quotes preserve flags length and the following parameter operation
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print ${(U)^''x} ${''#x} ${'':-fallback} ${${x}''[1]:l}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                (parameter_flags (parameter_flag (parameter_flag_name)))
+                (parameter_prefix_operator)
+                (single_quoted)
+                parameter: (variable_name)))
+            argument: (word
+              (parameter_expansion
+                (single_quoted)
+                (parameter_length_operator)
+                parameter: (variable_name)))
+            argument: (word
+              (parameter_expansion
+                (single_quoted)
+                (parameter_value_operator)
+                (parameter_word (literal))))
+            argument: (word
+              (parameter_expansion
+                parameter: (parameter_expansion parameter: (variable_name))
+                (single_quoted)
+                subscript: (array_subscript
+                  source: (subscript_source candidate: (arithmetic_candidate_number)))
+                (parameter_modifier (modifier_prefix) name: (modifier_name))))))))))
+
+==================
+Empty single reference quotes are not quote delimiters inside outer double quotes
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+: "${''}"
+---
+
+
+==================
+A single quoted reference prefix cannot contain literal text
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+: ${'x'}
+---
+
+
+==================
 Empty reference quotes preserve flags control prefixes and length ownership
 :language(zsh)
 :language(zsh_extended_glob)
@@ -533,6 +622,61 @@ print ${x[1][2]:h} ${${x}[1][2]}
                   source: (subscript_source candidate: (arithmetic_candidate_number)))))))))))
 
 ==================
+Special parameters end before subscript separators and arithmetic operators
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print ${x[$?,$#]} $x[$!] $(( x[$-] + $? ))
+x[$*]=1
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                subscript: (array_subscript
+                  source: (subscript_source
+                    candidate: (subscript_range_candidate
+                      start: (subscript_source
+                        (parameter_expansion parameter: (special_parameter)))
+                      separator: (subscript_comma)
+                      end: (subscript_source
+                        (parameter_expansion parameter: (special_parameter))))))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (array_subscript
+                    source: (subscript_source
+                      (parameter_expansion parameter: (special_parameter)))))))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (arithmetic_array_reference
+                    name: (arithmetic_variable)
+                    subscript: (array_subscript
+                      source: (subscript_source
+                        (parameter_expansion parameter: (special_parameter)))))
+                  (arithmetic_operator)
+                  (parameter_expansion parameter: (special_parameter)))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              subscript: (array_subscript
+                source: (subscript_source
+                  (parameter_expansion parameter: (special_parameter))))
+              (assignment_operator)
+              value: (assignment_value (literal)))))))))
+
+==================
 Special parameter references take priority over parameter operations
 :language(zsh)
 :language(zsh_extended_glob)
@@ -692,6 +836,15 @@ print $x[}]
                 (parameter_suffix_source
                   (array_subscript
                     source: (subscript_source (subscript_text))))))))))))
+
+==================
+A matched brace pair stays inside an unfinished unbraced subscript
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $x[a{b}&c]
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_text)))))))))) (sublist (pipeline (command (simple_command name: (word (literal))))))))
 
 ==================
 Nested parentheses after a subscript bracket are groups rather than flags
@@ -919,6 +1072,24 @@ An unfinished subscript cannot cross the enclosing quote and word boundary
 print "$a[1" "]"
 ---
 (program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (double_quoted (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_text))))))) argument: (word (double_quoted (double_quote_text)))))))))
+
+==================
+An unclosed group inside an unfinished quoted subscript stays text
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print "$x[a(b" "$x[(r"
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (double_quoted (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_text))))))) argument: (word (double_quoted (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_text)))))))))))))
+
+==================
+A stray closing parenthesis inside a quoted subscript stays text
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print "$x[c)d]"
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (double_quoted (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (arithmetic_candidate_variable) (subscript_text) (arithmetic_candidate_variable)))))))))))))
 
 ==================
 Apostrophes in a double quoted suffix do not hide an explicit expansion

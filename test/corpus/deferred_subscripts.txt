@@ -377,3 +377,244 @@ a[(r)x}]=value
                   (subscript_pattern_candidate (pattern_candidate_text))))
               (assignment_operator)
               (assignment_value (literal)))))))))
+
+==================
+An arithmetic unbraced subscript owns its closing bracket before the expansion
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $[$x[a<b]]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (arithmetic_expansion
+                (arithmetic_source
+                  (parameter_expansion
+                    parameter: (variable_name)
+                    (parameter_suffix_source
+                      (array_subscript
+                        source: (subscript_source
+                          candidate: (arithmetic_candidate_binary_expression
+                            left: (arithmetic_candidate_variable)
+                            operator: (arithmetic_candidate_operator)
+                            right: (arithmetic_candidate_variable)))))))))))))))
+
+==================
+Process substitution spelling remains a candidate inside an arithmetic unbraced subscript
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+(( $x[a<(b)] ))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (arithmetic_command
+              (arithmetic_source
+                (parameter_expansion
+                  parameter: (variable_name)
+                  (parameter_suffix_source
+                    (array_subscript
+                      source: (subscript_source
+                        candidate: (arithmetic_candidate_binary_expression
+                          left: (arithmetic_candidate_variable)
+                          operator: (arithmetic_candidate_operator)
+                          right: (parenthesized_arithmetic_candidate
+                            expression: (arithmetic_candidate_variable)))))))))))))))
+
+==================
+A subscript brace closes inside its parenthesized candidate source
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print ${x[a{(b})]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                subscript: (array_subscript
+                  source: (subscript_source
+                    (arithmetic_candidate_variable)
+                    (subscript_group
+                      (subscript_source
+                        (parenthesized_arithmetic_candidate_source
+                          (arithmetic_candidate_source_expression
+                            (arithmetic_candidate_variable)))))
+                    (subscript_text)))))))))))
+
+==================
+A subscript brace continues beyond its enclosing candidate function source
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print ${x[a({b)}]}
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                subscript: (array_subscript
+                  source: (subscript_source
+                    (arithmetic_candidate_function_source
+                      name: (arithmetic_candidate_function_name)
+                      arguments: (arithmetic_argument_source
+                        (subscript_group
+                          (subscript_source
+                            candidate: (arithmetic_candidate_variable)))))
+                    (subscript_text)))))))))))
+
+==================
+A subscript brace and parenthesis pair across intervening literal match text
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $x[(re)a({b)c}d] $x[(re)a{(b}c)d]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (array_subscript
+                    source: (subscript_source
+                      (subscript_flags
+                        (subscript_flag (subscript_flag_name))
+                        (subscript_flag (subscript_flag_name)))
+                      (subscript_text)
+                      (subscript_group
+                        (subscript_source
+                          (subscript_group
+                            (subscript_source (subscript_text)))))
+                      (subscript_text)
+                      (subscript_text)
+                      (subscript_text))))))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (array_subscript
+                    source: (subscript_source
+                      (subscript_flags
+                        (subscript_flag (subscript_flag_name))
+                        (subscript_flag (subscript_flag_name)))
+                      (subscript_text)
+                      (subscript_group
+                        (subscript_source
+                          (subscript_group
+                            (subscript_source (subscript_text)))))
+                      (subscript_text)
+                      (subscript_text)
+                      (subscript_text))))))))))))
+
+==================
+An arithmetic expansion cannot borrow the closing bracket of its unbraced subscript
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $[$x[a<b]
+---
+
+
+==================
+An unbalanced bracket inside an arithmetic subscript cannot close the expansion
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $[$x[a([)]]
+---
+
+
+==================
+An empty group cannot hide an unclosed arithmetic subscript parenthesis
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $[$x[a(()]]
+---
+
+
+==================
+A separator inside an unbraced subscript group ends the word
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $x[(a;b)]
+---
+
+
+==================
+Spaces inside an unbraced subscript group keep the word
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $x[(a b)c]
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (parenthesized_arithmetic_candidate_source (arithmetic_candidate_source_expression (arithmetic_candidate_variable) (arithmetic_candidate_variable))) (arithmetic_candidate_variable))))))))))))
+
+==================
+A flag letter before the closing parenthesis keeps an arithmetic candidate
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+(( x[(b)1] ))
+---
+(program (list (sublist (pipeline (command (complex_command (arithmetic_command (arithmetic_source expression: (arithmetic_array_reference name: (arithmetic_variable) subscript: (array_subscript source: (subscript_source (parenthesized_arithmetic_candidate expression: (arithmetic_candidate_variable)) (arithmetic_candidate_number))))))))))))
+
+==================
+Escaped parentheses stay inside subscript flags
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $x[(a\)c)]
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_flags (subscript_flag (subscript_flag_name)) (subscript_flag (subscript_flag_name)) (subscript_flag (subscript_flag_name))))))))))))))
+
+==================
+A group or numeric range directly after unbraced flags begins the pattern candidate
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print $x[(r)(b|c)] $x[(r)<1-2>]
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_flags (subscript_flag (subscript_flag_name))) candidate: (subscript_pattern_candidate (pattern_candidate_group_source (pattern_candidate_alternatives (pattern_candidate_alternative (pattern_candidate_text)) (pattern_candidate_alternation) (pattern_candidate_alternative (pattern_candidate_text)))))))))) argument: (word (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_flags (subscript_flag (subscript_flag_name))) candidate: (subscript_pattern_candidate (pattern_candidate_numeric_range_source start: (pattern_candidate_number) (pattern_candidate_range_operator) end: (pattern_candidate_number))))))))))))))
+
+==================
+Quoted and arithmetic reverse subscripts retain alternatives
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print "$x[(r)a(b|c)]"; (( x[(r)a(b|c)] ))
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (double_quoted (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_flags (subscript_flag (subscript_flag_name))) candidate: (subscript_pattern_candidate (pattern_candidate_text) (pattern_candidate_group_source (pattern_candidate_alternatives (pattern_candidate_alternative (pattern_candidate_text)) (pattern_candidate_alternation) (pattern_candidate_alternative (pattern_candidate_text))))))))))))))) (sublist (pipeline (command (complex_command (arithmetic_command (arithmetic_source expression: (arithmetic_array_reference name: (arithmetic_variable) subscript: (array_subscript source: (subscript_source (subscript_flags (subscript_flag (subscript_flag_name))) candidate: (subscript_pattern_candidate (pattern_candidate_text) (pattern_candidate_group_source (pattern_candidate_alternatives (pattern_candidate_alternative (pattern_candidate_text)) (pattern_candidate_alternation) (pattern_candidate_alternative (pattern_candidate_text))))))))))))))))

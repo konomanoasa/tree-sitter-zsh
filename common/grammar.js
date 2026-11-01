@@ -44,6 +44,7 @@ const terminated = ($, name) =>
 const condition = ($) => field("condition", alias($._condition_list, $.list));
 
 const headerSeparator = ($) => field("separator", $.term);
+const loopWordItems = ($) => repeat(choice(field("word", $.word), $._term));
 
 const separated = (item, separator) =>
   choice(
@@ -210,11 +211,7 @@ const loopBody = ($, short = $._short_body) =>
 
 const forClause = ($) =>
   choice(
-    seq($._for_header, optional(loopBody($))),
-    seq(
-      $._for_names,
-      optional(seq(field("body", $.do_group), repeat($._redirect))),
-    ),
+    seq(choice($._for_header, $._for_names), optional(loopBody($))),
     seq($._foreach_group_header, loopBody($, $._foreach_brace_body)),
     seq(
       $._foreach_header,
@@ -692,7 +689,8 @@ export default (name) =>
       [$.simple_command, $._parenthesized_function_names],
       [$.precommand_modifier, $._precommand_function_first_word],
       [$._loop_in_words, $._term],
-      [$._foreach_words, $._foreach_group_header_end],
+      [$._parenthesized_loop_words, $._foreach_group_header_end],
+      [$._foreach_header, $._foreach_group_header],
       [$._foreach_header, $._foreach_group_header_separator],
       [$.else_clause, $._term],
       [$._terminated_sublist, $._term],
@@ -936,12 +934,14 @@ export default (name) =>
       _foreach_names: ($) =>
         seq($.foreach_keyword, repeat1(field("name", $.name))),
       _foreach_header: ($) =>
-        seq(
-          $._foreach_names,
-          choice(
-            field("words", alias($._foreach_words, $.loop_words)),
-            seq($._loop_in_words, headerSeparator($)),
-            headerSeparator($),
+        prec.right(
+          seq(
+            $._foreach_names,
+            choice(
+              field("words", alias($._parenthesized_loop_words, $.loop_words)),
+              seq($._loop_in_words, headerSeparator($)),
+              optional(headerSeparator($)),
+            ),
           ),
         ),
       _foreach_group_header: ($) =>
@@ -963,21 +963,11 @@ export default (name) =>
       _loop_in_words: ($) => seq(repeat($._line), field("words", $.loop_words)),
       loop_words: ($) => seq($.in_keyword, repeat(field("word", $.word))),
       _parenthesized_loop_words: ($) =>
-        seq(
-          $._for_words_open_source,
-          repeat(choice(field("word", $.word), $._term)),
-          $._right_paren_source,
-        ),
-      _foreach_words: ($) =>
-        seq(
-          $._for_words_open_source,
-          repeat(field("word", $.word)),
-          $._right_paren_source,
-        ),
+        seq($._for_words_open_source, loopWordItems($), $._right_paren_source),
       _foreach_group_words: ($) =>
         seq(
           $._for_words_open_source,
-          repeat(field("word", $.word)),
+          loopWordItems($),
           $._foreach_group_header_end,
         ),
       repeat_clause: ($) =>
@@ -1293,7 +1283,7 @@ export default (name) =>
           seq(
             $._candidate_group_open_source,
             optional($.arithmetic_candidate_source_expression),
-            $._candidate_group_close_source,
+            choice($._candidate_group_close_source, $._subscript_paren_end),
           ),
         ),
       arithmetic_candidate_source_expression: ($) =>
@@ -1324,6 +1314,7 @@ export default (name) =>
           optional(field("arguments", $.arithmetic_argument_source)),
           choice(
             $._subscript_paren_close_source,
+            $._subscript_paren_end,
             $._array_key_group_close_source,
             $._arithmetic_function_close_source,
           ),
@@ -1907,7 +1898,7 @@ export default (name) =>
         subscriptGroup(
           $,
           $._subscript_paren_open_source,
-          $._subscript_paren_close_source,
+          choice($._subscript_paren_close_source, $._subscript_paren_end),
         ),
       subscript_pattern_candidate: ($) =>
         seq($._subscript_pattern_begin, $._pattern_candidate_exclusion),
@@ -1965,7 +1956,7 @@ export default (name) =>
           subscriptGroup(
             $,
             $._subscript_brace_open_source,
-            $._subscript_brace_close_source,
+            choice($._subscript_brace_close_source, $._subscript_brace_end),
           ),
         ),
       _array_open_source: ($) => punctuation($, "array_open", "("),
@@ -2468,10 +2459,7 @@ export default (name) =>
         choice(
           seq(
             repeat1(
-              choice(
-                $.parameter_prefix_operator,
-                alias($._empty_double_quoted, $.double_quoted),
-              ),
+              choice($.parameter_prefix_operator, $._empty_parameter_quote),
             ),
             optional($.parameter_length_operator),
           ),
@@ -2495,7 +2483,7 @@ export default (name) =>
                 alias($._quoted_parameter_reference, $.double_quoted),
               ),
             ),
-            repeat(alias($._empty_double_quoted, $.double_quoted)),
+            repeat($._empty_parameter_quote),
           ),
         ),
       _nested_parameter_reference: ($) =>
@@ -2510,6 +2498,12 @@ export default (name) =>
           $._nested_parameter_reference,
           $._dq_close_source,
         ),
+      _empty_parameter_quote: ($) =>
+        choice(
+          alias($._empty_single_quoted, $.single_quoted),
+          alias($._empty_double_quoted, $.double_quoted),
+        ),
+      _empty_single_quoted: ($) => seq($._sq_open_source, $._sq_close_source),
       _empty_double_quoted: ($) => seq($._dq_open_source, $._dq_close_source),
       _parameter_tail: ($) =>
         choice(

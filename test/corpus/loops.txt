@@ -1,4 +1,72 @@
 ==================
+Numeric loop names retain name fields in for foreach and select
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+for 0 01 (a b) :
+foreach 12 x (a b) :; end
+select 1 (a) :
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                word: (word
+                  (literal)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))))
+              (end_keyword))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal)))
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      name: (word
+                        (literal)))))))))))))
+
+==================
 A parenthesized for word list permits a do body
 :language(zsh)
 :language(zsh_extended_glob)
@@ -410,6 +478,42 @@ end
               (end_keyword))))))))
 
 ==================
+Foreach word lists keep separators and comments between words
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x (a # first
+; b
+)
+:
+end
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              words: (loop_words
+                word: (word
+                  (literal))
+                (comment
+                  (comment_text))
+                word: (word
+                  (literal)))
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (simple_command
+                        name: (word
+                          (literal)))))))
+              (end_keyword))))))))
+
+==================
 Short while uses a delimited condition and a sublist body
 :language(zsh)
 :language(zsh_extended_glob)
@@ -442,11 +546,11 @@ while ((0)) print never
                         (literal)))))))))))))
 
 ==================
-Empty for parentheses denote an empty word list
+Spaced for parentheses denote an empty word list
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
-for x () :
+for x ( ) :
 ---
 (program
   (list
@@ -1110,13 +1214,33 @@ do :; done
                 (done_keyword)))))))))
 
 ==================
-A short for without parentheses requires a header terminator
-:error
+A positional short for starts a brace body without a header terminator
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
 for x { :; }
 ---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (brace_group
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal)))))))))))))))))))
 
 ==================
 A parenthesized for may omit its body after header separators
@@ -1535,7 +1659,7 @@ An empty parenthesized for header may end at EOF
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
-for x ()
+for x ( )
 ---
 (program
   (list
@@ -1790,13 +1914,29 @@ repeat 2 (
 
 
 ==================
-A redirection short body still needs the documented plain for terminator
-:error
+A positional short for starts a redirection body without a header terminator
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
 for x >out
 ---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              body: (sublist
+                (pipeline
+                  (command
+                    (simple_command
+                      (io_file
+                        (redirect_operator)
+                        filename: (word
+                          (literal))))))))))))))
 
 
 ==================
@@ -2415,7 +2555,7 @@ A select with empty parentheses retains an empty choice list without a body
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
-select x ()
+select x ( )
 ---
 (program
   (list
@@ -2820,7 +2960,7 @@ Positional foreach accepts empty bodies only with their explicit delimiters
 ==================
 foreach x { }
 foreach x do done
-foreach x; end
+foreach x end
 ---
 (program
   (list
@@ -2853,7 +2993,6 @@ foreach x; end
             (for_clause
               (foreach_keyword)
               name: (name)
-              separator: (term)
               (end_keyword))))))))
 
 ==================
@@ -2866,7 +3005,7 @@ foreach x
 ---
 
 ==================
-Positional foreach requires a separator before an ordinary list body
+Positional foreach does not read an invalid name as a simple command body
 :error
 :language(zsh)
 :language(zsh_extended_glob)
@@ -2902,13 +3041,30 @@ foreach x in a; :
 ---
 
 ==================
-A short for requires a separator before an arithmetic command body
-:error
+A positional short for starts an arithmetic command body without a separator
 :language(zsh)
 :language(zsh_extended_glob)
 ==================
 for x ((++i))
 ---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (arithmetic_command
+                        (arithmetic_source
+                          expression: (arithmetic_update_expression
+                            operator: (arithmetic_operator)
+                            operand: (arithmetic_variable)))))))))))))))
 
 ==================
 A separated arithmetic command remains the short for body
@@ -2936,3 +3092,238 @@ for x; ((++i))
                           expression: (arithmetic_update_expression
                             operator: (arithmetic_operator)
                             operand: (arithmetic_variable)))))))))))))))
+
+==================
+Positional foreach starts an arithmetic list body without a separator
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x (( 1 )) end
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (arithmetic_command
+                          (arithmetic_source
+                            expression: (arithmetic_number))))))))
+              (end_keyword))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+Positional foreach starts a keyword list body without a separator
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x if :; then :; fi; end
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (if_clause
+                          branch: (if_branch
+                            (if_keyword)
+                            condition: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal)))))))
+                            (then_keyword)
+                            body: (list
+                              (sublist
+                                (pipeline
+                                  (command
+                                    (simple_command
+                                      name: (word
+                                        (literal))))))))
+                          (fi_keyword)))))))
+              (end_keyword))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+Adjacent foreach parentheses start an anonymous function in the list body
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+foreach x () :; end
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (foreach_keyword)
+              name: (name)
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (function_definition
+                          body: (command
+                            (simple_command
+                              name: (word
+                                (literal))))))))))
+              (end_keyword))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+Adjacent select parentheses start an anonymous function instead of choices
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+select x () :
+print AFTER
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (select_clause
+              (select_keyword)
+              name: (name)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (function_definition
+                        body: (command
+                          (simple_command
+                            name: (word
+                              (literal))))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (literal))))))))
+
+==================
+A positional short for starts an anonymous function body without a header terminator
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+for x () print
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (for_clause
+              (for_keyword)
+              name: (name)
+              body: (sublist
+                (pipeline
+                  (command
+                    (complex_command
+                      (function_definition
+                        body: (command
+                          (simple_command
+                            name: (word
+                              (literal))))))))))))))))
+
+==================
+Adjacent for parentheses cannot stand for omitted words and body
+:language(zsh)
+:language(zsh_extended_glob)
+:error
+==================
+for x ()
+
+---
+
+==================
+Adjacent select parentheses require a function body
+:language(zsh)
+:language(zsh_extended_glob)
+:error
+==================
+select x ()
+
+---
+
+==================
+Foreach end cannot be the anonymous function body
+:language(zsh)
+:language(zsh_extended_glob)
+:error
+==================
+foreach x () end
+
+---
+
+==================
+A foreach anonymous function does not replace the loop end
+:language(zsh)
+:language(zsh_extended_glob)
+:error
+==================
+foreach x () { :; }
+
+---
+
+==================
+Do cannot follow the anonymous function parentheses in a loop
+:language(zsh)
+:language(zsh_extended_glob)
+:error
+==================
+select x () do :; done
+
+---

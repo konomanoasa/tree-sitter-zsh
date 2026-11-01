@@ -1438,6 +1438,58 @@ for (const language of grammars) {
       assert.equal(valid(source, [...inserts, ...removals]), valid(source));
     });
 
+    test("moving subscript braces across parentheses preserves pending closers through edits", () => {
+      for (const [before, after] of [
+        ["a{(b)}", "a{(b})"],
+        ["a({b})", "a({b)}"],
+        ["a{(bc)d}", "a{(b}c)d"],
+        ["a({bc}d)", "a({b)c}d"],
+      ]) {
+        for (const flag of ["", "(r)", "(re)"]) {
+          for (const [prefix, suffix] of [
+            ["print $x[", "]"],
+            ['print "$x[', ']"'],
+            ["print ${x[", "]}"],
+            ['print "${x[', ']}"'],
+            ["print $[${x[", "]}]"],
+          ]) {
+            const head = prefix + flag;
+            const tail = `${suffix}\nprint AFTER\n`;
+            const source = head + before + tail;
+            const changed = head + after + tail;
+            const edit = {
+              byte: head.length + 4,
+              deleteBytes: before.length - 4,
+              insert: after.slice(4),
+            };
+            const repair = {
+              ...edit,
+              deleteBytes: after.length - 4,
+              insert: before.slice(4),
+            };
+            assert.equal(valid(source, [edit]), valid(changed));
+            assert.equal(valid(changed, [repair]), valid(source));
+            assert.equal(valid(source, [edit, repair]), valid(source));
+            const byte = head.length + after.indexOf("}");
+            const remove = { byte, deleteBytes: 1, insert: "" };
+            const restore = { byte, deleteBytes: 0, insert: "}" };
+            const incomplete = changed.slice(0, byte) + changed.slice(byte + 1);
+            assert.notEqual(parse(incomplete).status, 0, incomplete);
+            assert.notEqual(parse(changed, [remove]).status, 0, incomplete);
+            assert.equal(valid(changed, [remove, restore]), valid(changed));
+          }
+        }
+      }
+    });
+
+    test("adding and removing a surplus word brace restores the following command", () => {
+      const source = "print a{(b});print AFTER\n";
+      const edit = { byte: 11, deleteBytes: 1, insert: "}" };
+      const restore = { ...edit, insert: ")" };
+      assert.notEqual(parse(source, [edit]).status, 0);
+      assert.equal(valid(source, [edit, restore]), valid(source));
+    });
+
     test("quoted and arithmetic subscript repairs preserve explicit delimiter ownership", () => {
       for (const [prefix, suffix] of [
         ['print -r -- "', '"\n'],
@@ -1459,6 +1511,84 @@ for (const language of grammars) {
           const fresh = valid(repaired);
           assert.equal(valid(source, [repair]), fresh);
           assert.equal(valid(repaired, [remove, repair]), fresh);
+        }
+      }
+    });
+
+    test("adding arithmetic context changes an unbraced subscript's boundaries", () => {
+      const source = "print $x[a<(b)]\nprint after\n";
+      const wrapped = "print $[$x[a<(b)]]\nprint after\n";
+      const wrap = [
+        { byte: 15, deleteBytes: 0, insert: "]" },
+        { byte: 6, deleteBytes: 0, insert: "$[" },
+      ];
+      const unwrap = [
+        { byte: 6, deleteBytes: 2, insert: "" },
+        { byte: 15, deleteBytes: 1, insert: "" },
+      ];
+      const fresh = valid(wrapped);
+      assert.equal(valid(source, wrap), fresh);
+      assert.equal(valid(wrapped, unwrap), valid(source));
+      assert.equal(valid(source, [...wrap, ...unwrap]), valid(source));
+      assert.deepEqual(
+        sourceNodes(fresh, wrapped)
+          .filter(({ type }) => type === "array_subscript")
+          .map(({ text }) => text),
+        ["[a<(b)]"],
+      );
+      assert.doesNotMatch(fresh, /io_file|process_substitution/);
+    });
+
+    test("removing an arithmetic closer cannot reuse the subscript closer", () => {
+      for (const content of ["a<b", "a>b", "a<(b)", "a b"]) {
+        const source = `print $[$x[${content}]]\nprint after\n`;
+        const byte = source.indexOf("]]\n") + 1;
+        const incomplete = source.slice(0, byte) + source.slice(byte + 1);
+        const remove = { byte, deleteBytes: 1, insert: "" };
+        const restore = { byte, deleteBytes: 0, insert: "]" };
+        const edited = parse(source, [remove]);
+        assert.ok(edited.hasError, edited.output);
+        assert.deepEqual(
+          sourceNodes(edited.output, incomplete),
+          sourceNodes(parse(incomplete).output, incomplete),
+        );
+        assert.equal(valid(incomplete, [restore]), valid(source));
+        assert.equal(valid(source, [remove, restore]), valid(source));
+      }
+    });
+
+    test("repairing inner arithmetic subscript delimiters restores their own closers", () => {
+      for (const { before, after, offset, insert } of [
+        { before: "a([)", after: "a([])", offset: 3, insert: "]" },
+        { before: "a(()", after: "a(())", offset: 4, insert: ")" },
+        { before: "a([)", after: "a(\\[)", offset: 2, insert: "\\" },
+      ]) {
+        for (const [prefix, suffix] of [
+          ["print ", "\nprint after\n"],
+          ["cat <<END\n", "\nEND\nprint after\n"],
+        ]) {
+          const source = `${prefix}$[$x[${before}]]${suffix}`;
+          const repaired = `${prefix}$[$x[${after}]]${suffix}`;
+          const byte = source.indexOf(before) + offset;
+          const repair = { byte, deleteBytes: 0, insert };
+          const remove = { byte, deleteBytes: insert.length, insert: "" };
+          const broken = parse(source);
+          assert.ok(broken.hasError, source);
+          const fresh = valid(repaired);
+          assert.equal(valid(source, [repair]), fresh);
+          const edited = parse(repaired, [remove]);
+          assert.ok(edited.hasError, edited.output);
+          assert.deepEqual(
+            sourceNodes(edited.output, source),
+            sourceNodes(broken.output, source),
+          );
+          assert.equal(valid(repaired, [remove, repair]), fresh);
+          assert.deepEqual(
+            sourceNodes(fresh, repaired)
+              .filter(({ type }) => type === "arithmetic_expansion")
+              .map(({ text }) => text),
+            [`$[$x[${after}]]`],
+          );
         }
       }
     });
@@ -1501,6 +1631,113 @@ for (const language of grammars) {
           assert.equal(valid(changed, [undo]), valid(source));
           assert.equal(valid(source, [edit, undo]), valid(source));
         }
+      }
+    });
+
+    test("empty single reference quote edits preserve source ownership and reject nonempty prefixes", () => {
+      for (const { before, after, offset, deleteBytes, insert, accepted } of [
+        {
+          before: `\${x}`,
+          after: `\${''x}`,
+          offset: 2,
+          deleteBytes: 0,
+          insert: "''",
+          accepted: true,
+        },
+        {
+          before: `\${\${x}}`,
+          after: `\${\${x}''}`,
+          offset: 6,
+          deleteBytes: 0,
+          insert: "''",
+          accepted: true,
+        },
+        {
+          before: `\${''x}`,
+          after: `\${''''x}`,
+          offset: 2,
+          deleteBytes: 0,
+          insert: "''",
+          accepted: true,
+        },
+        {
+          before: `\${""x}`,
+          after: `\${''x}`,
+          offset: 2,
+          deleteBytes: 2,
+          insert: "''",
+          accepted: true,
+        },
+        {
+          before: `\${''x}`,
+          after: `\${'y'x}`,
+          offset: 3,
+          deleteBytes: 0,
+          insert: "y",
+          accepted: false,
+        },
+        {
+          before: `\${''x}`,
+          after: `\${x''}`,
+          offset: 2,
+          deleteBytes: 3,
+          insert: "x''",
+          accepted: false,
+        },
+        {
+          before: `\${''x}`,
+          after: `\${'\\\n'x}`,
+          offset: 3,
+          deleteBytes: 0,
+          insert: "\\\n",
+          accepted: false,
+        },
+        {
+          before: `\${''x}`,
+          after: `\${''\\\nx}`,
+          offset: 4,
+          deleteBytes: 0,
+          insert: "\\\n",
+          accepted: true,
+        },
+      ]) {
+        for (const [prefix, suffix] of [
+          ["print ", "\nprint AFTER\n"],
+          ['print "$(print ', ')"\nprint AFTER\n'],
+        ]) {
+          const source = prefix + before + suffix;
+          const changed = prefix + after + suffix;
+          const edit = { byte: prefix.length + offset, deleteBytes, insert };
+          const undo = {
+            byte: edit.byte,
+            deleteBytes: insert.length,
+            insert: before.slice(offset, offset + deleteBytes),
+          };
+          assert.equal(parse(changed).hasError, !accepted, changed);
+          assert.equal(parse(source, [edit]).hasError, !accepted, changed);
+          if (accepted) assert.equal(valid(source, [edit]), valid(changed));
+          assert.equal(valid(changed, [undo]), valid(source));
+          assert.equal(valid(source, [edit, undo]), valid(source));
+        }
+      }
+    });
+
+    test("outer quote edits change whether empty single reference quotes are recognized", () => {
+      for (const reference of [`\${''}`, `\${''x}`, `\${\${x}''}`]) {
+        const source = `print ${reference}\nprint AFTER\n`;
+        const quoted = `print "${reference}"\nprint AFTER\n`;
+        const edits = [
+          { byte: 6 + reference.length, deleteBytes: 0, insert: '"' },
+          { byte: 6, deleteBytes: 0, insert: '"' },
+        ];
+        const undo = [
+          { byte: 6, deleteBytes: 1, insert: "" },
+          { byte: 6 + reference.length, deleteBytes: 1, insert: "" },
+        ];
+        assert.ok(parse(quoted).hasError, quoted);
+        assert.ok(parse(source, edits).hasError, quoted);
+        assert.equal(valid(quoted, undo), valid(source));
+        assert.equal(valid(source, [...edits, ...undo]), valid(source));
       }
     });
 
@@ -1805,6 +2042,12 @@ for (const language of grammars) {
 
     test("editing optional header separators preserves fresh and incremental agreement", () => {
       for (const { source, byte } of [
+        { source: "for x { :; }\n", byte: 5 },
+        { source: "for x ((++i))\n", byte: 5 },
+        { source: "for x () :\n", byte: 5 },
+        { source: "for x [[ x ]]\n", byte: 5 },
+        { source: "for x x=1\n", byte: 5 },
+        { source: "for x >out\n", byte: 5 },
         { source: "for x (a) : && :\n", byte: 9 },
         { source: "for ((;0;)) : && :\n", byte: 11 },
         { source: "for ((;0;)) { :; }\n", byte: 11 },
@@ -2739,17 +2982,61 @@ for (const language of grammars) {
       }
     });
 
-    test("joining empty for parentheses preserves the word list", () => {
-      assert.equal(
-        valid("for x ( ) :\n", [{ byte: 7, deleteBytes: 1, insert: "" }]),
-        valid("for x () :\n"),
-      );
-      assert.equal(
-        valid("for x () { :; } | :\n", [
-          { byte: 7, deleteBytes: 0, insert: "a" },
-        ]),
-        valid("for x (a) { :; } | :\n"),
-      );
+    test("loop name edits preserve numeric names and repair mixed digit prefixes", () => {
+      for (const [prefix, suffix] of [
+        ["", "\n"],
+        ['print "$(', ')"\n'],
+        ["a[$(", ")]=x\n"],
+      ]) {
+        for (const [keyword, body] of [
+          ["for", "do :; done"],
+          ["foreach", ":; end"],
+          ["select", ":"],
+        ]) {
+          const source = `${prefix}${keyword} 12 in a; ${body}${suffix}`;
+          const byte = prefix.length + keyword.length + 1;
+          const alphabetic = `${prefix}${keyword} a2 in a; ${body}${suffix}`;
+          const edits = [{ byte, deleteBytes: 1, insert: "a" }];
+          assert.equal(valid(source, edits), valid(alphabetic), alphabetic);
+          edits.push({ byte, deleteBytes: 1, insert: "1" });
+          assert.equal(valid(source, edits), valid(source), source);
+          edits.push({ byte: byte + 1, deleteBytes: 1, insert: "a" });
+          assert.equal(parse(source, edits).hasError, true, source);
+          edits.push({ byte: byte + 1, deleteBytes: 1, insert: "2" });
+          assert.equal(valid(source, edits), valid(source), source);
+        }
+      }
+    });
+
+    test("joining loop parentheses changes ownership and preserves repair", () => {
+      for (const { source, joined, filled } of [
+        {
+          source: "for x ( ) :\n",
+          joined: "for x () :\n",
+          filled: "for x (a) :\n",
+        },
+        {
+          source: "foreach x ( ) :; end\n",
+          joined: "foreach x () :; end\n",
+          filled: "foreach x (a) :; end\n",
+        },
+        {
+          source: "select x ( ) :\n",
+          joined: "select x () :\n",
+          filled: "select x (a) :\n",
+        },
+      ]) {
+        const byte = source.indexOf("( ") + 1;
+        const edits = [{ byte, deleteBytes: 1, insert: "" }];
+        assert.equal(valid(source, edits), valid(joined), joined);
+        edits.push({ byte, deleteBytes: 0, insert: " " });
+        assert.equal(valid(source, edits), valid(source), source);
+        assert.equal(
+          valid(joined, [{ byte, deleteBytes: 0, insert: "a" }]),
+          valid(filled),
+          joined,
+        );
+      }
     });
 
     test("a redirect before a loop brace preserves its sublist body", () => {

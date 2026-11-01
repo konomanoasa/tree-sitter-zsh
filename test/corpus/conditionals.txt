@@ -1266,6 +1266,15 @@ An unclosed opening brace remains regex operand source
                         (regex_source_fragment)))))))))))))
 
 ==================
+An unclosed regex group ends at a conditional operator
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+[[ x =~ a(b && c ]]
+---
+(program (list (sublist (pipeline (command (complex_command (conditional_command condition: (conditional_and_expression left: (conditional_binary_expression left: (word (literal)) (conditional_operator) right: (regex_operand expression: (extended_reg_exp (ere_branch (ere_expression (one_char_or_coll_elem_ere (ordinary_character))) (regex_source_expression expression: (extended_reg_exp (ere_branch (ere_expression (one_char_or_coll_elem_ere (ordinary_character))) (ere_expression (one_char_or_coll_elem_ere (ordinary_character)))))))))) (conditional_operator) right: (word (literal))))))))))
+
+==================
 Regex numeric-range spellings retain ERE characters before a following condition
 :language(zsh)
 :language(zsh_extended_glob)

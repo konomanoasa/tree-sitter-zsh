@@ -5826,6 +5826,10 @@
         {
           "type": "parameter_word",
           "named": true
+        },
+        {
+          "type": "single_quoted",
+          "named": true
         }
       ]
     }

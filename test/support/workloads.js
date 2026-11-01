@@ -82,6 +82,11 @@ export const scalingWorkloads = [
     source: (n) => `print \${a[(r)foo${"~a#".repeat(n)}]}\n`,
   },
   {
+    name: "failing nested subscript assignment candidates",
+    units: 4,
+    source: (n) => `print ${"$(x[".repeat(n)}y${"]y)".repeat(n)}\n`,
+  },
+  {
     name: "arithmetic expressions with a dynamic tail",
     units: 256,
     source: (n) => `print $((1${" + 2 * 3".repeat(n)} + $x))\n`,

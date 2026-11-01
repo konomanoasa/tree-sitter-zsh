@@ -22,6 +22,46 @@ time time true
                       (literal))))))))))))
 
 ==================
+An assignment preserves an ordinary time command until the timing target ends
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+time x=1 time y
+time y
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (simple_command
+                    (assignment_word
+                      name: (variable_name)
+                      (assignment_operator)
+                      value: (assignment_value
+                        (literal)))
+                    name: (word
+                      (literal))
+                    argument: (word
+                      (literal))))))))))
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (time_command
+              (time_keyword)
+              pipeline: (pipeline
+                (command
+                  (simple_command
+                    name: (word
+                      (literal))))))))))))
+
+==================
 Timing extends across pipe operands
 :language(zsh)
 :language(zsh_extended_glob)
@@ -199,6 +239,24 @@ time &|
 2:0 - 2:5               time_command
 2:0 - 2:4                 time_keyword `time`
 2:5 - 2:7       async_disown `&|`
+
+==================
+A time outside a timing target remains a reserved word after an assignment
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+x=1 time y
+---
+
+==================
+A timing target does not turn other reserved words after assignments into command names
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+time x=1 if :; then :; fi
+---
 
 ==================
 A command named time cannot take an unseparated brace command as an argument

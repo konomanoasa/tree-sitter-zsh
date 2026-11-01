@@ -369,6 +369,34 @@ print [()]
                     (literal)))))))))))
 
 ==================
+A surplus closing brace cannot hide inside a pattern after its brace has closed
+:error
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print a{(b}};
+---
+
+
+==================
+A closing brace inside a group stays in the word before group characters
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+print a(b} c) a(b}|c) a(b}}c)
+---
+(program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (literal) (glob_qualifier (glob_qualifier_list (glob_text)))) argument: (word (literal) (pattern_group_source (pattern_alternatives (pattern_alternative (literal)) (pattern_alternation) (pattern_alternative (literal))))) argument: (word (literal) (glob_qualifier (glob_qualifier_list (glob_text))))))))))
+
+==================
+A scalar assignment keeps a closing brace inside an unclosed group
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+x=a(b};c
+---
+(program (list (sublist (pipeline (command (simple_command (assignment_word name: (variable_name) (assignment_operator) value: (assignment_value (literal) (pattern_group_source (pattern_alternatives (pattern_alternative (literal)))))))))) (sublist (pipeline (command (simple_command name: (word (literal))))))))
+
+==================
 An unclosed brace preserves separate words without inventing a delimiter
 :language(zsh)
 :language(zsh_extended_glob)

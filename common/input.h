@@ -12,6 +12,7 @@ struct ProbeMemo {
   size_t view;
   size_t stage_count;
   size_t end;
+  uint8_t kind;
   bool result;
 };
 
@@ -324,10 +325,13 @@ static inline bool probe_memo_matches(
   const struct NativeInput *native,
   const struct ProbeMemo *memo,
   size_t position,
+  uint8_t kind,
   const struct LogicalLexer *input
 ) {
   if (
-    memo->position != position || memo->stage_count != input->cursor.stage_count
+    memo->position != position ||
+    memo->kind != kind ||
+    memo->stage_count != input->cursor.stage_count
   )
     return false;
   for (size_t index = 0; index < memo->stage_count; index += 1) {
@@ -343,11 +347,12 @@ static inline bool probe_memo_matches(
 static inline const struct ProbeMemo *probe_memo_find(
   const struct NativeInput *native,
   size_t position,
+  uint8_t kind,
   const struct LogicalLexer *input
 ) {
   for (size_t index = 0; index < native->memo_count; index += 1) {
     const struct ProbeMemo *memo = &native->memos[index];
-    if (probe_memo_matches(native, memo, position, input)) return memo;
+    if (probe_memo_matches(native, memo, position, kind, input)) return memo;
   }
   return NULL;
 }
@@ -355,6 +360,7 @@ static inline const struct ProbeMemo *probe_memo_find(
 static inline void probe_memo_store(
   struct NativeInput *native,
   size_t position,
+  uint8_t kind,
   const struct LogicalLexer *input,
   size_t end,
   bool result
@@ -385,6 +391,7 @@ static inline void probe_memo_store(
     .view = native->view_count,
     .stage_count = count,
     .end = end,
+    .kind = kind,
     .result = result,
   };
   native->view_count += count;
