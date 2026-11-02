@@ -2853,6 +2853,37 @@ for (const language of grammars) {
       );
     });
 
+    for (const { name, open, close } of [
+      { name: "brace group", open: "{", close: "}" },
+      { name: "subshell", open: "(", close: ")" },
+      { name: "function brace body", open: "f() {", close: "}" },
+      { name: "while loop", open: "while :; do", close: "done" },
+      { name: "until loop", open: "until false; do", close: "done" },
+    ]) {
+      test(`editing the end of a ${name} body preserves its body and following command`, () => {
+        const prefix = `echo BEFORE\n${open}\necho INNER\n`;
+        const suffix = `${close}\necho AFTER\n`;
+        for (const tail of ["", "# tail\n", "cat <<E\nbody\nE\n"]) {
+          const before = prefix + tail + suffix;
+          const after = `${prefix}${tail}echo ADDED\n${suffix}`;
+          const byte = prefix.length + tail.length;
+          const edit = { byte, deleteBytes: 0, insert: "echo ADDED\n" };
+          const undo = { byte, deleteBytes: "echo ADDED\n".length, insert: "" };
+          assert.equal(valid(before, [edit]), valid(after), before);
+          assert.equal(valid(before, [edit, undo]), valid(before), after);
+        }
+      });
+
+      test(`restoring a comment newline before a ${name} closer preserves the fresh CST`, () => {
+        const source = `echo BEFORE\n${open}\necho INNER\n# tail\n${close}\necho AFTER\n`;
+        const byte = source.indexOf(`# tail\n${close}`) + "# tail".length;
+        const damage = { byte, deleteBytes: 1, insert: "" };
+        const repair = { byte, deleteBytes: 0, insert: "\n" };
+        assert.equal(parse(source, [damage]).hasError, true);
+        assert.equal(valid(source, [damage, repair]), valid(source));
+      });
+    }
+
     test("joining closing braces preserves both enclosing commands", () => {
       assert.equal(
         valid("{ { :; } }\n", [{ byte: 8, deleteBytes: 1, insert: "" }]),

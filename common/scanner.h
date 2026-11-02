@@ -262,7 +262,6 @@ static void advance(struct LogicalLexer *input) {
 
 static bool command_word_end(struct LogicalLexer *in);
 
-// A closing brace run ends the word where a command word would end.
 static bool closing_brace_start(struct LogicalLexer *in) {
   if (current(in) != '}') return false;
   struct LogicalPosition saved = logical_position(in);
@@ -739,6 +738,22 @@ static bool within_double_quotes(const struct Scanner *s) {
     if (substitution_context(opener)) break;
   }
   return false;
+}
+static bool within_backquote(const struct Scanner *s) {
+  for (size_t i = s->count; i > 0; --i)
+    if (s->contexts[i - 1].opener == BACKQUOTE_OPEN) return true;
+  return false;
+}
+// A backquote closing inside a here-document body does not end the body.
+static bool
+document_backquote_end(const struct Scanner *s, const struct LogicalLexer *in) {
+  if (!logical_backquote_end(in)) return false;
+  for (size_t i = s->count; i > 0; --i) {
+    enum Token opener = s->contexts[i - 1].opener;
+    if (opener == BACKQUOTE_OPEN) return false;
+    if (opener == DOCUMENT_BEGIN) break;
+  }
+  return true;
 }
 
 static void
@@ -1232,8 +1247,18 @@ static struct Context *group_source_owner(struct Scanner *s, enum Token group) {
   return NULL;
 }
 
+static void update_parameter_quoting(struct Scanner *s) {
+  if (s->parameter_count)
+    s->source.stages[s->source.stage_count - 1].disabled =
+      parameter_source_literal(s);
+}
+
 static bool commit(struct Scanner *s, enum Token token) {
   if (token == REMOVED_SOURCE) return true;
+  if (token == UNRECOGNIZED_SOURCE) {
+    update_parameter_quoting(s);
+    return true;
+  }
   if (token == BRACE_EXPANSION_END || token == SUBSCRIPT_BRACE_END) {
     enum Token opener = token == BRACE_EXPANSION_END ? BRACE_EXPANSION_OPEN
                                                      : SUBSCRIPT_BRACE_OPEN;
@@ -1316,9 +1341,16 @@ static bool commit(struct Scanner *s, enum Token token) {
         s->contexts[s->count - 1].opener == CONDITION_BEGIN &&
         pop(s);
     case COMMAND_CLOSE:
-    case BACKQUOTE_CLOSE:
       finish_pending_documents(s, depth(s));
       return pop(s);
+    case BACKQUOTE_CLOSE:
+      while (s->count) {
+        finish_pending_documents(s, depth(s));
+        enum Token opener = s->contexts[s->count - 1].opener;
+        if (!pop(s)) return false;
+        if (opener == BACKQUOTE_OPEN) return true;
+      }
+      return false;
     default:
       break;
   }
@@ -1349,9 +1381,7 @@ static bool commit(struct Scanner *s, enum Token token) {
     s->contexts[s->count - 1].source_depth = 0;
     s->parameter_count = 0;
   }
-  if (s->parameter_count)
-    s->source.stages[s->source.stage_count - 1].disabled =
-      parameter_source_literal(s);
+  update_parameter_quoting(s);
   return true;
 }
 
@@ -1669,6 +1699,7 @@ static bool emit(struct Scanner *s, TSLexer *lexer, const bool *valid) {
     : s->emission == LAYOUT                 ? LAYOUT_PIECE
     : s->emission == ARITHMETIC_OUTPUT_BASE ? ARITHMETIC_BASE_PIECE
     : s->emission == REMOVED_SOURCE         ? REMOVED_SOURCE
+    : s->emission == UNRECOGNIZED_SOURCE    ? UNRECOGNIZED_SOURCE
                                             : PIECE;
   if (s->removed_newline) {
     token = REMOVED_NEWLINE;
@@ -1763,12 +1794,7 @@ static void skip_numeric_range(struct LogicalLexer *in) {
   advance(in);
 }
 static void skip_line(struct LogicalLexer *in) {
-  while (
-    in->result == SOURCE_CHARACTER &&
-    current(in) != '\n' &&
-    !logical_backquote_end(in)
-  )
-    advance(in);
+  while (logical_inside(in) && current(in) != '\n') advance(in);
 }
 
 static bool read_comment(struct LogicalLexer *in) {
@@ -1913,7 +1939,6 @@ static bool lookahead_exhausted(struct NativeInput *native) {
   return true;
 }
 
-// Forks the input for a nested probe and counts its depth until the release.
 static bool
 lookahead_fork(struct LogicalLexer *in, struct LogicalLexer *ahead) {
   if (lookahead_exhausted(in->native)) return false;
@@ -1961,7 +1986,8 @@ static bool arithmetic_candidate(struct LogicalLexer *in, size_t *end) {
     if (c == '`' || (c == '$' && dollar_group(logical_peek(in)))) {
       bool incomplete;
       if (!read_nested_boundary(in, true, &incomplete)) {
-        result = incomplete;
+        // zsh re-reads `((` with an unclosed backquote as a subshell.
+        result = c == '$' && incomplete;
         break;
       }
       continue;
@@ -1982,7 +2008,7 @@ static bool arithmetic_candidate(struct LogicalLexer *in, size_t *end) {
         break;
       }
     }
-  } while (in->result == SOURCE_CHARACTER && !logical_backquote_end(in));
+  } while (logical_inside(in));
   logical_restore_position(in, &saved);
   return result;
 }
@@ -2175,8 +2201,7 @@ static bool condition_operand(struct LogicalLexer *in) {
     if (!read_comment(in)) return false;
   }
   int32_t c = current(in), next = logical_peek(in);
-  return in->result == SOURCE_CHARACTER &&
-    !logical_backquote_end(in) &&
+  return logical_inside(in) &&
     c != ')' &&
     c != ';' &&
     !condition_close_start(in) &&
@@ -2304,7 +2329,7 @@ static bool read_pattern_parenthesis(
 ) {
   size_t parentheses = 0;
   if (alternative) *alternative = false;
-  while (in->result == SOURCE_CHARACTER && !logical_backquote_end(in)) {
+  while (logical_inside(in)) {
     int32_t c = current(in);
     if (c == '[' && read_pattern_bracket(in, NULL, true)) continue;
     if (c != '(' && c != ')' && word_source_end(in, owner, true)) return false;
@@ -2849,8 +2874,6 @@ struct DelimiterGroups {
   size_t braces;
 };
 
-// Tracks the group structure of an unquoted delimiter character: pattern
-// groups, expansions and the brackets of a square arithmetic expansion.
 static bool delimiter_group_character(
   struct DelimiterGroups *groups,
   int32_t c,
@@ -2926,7 +2949,6 @@ enum DelimiterStep {
   DELIMITER_FAILURE
 };
 
-// Consumes one delimiter character, substitution or escape.
 static enum DelimiterStep
 delimiter_step(struct DelimiterReader *r, struct LogicalLexer *in) {
   int32_t c = current(in);
@@ -3022,8 +3044,6 @@ static bool read_delimiter(struct Scanner *s, struct LogicalLexer *in) {
   enum DelimiterStep step = DELIMITER_CONTINUE;
   while (step == DELIMITER_CONTINUE && in->result == SOURCE_CHARACTER)
     step = delimiter_step(&r, in);
-  // Pattern groups left open at a separator or the source end close with
-  // the word.
   struct DelimiterGroups *groups = &r.groups;
   while (groups->count && groups->items[groups->count - 1].pattern)
     groups->count--;
@@ -3127,12 +3147,7 @@ static enum SourceResult document_boundary(void *payload, size_t position) {
         size_t start = view->consumed;
         size_t length = 0;
         bool matches = true;
-        while (
-          view->result == SOURCE_CHARACTER &&
-          !logical_backquote_end(view) &&
-          current(view) != '\n' &&
-          matches
-        ) {
+        while (logical_inside(view) && current(view) != '\n' && matches) {
           matches = delimiter_matches(document, current(view), &length);
           document_boundary_advance(bound);
         }
@@ -3148,8 +3163,7 @@ static enum SourceResult document_boundary(void *payload, size_t position) {
         }
         if (position < view->consumed) break;
       }
-      if (view->result != SOURCE_CHARACTER || logical_backquote_end(view))
-        break;
+      if (!logical_inside(view)) break;
       document_boundary_advance(bound);
     }
     if (bound->found && position >= bound->end) return SOURCE_END;
@@ -3250,6 +3264,12 @@ static bool boundary_compound_header(enum Token token) {
   return boundary_loop_header(token) ||
     token == FUNCTION_KEYWORD ||
     (boundary_condition_header(token) && token != ELIF_KEYWORD);
+}
+
+static bool boundary_within_backquote(const struct BoundaryProbe *probe) {
+  for (size_t i = probe->count; i > 0; --i)
+    if (probe->frames[i - 1].kind == BOUNDARY_BACKQUOTE) return true;
+  return false;
 }
 
 static size_t boundary_depth(const struct BoundaryProbe *probe) {
@@ -3452,7 +3472,7 @@ boundary_documents(struct BoundaryProbe *probe, struct LogicalLexer *in) {
       return false;
     size_t length = 0;
     bool matched = true;
-    while (in->result == SOURCE_CHARACTER && !logical_backquote_end(in)) {
+    while (logical_inside(in)) {
       int32_t c = current(in);
       advance(in);
       if (c == '\n') {
@@ -3481,7 +3501,6 @@ static bool boundary_word(struct LogicalLexer *in, const char *word) {
 
 static enum Token read_keyword(struct LogicalLexer *in, bool timed);
 
-// Whether the probed word ends at the current character of a frame.
 static bool boundary_word_end(
   const struct BoundaryProbe *probe,
   const struct BoundaryFrame *frame,
@@ -3542,12 +3561,9 @@ read_boundary(struct BoundaryProbe *probe, struct LogicalLexer *in) {
     bool single = kind == BOUNDARY_SINGLE || kind == BOUNDARY_DOLLAR_SINGLE;
     if (frame->quoting == SOURCE_DOUBLE_QUOTED && c == '"') return false;
     if (logical_backquote_end(in)) {
-      if (kind == BOUNDARY_COMMAND_LIST) {
-        if (!boundary_pop(probe, in)) return false;
-        continue;
-      }
-      if (kind != BOUNDARY_BACKQUOTE) return false;
-      advance(in);
+      if (kind == BOUNDARY_BACKQUOTE) {
+        if (logical_backquote_close(in)) advance(in);
+      } else if (!boundary_within_backquote(probe)) return false;
       if (!boundary_pop(probe, in)) return false;
       continue;
     }
@@ -3634,8 +3650,7 @@ read_boundary(struct BoundaryProbe *probe, struct LogicalLexer *in) {
         if (!dollar_escape(in, &escape)) return false;
       } else {
         advance(in);
-        if (in->result == SOURCE_CHARACTER && !logical_backquote_end(in))
-          advance(in);
+        if (logical_inside(in)) advance(in);
       }
       frame->word = false;
       continue;
@@ -4291,7 +4306,7 @@ precommand_option(struct LogicalLexer *in, bool *end, bool *operand) {
   int32_t quote = 0;
   size_t count = 0;
   bool option = false, letters = true, argument = false, terminator = false;
-  while (in->result == SOURCE_CHARACTER) {
+  while (logical_inside(in)) {
     int32_t c = current(in);
     if (!quote && boundary(c)) break;
     advance(in);
@@ -4524,7 +4539,7 @@ static enum Token scan_documents(struct Scan *scan) {
     if (
       !doc->found &&
       in->result == SOURCE_CHARACTER &&
-      !logical_backquote_end(in)
+      !document_backquote_end(s, in)
     )
       return TOKEN_COUNT;
   }
@@ -4536,7 +4551,7 @@ static enum Token scan_documents(struct Scan *scan) {
     valid[HERE_END_FINISH] &&
     (doc->end_line ||
       in->result != SOURCE_CHARACTER ||
-      logical_backquote_end(in) ||
+      document_backquote_end(s, in) ||
       (doc->length == 0 && c != '\n'))
   )
     return HERE_END_FINISH;
@@ -4544,7 +4559,7 @@ static enum Token scan_documents(struct Scan *scan) {
     valid[HERE_DOCUMENT_END_TEXT] &&
     c != '\n' &&
     in->result == SOURCE_CHARACTER &&
-    !logical_backquote_end(in)
+    !document_backquote_end(s, in)
   ) {
     skip_line(in);
     return HERE_DOCUMENT_END_TEXT;
@@ -4592,7 +4607,6 @@ static void scan_prepare(struct Scan *scan) {
   bool delimited =
     (valid[SUBSCRIPT_OPEN] && !arithmetic_context(scan->context)) ||
     (valid[UNBRACED_SUBSCRIPT_OPEN] && scan->quoting == SOURCE_ARITHMETIC);
-  // One boundary probe decides both the unclosed prefix and the opener.
   bool probe = bracket &&
     !(prefix && prefix_context) &&
     (prefix || (subscript_valid && !key_context(scan->context) && !delimited));
@@ -4717,11 +4731,7 @@ static enum Token scan_word_end(struct Scan *scan) {
       (ends && !(c == '(' && valid[ARRAY_OPEN])))
   )
     return valid[ARRAY_ELEMENT_END] ? ARRAY_ELEMENT_END : ASSIGNMENT_END;
-  if (
-    valid[WORD_END] &&
-    (in->result != SOURCE_CHARACTER || ends || logical_backquote_end(in))
-  )
-    return WORD_END;
+  if (valid[WORD_END] && (!logical_inside(in) || ends)) return WORD_END;
   return TOKEN_COUNT;
 }
 
@@ -4753,7 +4763,7 @@ static bool unexpanded_group_end(struct Scan *scan) {
 
 static bool unexpanded_word_end(struct Scan *scan) {
   struct LogicalLexer *in = scan->in;
-  if (in->result != SOURCE_CHARACTER || logical_backquote_end(in)) return true;
+  if (!logical_inside(in)) return true;
   struct Context *owner = unexpanded_owner(scan);
   int32_t c = current(in);
   switch (owner->opener) {
@@ -4819,7 +4829,7 @@ static enum Token scan_here_body(struct Scan *scan) {
     enum Token text =
       scan->doc->quoted ? QUOTED_HERE_DOCUMENT_TEXT : HERE_DOCUMENT_TEXT;
     if (valid[text] && (scan->doc->quoted || within_here_delimiter(scan->s))) {
-      while (in->result == SOURCE_CHARACTER) advance(in);
+      while (logical_inside(in)) advance(in);
       return in->consumed ? text : reject(scan);
     }
   }
@@ -4829,7 +4839,7 @@ static enum Token scan_here_body(struct Scan *scan) {
     valid[HERE_DOCUMENT_DELIMITER_QUOTED]
   ) {
     advance(in);
-    while (in->result == SOURCE_CHARACTER && current(in) != '`') {
+    while (logical_inside(in) && current(in) != '`') {
       bool escaped = current(in) == '\\';
       advance(in);
       if (escaped && in->result == SOURCE_CHARACTER) advance(in);
@@ -4841,7 +4851,6 @@ static enum Token scan_here_body(struct Scan *scan) {
   return TOKEN_COUNT;
 }
 
-// A closing brace matched by an earlier brace of the bracket name stays text.
 static bool key_source_end(const struct Scan *scan, size_t count) {
   if (current(scan->in) == '}' && scan->top->braces) return false;
   return enclosing_source_end(scan->s, scan->in, count, false);
@@ -5207,7 +5216,7 @@ static enum Token scan_parameter_flags(struct Scan *scan) {
     top->arguments &&
     (top->initial ||
       (parameter ? parameter_delimiter(scan) : c == top->delimiter)) &&
-    in->result == SOURCE_CHARACTER
+    logical_inside(in)
   ) {
     scan->s->argument_delimiter = c;
     top->delimiter = c;
@@ -5224,7 +5233,7 @@ static enum Token scan_parameter_flags(struct Scan *scan) {
     !in_set(c, "#%@AabcCDefFgikLn-oOPqQtuUvVwWXz0p~jlmrsZ_SI*BEMNR")
   )
     return reject(scan);
-  if (valid[name] && in->result == SOURCE_CHARACTER && c != ')' && c != '}') {
+  if (valid[name] && logical_inside(in) && c != ')' && c != '}') {
     struct Context *owner =
       scan->s->count > 1 ? &scan->s->contexts[scan->s->count - 2] : NULL;
     if (parameter) {
@@ -5268,6 +5277,7 @@ static enum Token scan_flag_argument(struct Scan *scan) {
     if (parameter_delimiter(scan) && valid[FLAG_ARGUMENT_CLOSE])
       return advance_parameter_source(scan) ? FLAG_ARGUMENT_CLOSE : TOKEN_COUNT;
     if (!valid[FLAG_ARGUMENT_TEXT]) return TOKEN_COUNT;
+    if (!s->parameter_count) return reject(scan);
     size_t start = in->consumed;
     bool literal = parameter_source_literal(s);
     int32_t flag = s->contexts[s->count - 2].flag_name;
@@ -5275,12 +5285,19 @@ static enum Token scan_flag_argument(struct Scan *scan) {
       : flag == 'g'                   ? "oce"
       : flag == 'Z'                   ? "cCn"
                                       : NULL;
-    while (in->result == SOURCE_CHARACTER && !parameter_delimiter(scan)) {
-      if (options && !in_set(current(in), options)) return reject(scan);
-      if (!advance_parameter_source(scan)) return TOKEN_COUNT;
+    while (logical_inside(in) && !parameter_delimiter(scan)) {
+      if (options && !in_set(current(in), options)) break;
+      size_t depth = s->parameter_count;
+      struct ParameterSourceFrame saved = s->parameter_frames[depth - 1];
+      if (!advance_parameter_source(scan)) {
+        s->parameter_count = depth;
+        s->parameter_frames[depth - 1] = saved;
+        scan->rejected = false;
+        break;
+      }
       if (literal != parameter_source_literal(s)) break;
     }
-    return in->consumed > start ? FLAG_ARGUMENT_TEXT : TOKEN_COUNT;
+    return in->consumed > start ? FLAG_ARGUMENT_TEXT : reject(scan);
   }
   bool replacement = context == PARAMETER_REPLACEMENT_OPERATOR;
   bool substring = context == PARAMETER_SUBSTRING_OPERATOR;
@@ -5632,7 +5649,6 @@ static enum Token scan_command_word(struct Scan *scan) {
   return TOKEN_COUNT;
 }
 
-// A group or numeric range continues a subscript source where a word would end.
 static bool subscript_source_end(const struct Scan *scan) {
   struct LogicalLexer *in = scan->in;
   int32_t c = scan->c;
@@ -5759,7 +5775,7 @@ static bool regex_delimited(const struct Scan *scan, int32_t kind) {
   if (kind == '[' && current(in) == '^') advance(in);
   if (kind != '[' && kind != '{') advance(in);
   int32_t marker = 0;
-  while (in->result == SOURCE_CHARACTER && !logical_backquote_end(in)) {
+  while (logical_inside(in)) {
     int32_t c = current(in);
     if (regex_shell_start(scan->s, in)) {
       if (!regex_skip_shell(scan->s, in)) break;
@@ -5834,11 +5850,7 @@ static enum Token scan_regex(struct Scan *scan) {
     top->arguments--;
     return REGEX_SOURCE_GROUP_END;
   }
-  if (
-    in->result != SOURCE_CHARACTER ||
-    logical_backquote_end(in) ||
-    regex_boundary(scan->s, in, top)
-  )
+  if (!logical_inside(in) || regex_boundary(scan->s, in, top))
     return TOKEN_COUNT;
   if (regex_shell_start(scan->s, in)) return TOKEN_COUNT;
   if (!valid[COMMAND_OPEN] && empty_parentheses(in)) return reject(scan);
@@ -5912,8 +5924,7 @@ static enum Token scan_regex(struct Scan *scan) {
     int32_t marker = equivalence ? '=' : '.';
     size_t count = 0;
     while (
-      in->result == SOURCE_CHARACTER &&
-      !logical_backquote_end(in) &&
+      logical_inside(in) &&
       !regex_boundary(scan->s, in, top) &&
       !regex_shell_start(scan->s, in) &&
       !empty_parentheses(in)
@@ -5999,8 +6010,7 @@ static enum Token scan_regex(struct Scan *scan) {
     regex_advance(in, top);
     if (!closing || consumed == closing) break;
   } while (
-    in->result == SOURCE_CHARACTER &&
-    !logical_backquote_end(in) &&
+    logical_inside(in) &&
     !regex_boundary(scan->s, in, top) &&
     !in_set(current(in), "()") &&
     !regex_shell_start(scan->s, in)
@@ -6048,15 +6058,14 @@ static bool unbraced_modifier_start(struct Scan *scan) {
       int32_t delimiter = closing_delimiter(opening);
       advance(in);
       while (
-        in->result == SOURCE_CHARACTER &&
+        logical_inside(in) &&
         current(in) != delimiter &&
         !enclosing_source_end(
           scan->s,
           in,
           scan->s->count,
           scan->grouped || opening != delimiter
-        ) &&
-        !logical_backquote_end(in)
+        )
       )
         advance(in);
       if (in->result != SOURCE_CHARACTER || current(in) != delimiter) break;
@@ -6233,11 +6242,10 @@ static enum Token scan_word_start(struct Scan *scan) {
 }
 
 static bool pattern_range_character(const struct Scan *scan) {
-  return scan->in->result == SOURCE_CHARACTER &&
+  return logical_inside(scan->in) &&
     current(scan->in) != ']' &&
     !class_start(scan->in) &&
-    !source_part_start(scan) &&
-    !logical_backquote_end(scan->in);
+    !source_part_start(scan);
 }
 
 static bool pattern_range_start(const struct Scan *scan) {
@@ -6570,7 +6578,7 @@ static bool subscript_flags_start(struct LogicalLexer *in) {
   struct LogicalPosition saved = logical_position(in);
   advance(in);
   bool found = false;
-  while (in->result == SOURCE_CHARACTER) {
+  while (logical_inside(in)) {
     int32_t c = current(in);
     if (c == ')') {
       found = true;
@@ -6587,7 +6595,7 @@ static bool subscript_flags_start(struct LogicalLexer *in) {
     if (delimiter == ')' || delimiter == '\\') break;
     int32_t closer = closing_delimiter(delimiter);
     advance(in);
-    while (in->result == SOURCE_CHARACTER && current(in) != closer) {
+    while (logical_inside(in) && current(in) != closer) {
       if (current(in) == ')') break;
       if (current(in) == '\\') advance(in);
       advance(in);
@@ -6599,7 +6607,6 @@ static bool subscript_flags_start(struct LogicalLexer *in) {
   return found;
 }
 
-// Whether the group at the current `(` closes within the bracket name source.
 static bool group_closes(const struct Scan *scan) {
   struct LogicalLexer *in = scan->in;
   struct LogicalLexer ahead;
@@ -6689,14 +6696,17 @@ static bool punctuation_allowed(const struct Scan *scan, enum Token token) {
   }
 }
 
+static enum Token backquote_close(struct LogicalLexer *in) {
+  if (logical_backquote_close(in)) advance(in);
+  return BACKQUOTE_CLOSE;
+}
+
 static enum Token scan_punctuation(struct Scan *scan) {
   struct LogicalLexer *in = scan->in;
   const bool *valid = scan->valid;
   int32_t c = scan->c;
-  if (valid[BACKQUOTE_CLOSE] && logical_backquote_end(in)) {
-    advance(in);
-    return BACKQUOTE_CLOSE;
-  }
+  if (valid[BACKQUOTE_CLOSE] && logical_backquote_end(in))
+    return backquote_close(in);
   for (size_t i = 0; i < sizeof(punctuation) / sizeof(*punctuation); ++i) {
     enum Token token = punctuation[i].token;
     if (
@@ -6916,8 +6926,6 @@ static bool literal_end(const struct Scan *scan, size_t start) {
     c == '=';
 }
 
-// Ends the text of an unexpanded here-document delimiter before a closing
-// delimiter or nested source; otherwise counts the group characters.
 static bool here_end_text_end(struct Scan *scan) {
   struct Scanner *s = scan->s;
   struct LogicalLexer *in = scan->in;
@@ -6989,7 +6997,7 @@ static enum Token scan_text(struct Scan *scan) {
     text == ERE_FRAGMENT_BEGIN ||
     (text == HERE_END_TEXT &&
       (context == UNEXPANDED_WORD_BEGIN || context == UNEXPANDED_PAREN_OPEN));
-  while (in->result == SOURCE_CHARACTER && !logical_backquote_end(in)) {
+  while (logical_inside(in)) {
     int32_t c = current(in);
     if (text != HERE_END_TEXT && brace_source_token(scan) != TOKEN_COUNT) break;
     if (subscript_group_source_owner(scan)) break;
@@ -7092,7 +7100,6 @@ static enum Token scan_text(struct Scan *scan) {
             name_character(c) ||
             (c == '.' && digit(logical_peek(in))) ||
             in_set(c, arithmetic_operator_characters);
-        // Braces of the bracket name pair up, so a matched closer stays text.
         if (end) break;
         if (c == '{') top->braces++;
         else if (c == '}' && top->braces) top->braces--;
@@ -7235,6 +7242,10 @@ classify(struct Scanner *s, struct LogicalLexer *in, const bool *valid) {
     logical_restore_position(in, &start);
     token = scan_zero_width_end(&scan);
   }
+  if (
+    token == TOKEN_COUNT && valid[BACKQUOTE_CLOSE] && logical_backquote_end(in)
+  )
+    return backquote_close(in);
   if (token != TOKEN_COUNT && s->parameter_count && !scan.raw_scanned) {
     size_t end = in->consumed;
     logical_restore_position(in, &start);
@@ -7304,10 +7315,14 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
     [LINE_CONTINUATION] = true,
     [REMOVED_NEWLINE] = true,
     [REMOVED_SOURCE] = true,
+    [UNRECOGNIZED_SOURCE] = true,
   };
   static const enum Token command_symbols[] = {
     NEWLINE,
     SEMICOLON,
+    CASE_BREAK,
+    CASE_FALLTHROUGH,
+    CASE_CONTINUE,
     AMPERSAND,
     PIPE,
     AND_IF,
@@ -7352,7 +7367,7 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
   valid[ASSIGNMENT_END] = scalar_assignment_context(context);
   valid[ARRAY_ELEMENT_END] = context == ARRAY_ELEMENT_BEGIN;
   valid[COMMAND_CLOSE] = context == COMMAND_OPEN;
-  valid[BACKQUOTE_CLOSE] = context == BACKQUOTE_OPEN;
+  valid[BACKQUOTE_CLOSE] = within_backquote(s);
   valid[SQ_CLOSE] = context == SQ_OPEN;
   valid[SINGLE_QUOTE_CONTENT] = context == SQ_OPEN;
   valid[DQ_CLOSE] = context == DQ_OPEN;
@@ -7362,6 +7377,10 @@ static void select_recovery_symbols(const struct Scanner *s, bool *valid) {
   valid[DOLLAR_SINGLE_QUOTE_TEXT] = context == DOLLAR_SQ_OPEN;
   valid[DOLLAR_SINGLE_QUOTE_ESCAPE] = context == DOLLAR_SQ_OPEN;
   valid[PARAMETER_CLOSE] = context == PARAMETER_OPEN;
+  valid[PARAMETER_FLAGS_CLOSE] = context == PARAMETER_FLAGS_OPEN;
+  valid[SUBSCRIPT_FLAGS_CLOSE] = context == SUBSCRIPT_FLAGS_OPEN;
+  valid[FLAG_ARGUMENT_CLOSE] = context == FLAG_ARGUMENT_OPEN;
+  valid[FLAG_ARGUMENT_TEXT] = doc && context == FLAG_ARGUMENT_OPEN;
   valid[UNEXPANDED_BRACE_CLOSE] = context == UNEXPANDED_BRACE_OPEN;
   valid[UNEXPANDED_SQUARE_CLOSE] = context == UNEXPANDED_SQUARE_OPEN;
   valid[UNEXPANDED_PAREN_CLOSE] =
@@ -7392,6 +7411,7 @@ static bool zsh_scanner_scan(void *payload, TSLexer *lexer, const bool *valid) {
   size_t saved_length;
   if (!encode(s, saved, &saved_length)) return false;
   bool result = false;
+  size_t unrecognized = 0;
   if (!init_source(s)) return false;
   if (s->remaining) result = emit(s, lexer, valid);
   else {
@@ -7403,6 +7423,7 @@ static bool zsh_scanner_scan(void *payload, TSLexer *lexer, const bool *valid) {
       native.boundary = document_boundary;
       native.boundary_payload = &documents;
       if (logical_init(&input, &native, &s->source)) {
+        struct LogicalPosition start = logical_position(&input);
         size_t prefix = logical_raw_position(&input);
         size_t character = input.result == SOURCE_CHARACTER &&
             input.character.origin.character > 0
@@ -7413,6 +7434,25 @@ static bool zsh_scanner_scan(void *payload, TSLexer *lexer, const bool *valid) {
           input.consumed = prefix;
           token = REMOVED_SOURCE;
         } else token = classify(s, &input, valid);
+        if (token == TOKEN_COUNT && valid[UNRECOGNIZED_SOURCE]) {
+          logical_restore_position(&input, &start);
+          if (logical_inside(&input)) {
+            clear(s);
+            bool restored = decode(s, saved, saved_length) && init_source(s);
+            if (
+              restored &&
+              s->parameter_count &&
+              !parameter_source_character(s, &input, UNRECOGNIZED_SOURCE)
+            ) {
+              clear(s);
+              restored = decode(s, saved, saved_length) && init_source(s);
+            }
+            if (restored) {
+              advance(&input);
+              unrecognized = input.consumed;
+            }
+          }
+        }
         if (token < TOKEN_COUNT && valid[token]) {
           extend_lookahead(&input);
           lexer->result_symbol = token;
@@ -7430,6 +7470,14 @@ static bool zsh_scanner_scan(void *payload, TSLexer *lexer, const bool *valid) {
     }
     document_input_clear(&documents);
     native_input_clear(&native);
+  }
+  if (unrecognized) {
+    lexer->result_symbol = UNRECOGNIZED_SOURCE;
+    s->emission = UNRECOGNIZED_SOURCE;
+    s->remaining = unrecognized;
+    s->physical = false;
+    s->character = 0;
+    result = true;
   }
   uint8_t next[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   size_t next_length;

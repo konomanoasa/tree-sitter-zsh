@@ -110,8 +110,6 @@ const bracedParameter = ($) =>
 
 const groupBody = ($) => [repeat($._line), optional(field("body", $.list))];
 
-const groupContent = ($, open, close) => seq(open, ...groupBody($), close);
-
 const subscriptGroup = ($, open, close) =>
   seq(open, optional($.subscript_source), close);
 
@@ -906,7 +904,8 @@ export default (name) =>
           repeat($._term),
           field("body", alias($._header_brace_group_content, $.brace_group)),
         ),
-      do_group: ($) => seq($.do_keyword, terminated($, "body"), $.done_keyword),
+      do_group: ($) => seq($._do_open_body, $.done_keyword),
+      _do_open_body: ($) => seq($.do_keyword, terminated($, "body")),
       while_clause: ($) => whileClause($, $.while_keyword),
       until_clause: ($) => whileClause($, $.until_keyword),
       for_clause: ($) => prec.right(seq(repeat($._redirect), forClause($))),
@@ -1965,12 +1964,16 @@ export default (name) =>
       _subscript_close_source: ($) => punctuation($, "subscript_close", "]"),
       subshell: ($) => redirected($, $._subshell_content),
       _subshell_content: ($) =>
-        groupContent($, $._left_paren_source, $._right_paren_source),
+        seq($._subshell_open_body, $._right_paren_source),
+      _subshell_open_body: ($) => seq($._left_paren_source, ...groupBody($)),
       brace_group: ($) => redirected($, $._brace_group_content),
       _brace_group_content: ($) =>
-        groupContent($, $._left_brace_source, $._right_brace_source),
+        seq($._brace_group_open_body, $._right_brace_source),
+      _brace_group_open_body: ($) => seq($._left_brace_source, ...groupBody($)),
       _header_brace_group_content: ($) =>
-        groupContent($, $._header_brace_open_source, $._right_brace_source),
+        seq($._header_brace_group_open_body, $._right_brace_source),
+      _header_brace_group_open_body: ($) =>
+        seq($._header_brace_open_source, ...groupBody($)),
       word: ($) => seq($._word_begin, $._word_source, $._word_end),
       _function_argument: ($) =>
         seq($._function_argument_begin, $._word_source, $._word_end),

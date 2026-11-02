@@ -17,7 +17,10 @@
       "cflags_cc": ["-std=c++17"],
       "msvs_settings": {
         "VCCLCompilerTool": {
-          "AdditionalOptions": ["/std:c17", "/std:c++17", "/utf-8"]
+          "AdditionalOptions": ["/utf-8"],
+          "AdditionalOptions!": ["-std:c++20"],
+          "LanguageStandard": "stdcpp17",
+          "LanguageStandard_C": "stdc17"
         }
       },
       "target_conditions": [

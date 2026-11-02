@@ -1677,6 +1677,19 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_do_open_body"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "done_keyword"
+        }
+      ]
+    },
+    "_do_open_body": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
           "name": "do_keyword"
         },
         {
@@ -1711,10 +1724,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "done_keyword"
         }
       ]
     },
@@ -12023,6 +12032,19 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_subshell_open_body"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_right_paren_source"
+        }
+      ]
+    },
+    "_subshell_open_body": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
           "name": "_left_paren_source"
         },
         {
@@ -12047,10 +12069,6 @@
               "type": "BLANK"
             }
           ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_right_paren_source"
         }
       ]
     },
@@ -12086,6 +12104,19 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_brace_group_open_body"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_right_brace_source"
+        }
+      ]
+    },
+    "_brace_group_open_body": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
           "name": "_left_brace_source"
         },
         {
@@ -12110,6 +12141,15 @@
               "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "_header_brace_group_content": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_header_brace_group_open_body"
         },
         {
           "type": "SYMBOL",
@@ -12117,7 +12157,7 @@
         }
       ]
     },
-    "_header_brace_group_content": {
+    "_header_brace_group_open_body": {
       "type": "SEQ",
       "members": [
         {
@@ -12146,10 +12186,6 @@
               "type": "BLANK"
             }
           ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_right_brace_source"
         }
       ]
     },
@@ -24077,6 +24113,10 @@
     {
       "type": "SYMBOL",
       "name": "_character_hyphen"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_unrecognized_source"
     }
   ],
   "inline": [

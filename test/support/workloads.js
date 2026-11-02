@@ -22,6 +22,17 @@ export const scalingWorkloads = [
     source: (n) => "print value\n".repeat(n),
   },
   {
+    name: "brace group bodies",
+    units: 256,
+    source: (n) => `echo BEFORE\n{\n${"echo INNER\n".repeat(n)}}\necho AFTER\n`,
+  },
+  {
+    name: "do loop bodies",
+    units: 256,
+    source: (n) =>
+      `echo BEFORE\nwhile :; do\n${"echo INNER\n".repeat(n)}done\necho AFTER\n`,
+  },
+  {
     name: "array elements",
     units: 1024,
     source: (n) => `items=(${"value ".repeat(n)})\n`,
@@ -127,6 +138,17 @@ export const scalingWorkloads = [
     source: (n) => `${"while ((0)) { ".repeat(n)}:${"; }".repeat(n)}\n`,
   },
   {
+    name: "nested brace groups",
+    units: 128,
+    source: (n) => `${"{ ".repeat(n)}:; ${"}; ".repeat(n)}\n`,
+  },
+  {
+    name: "nested do loop bodies",
+    units: 128,
+    source: (n) =>
+      `${"while :; do\n".repeat(n)}echo INNER\n${"done\n".repeat(n)}`,
+  },
+  {
     name: "nested positional foreach brace bodies",
     units: 128,
     source: (n) => `${"foreach x { ".repeat(n)}:${"; }".repeat(n)}\n`,
@@ -135,5 +157,55 @@ export const scalingWorkloads = [
     name: "nested positional foreach list bodies",
     units: 128,
     source: (n) => `${"foreach x; ".repeat(n)}:${"; end".repeat(n)}\n`,
+  },
+];
+
+export const recoveryWorkloads = [
+  {
+    name: "unclosed brace group bodies",
+    units: 256,
+    source: (n) => `echo BEFORE\n{\n${"echo INNER\n".repeat(n)}`,
+  },
+  {
+    name: "unclosed do loop bodies",
+    units: 256,
+    source: (n) => `echo BEFORE\nwhile :; do\n${"echo INNER\n".repeat(n)}`,
+  },
+  {
+    name: "heredoc bodies following unclosed parameter flags",
+    units: 64 * 1024,
+    source: (n) => `cat <<E\n\${(j)name}\n${"x".repeat(n)}\nE\necho AFTER\n`,
+  },
+  {
+    name: "unknown parameter flag sequences",
+    units: 1024,
+    source: (n) => `echo BEFORE\necho \${(${"?".repeat(n)})name}\necho AFTER\n`,
+  },
+  {
+    name: "unclosed flag arguments before a brace in a heredoc",
+    units: 1024,
+    source: (n) => `cat <<E\n\${(j)${"x".repeat(n)}}\nE\necho AFTER\n`,
+  },
+  {
+    name: "flag arguments with an invalid final option in a heredoc",
+    units: 1024,
+    source: (n) => `cat <<E\n\${(g:${"o".repeat(n)}x:)name}\nE\necho AFTER\n`,
+  },
+  {
+    name: "flag arguments ending in an unclosed substitution in a heredoc",
+    units: 1024,
+    source: (n) => `cat <<E\n\${(j:${"x".repeat(n)}$(\nE\necho AFTER\n`,
+  },
+  {
+    name: "damaged select bodies",
+    units: 512,
+    source: (n) =>
+      `echo BEFORE\nselect x in a; do ${") ; ".repeat(n)}done\necho AFTER\n`,
+  },
+  {
+    name: "case items with incomplete pipelines",
+    units: 128,
+    source: (n) =>
+      `echo BEFORE\ncase x in ${"x) echo SAME | ;; ".repeat(n)}esac\necho AFTER\n`,
   },
 ];

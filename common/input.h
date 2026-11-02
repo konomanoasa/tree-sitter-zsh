@@ -143,13 +143,19 @@ static void logical_load(struct LogicalLexer *input) {
 }
 
 static bool logical_backquote_end(const struct LogicalLexer *input) {
-  if (
-    input == NULL ||
-    input->result != SOURCE_CHARACTER ||
-    input->character.boundary_stage == SIZE_MAX
-  ) {
-    return false;
-  }
+  return input != NULL &&
+    input->result == SOURCE_CHARACTER &&
+    input->character.boundary_stage != SIZE_MAX;
+}
+
+static bool logical_inside(const struct LogicalLexer *input) {
+  return input->result == SOURCE_CHARACTER && !logical_backquote_end(input);
+}
+
+// A boundary of an enclosing source also ends a nested backquote source that
+// has no closing backquote of its own.
+static bool logical_backquote_close(const struct LogicalLexer *input) {
+  if (!logical_backquote_end(input)) return false;
   for (size_t index = input->cursor.stage_count; index > 0; index -= 1) {
     const struct SourceStage *stage = &input->cursor.stages[index - 1];
     if (stage->kind == SOURCE_BACKQUOTE_DECODE && !stage->disabled) {

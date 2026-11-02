@@ -149,9 +149,69 @@ for (const language of grammars) {
         owner: "backquote_substitution",
       },
       {
+        name: "an unclosed single quote inside a backquote substitution",
+        body: "x=`echo '`\n",
+        owner: "backquote_substitution",
+      },
+      {
+        name: "an unclosed parameter inside a backquote substitution",
+        body: "x=`echo ${x`\n",
+        owner: "backquote_substitution",
+      },
+      {
+        name: "an unclosed command substitution inside a backquote substitution",
+        body: "x=`echo $(`\n",
+        owner: "backquote_substitution",
+      },
+      {
+        name: "an unclosed parameter flag inside a backquote substitution",
+        body: "x=`echo ${(g`\n",
+        owner: "backquote_substitution",
+      },
+      {
+        name: "an unclosed subscript flag inside a backquote substitution",
+        body: "x=$(`echo ${x[(e:`)\n",
+        owner: "backquote_substitution",
+      },
+      {
+        name: "an unclosed nested backquote substitution",
+        body: "x=`echo \\`b`\n",
+        owner: "backquote_substitution",
+      },
+      {
+        name: "an unclosed single quote inside a nested backquote substitution",
+        body: "x=`echo \\`b '`\n",
+        owner: "backquote_substitution",
+      },
+      {
         name: "a quoted parameter",
         body: `echo "\${x!bad}"\n`,
         owner: "parameter_expansion",
+      },
+      {
+        name: "an unknown parameter flag",
+        body: `echo \${(?)name}\n`,
+        owner: "parameter_expansion",
+      },
+      {
+        name: "an invalid delimited flag argument",
+        body: `echo \${(g:x:)name}\n`,
+        owner: "parameter_expansion",
+      },
+      {
+        name: "an invalid flag argument with a quoted closing delimiter",
+        body: `echo \${(g{"x}"})name}\n`,
+        owner: "parameter_expansion",
+      },
+      {
+        name: "a continued parameter flag closer",
+        body: `echo \${(?\\\n)name}\n`,
+        owner: "parameter_expansion",
+      },
+      {
+        name: "a closed foreach body",
+        body: "foreach x (a)\n) ; end\n",
+        owner: "for_clause",
       },
       {
         name: "a continued closing keyword",
@@ -175,6 +235,68 @@ for (const language of grammars) {
       });
     }
 
+    test("unclosed heredoc delimiter quotes preserve decoded characters and the outer backquote", () => {
+      for (const { prefix = "x=", substitution, suffix = "; echo AFTER\n" } of [
+        { substitution: "`cat <<\\`E`" },
+        { substitution: "`cat <<-\\`E`" },
+        { substitution: "`cat <<pre\\`E`" },
+        { substitution: "`cat <<OK <<\\`E`" },
+        { substitution: "`cat <<\\`é`" },
+        { substitution: "`cat <<\\`E\\\nF`" },
+        {
+          prefix: 'x="',
+          substitution: "`cat <<\\`E`",
+          suffix: '"; echo AFTER\n',
+        },
+        {
+          prefix: "x=$(echo ",
+          substitution: "`cat <<\\`E`",
+          suffix: "); echo AFTER\n",
+        },
+        { substitution: "`echo \\`cat <<\\\\\\`E\\``" },
+      ]) {
+        const source = `echo BEFORE\n${prefix}${substitution}${suffix}`;
+        const parsed = parse(source);
+        assert.ok(parsed.hasError, source);
+        const nodes = sourceNodes(parsed.output, source);
+        assert.equal(nodes[0].type, "program", parsed.output);
+        assertOutsideErrors(nodes, ["BEFORE", "AFTER"]);
+        assert.ok(
+          nodes.some(
+            ({ type, text }) =>
+              type === "backquote_substitution" && text === substitution,
+          ),
+          parsed.output,
+        );
+      }
+    });
+
+    test("repairing a decoded heredoc delimiter quote matches fresh parsing", () => {
+      for (const [prefix, suffix] of [
+        ["x=", "; echo AFTER\n"],
+        ['x="', '"; echo AFTER\n'],
+        ["x=$(echo ", "); echo AFTER\n"],
+      ]) {
+        const before = `${prefix}\`cat <<\\\`E\`${suffix}`;
+        const after = `${prefix}\`cat <<\\\`E\\\`\`${suffix}`;
+        const byte = before.indexOf("E") + 1;
+        const repair = { byte, deleteBytes: 0, insert: "\\`" };
+        const damage = { byte, deleteBytes: 2, insert: "" };
+        assert.ok(parse(before).hasError, before);
+        assert.equal(valid(before, [repair]), valid(after));
+        assert.ok(parse(after, [damage]).hasError, before);
+        assert.equal(valid(after, [damage, repair]), valid(after));
+        const nodes = sourceNodes(valid(after), after);
+        assert.ok(
+          nodes.some(
+            ({ type, text }) =>
+              type === "here_document_delimiter_quoted" && text === "\\`E\\`",
+          ),
+        );
+        assertOutsideErrors(nodes, ["AFTER"]);
+      }
+    });
+
     for (const { name, body, ends, hasError = true } of [
       {
         name: "a damaged parameter",
@@ -192,53 +314,103 @@ for (const language of grammars) {
         ends: ["E"],
       },
       {
+        name: "an unclosed flag argument",
+        body: `cat <<E\n\${(j)name}\nE\n`,
+        ends: ["E"],
+      },
+      {
+        name: "an unclosed quote inside a flag argument",
+        body: `cat <<E\n\${(j:"x:)name}\nE\n`,
+        ends: ["E"],
+      },
+      {
+        name: "an escaped quote inside an unclosed flag argument",
+        body: `cat <<E\n\${(j:"x\\":)name}\nE\n`,
+        ends: ["E"],
+      },
+      {
+        name: "a nested quoted parameter inside an unclosed flag argument",
+        body: `cat <<E\n\${(j.\${other:-"}"})name}\nE\n`,
+        ends: ["E"],
+      },
+      {
+        name: "a command substitution inside an unclosed flag argument",
+        body: `cat <<E\n\${(j:$(echo x))name}\nE\n`,
+        ends: ["E"],
+      },
+      {
+        name: "an unclosed command substitution after flag argument text",
+        body: `cat <<E\n\${(j:prefix$(\nE\n`,
+        ends: ["E"],
+      },
+      {
+        name: "an unknown flag",
+        body: `cat <<E\n\${(?)name}\nE\n`,
+        ends: ["E"],
+      },
+      {
+        name: "an invalid flag argument",
+        body: `cat <<E\n\${(g:x:)name}\nE\n`,
+        ends: ["E"],
+      },
+      {
+        name: "valid flag options followed by an invalid option",
+        body: `cat <<E\n\${(g:oooox:)name}\nE\n`,
+        ends: ["E"],
+      },
+      {
         name: "a body with stripped tabs",
-        body: `cat <<-E\n\t\${x!bad}\n\tE\n`,
+        body: `cat <<-E\n\t\${(j)name}\n\tE\n`,
         ends: ["E"],
       },
       {
         name: "a following quoted document",
-        body: `cat <<E <<'F'\n\${x!bad}\nE\n\${x!bad}\nF\n`,
+        body: `cat <<E <<'F'\n\${(j)name}\nE\n\${(j)name}\nF\n`,
         ends: ["E", "F"],
       },
       {
         name: "a document inside a quoted substitution",
-        body: `echo "$(cat <<E\n\${x!bad}\nE\n)"\n`,
+        body: `echo "$(cat <<E\n\${(j)name}\nE\n)"\n`,
         ends: ["E"],
       },
       {
         name: "a document inside a process substitution",
-        body: `cat <(cat <<E\n\${x!bad}\nE\n)\n`,
+        body: `cat <(cat <<E\n\${(j)name}\nE\n)\n`,
         ends: ["E"],
       },
       {
         name: "a document ending at a backquote",
-        body: `echo \`cat <<E\n\${x!bad}\nE\`\n`,
+        body: `echo \`cat <<E\n\${(j)name}\nE\`\n`,
+        ends: ["E"],
+      },
+      {
+        name: "a backquote with an unclosed quote inside the body",
+        body: "cat <<E\n`echo '`\nE\n",
         ends: ["E"],
       },
       {
         name: "nested documents",
-        body: `cat <<OUTER\n$(cat <<E\n\${x!bad}\nE\n)\nOUTER\n`,
+        body: `cat <<OUTER\n$(cat <<E\n\${(j)name}\nE\n)\nOUTER\n`,
         ends: ["E", "OUTER"],
       },
       {
         name: "an outer end before an inner document end",
-        body: `cat <<OUTER\n$(cat <<E\n\${x!bad}\nOUTER\n`,
+        body: `cat <<OUTER\n$(cat <<E\n\${(j)name}\nOUTER\n`,
         ends: ["OUTER"],
       },
       {
         name: "delimiter prefixes and continued body lines",
-        body: `cat <<E\n\${x!bad}\nnotE\nE suffix\nx\\\nE\nE\n`,
+        body: `cat <<E\n\${(j)name}\nnotE\nE suffix\nx\\\nE\nE\n`,
         ends: ["E"],
       },
       {
         name: "a continued delimiter",
-        body: `cat <<END\n\${x!bad}\nEN\\\nD\n`,
+        body: `cat <<END\n\${(j)name}\nEN\\\nD\n`,
         ends: ["EN\\\nD"],
       },
       {
         name: "literal parameter spelling in a quoted document",
-        body: `cat <<'E'\n\${x!bad}\nE\n`,
+        body: `cat <<'E'\n\${(j)name}\nE\n`,
         ends: ["E"],
         hasError: false,
       },
@@ -270,6 +442,121 @@ for (const language of grammars) {
           parsed.output,
         );
         assert.deepEqual(sourceNodes(parse(source).output, source), nodes);
+      });
+    }
+
+    for (const separator of [";;", ";&", ";|"]) {
+      for (const {
+        name,
+        prefix,
+        suffix,
+        opening = "case x in",
+        closing = "esac",
+        caseCount = 1,
+      } of [
+        { name: "a top-level case", prefix: "", suffix: "" },
+        { name: "a command substitution", prefix: 'echo "$(', suffix: ')"' },
+        {
+          name: "a loop inside a command substitution",
+          prefix: 'echo "$(for x in a; do ',
+          suffix: '; done)"',
+        },
+        { name: "a process substitution", prefix: "cat <(", suffix: ")" },
+        { name: "a backquote substitution", prefix: "echo `", suffix: "`" },
+        {
+          name: "a brace case",
+          prefix: "",
+          suffix: "",
+          opening: "case x {",
+          closing: "}",
+        },
+        {
+          name: "a nested case",
+          prefix: "case y in y) ",
+          suffix: " ;; esac",
+          caseCount: 2,
+        },
+        {
+          name: "a case nested in a brace case",
+          prefix: "case y { y) ",
+          suffix: " ;; }",
+          caseCount: 2,
+        },
+      ]) {
+        test(`case separator ${separator} preserves and repairs an incomplete pipeline in ${name}`, () => {
+          const source = `echo BEFORE\n${prefix}${opening} x) echo SAME | ${separator} ${closing}${suffix}\necho AFTER\necho FINAL\n`;
+          const parsed = parse(source);
+          assert.equal(parsed.hasError, true, parsed.output);
+          const nodes = sourceNodes(parsed.output, source);
+          assert.equal(nodes[0].type, "program", parsed.output);
+          assertOutsideErrors(nodes, ["BEFORE", "SAME", "AFTER", "FINAL"]);
+          const cases = nodes.filter((node) => node.type === "case_clause");
+          assert.equal(cases.length, caseCount, parsed.output);
+          const owner = cases.find(
+            (node) => node.start === source.indexOf(opening),
+          );
+          assert.ok(owner, parsed.output);
+          assert.ok(owner.start < source.indexOf("echo SAME"));
+          assert.ok(
+            owner.end > source.indexOf("echo SAME") + "echo SAME".length,
+          );
+          assert.ok(
+            cases.every((node) => node.end <= source.indexOf("echo AFTER")),
+          );
+          const byte = source.indexOf("| ") + 2;
+          const repair = { byte, deleteBytes: 0, insert: ": " };
+          const damage = { byte, deleteBytes: 2, insert: "" };
+          const repaired =
+            source.slice(0, byte) + repair.insert + source.slice(byte);
+          const fresh = valid(repaired);
+          assert.equal(valid(source, [repair]), fresh);
+          assert.equal(valid(repaired, [damage, repair]), fresh);
+        });
+      }
+      test(`an isolated ${separator} remains an error outside a case`, () => {
+        const source = `echo BEFORE\n${separator}\necho AFTER\necho FINAL\n`;
+        const parsed = parse(source);
+        assert.equal(parsed.hasError, true, parsed.output);
+        const nodes = sourceNodes(parsed.output, source);
+        assertOutsideErrors(nodes, ["BEFORE", "AFTER", "FINAL"]);
+        assert.ok(nodes.every((node) => node.type !== "case_clause"));
+      });
+    }
+
+    test("a parenthesis flag delimiter preserves multiline argument content", () => {
+      const source = `echo \${(j)foo\nbar))name}\necho AFTER\n`;
+      const nodes = sourceNodes(valid(source), source);
+      assert.deepEqual(
+        nodes
+          .filter((node) => node.type === "flag_argument_text")
+          .map((node) => node.text),
+        ["foo\nbar"],
+      );
+      assertOutsideErrors(nodes, ["AFTER"]);
+    });
+
+    for (const { name, parameter } of [
+      { name: "an unclosed quote", parameter: `\${(g:"x:)name}` },
+      { name: "a quoted brace", parameter: `\${(g{"x})name}` },
+      {
+        name: "a closed quote without the delimiter",
+        parameter: `\${(g{"x}")name}`,
+      },
+      { name: "an escaped brace", parameter: `\${(g{\\})name}` },
+    ]) {
+      test(`recovery does not end a flag argument at ${name}`, () => {
+        const source = `echo BEFORE\necho ${parameter}\necho AFTER\n`;
+        const parsed = parse(source);
+        assert.equal(parsed.hasError, true, parsed.output);
+        const nodes = sourceNodes(parsed.output, source);
+        assertOutsideErrors(nodes, ["BEFORE"]);
+        assert.ok(
+          nodes.every(
+            (node) =>
+              node.type !== "simple_command" || node.text !== "echo AFTER",
+          ),
+          parsed.output,
+        );
       });
     }
 
@@ -305,6 +592,12 @@ for (const language of grammars) {
         depth: 0,
         tail: "echo ${x:-word\n",
       },
+      {
+        name: "a flag argument outside a heredoc",
+        prefix: "",
+        depth: 0,
+        tail: `echo \${(j)name}\n`,
+      },
       { name: "a condition", prefix: "", depth: 0, tail: "[[ x == y\n" },
       { name: "a for name", prefix: "", depth: 0, tail: "for\n" },
       { name: "a repeat count", prefix: "", depth: 0, tail: "repeat\n" },
@@ -316,6 +609,96 @@ for (const language of grammars) {
         const nodes = sourceNodes(parsed.output, source);
         assert.equal(nodes[0].type, "program");
         assertOutsideErrors(nodes, ["BEFORE"]);
+      });
+    }
+
+    const loopBody =
+      "echo x\necho x\necho x\necho x\necho x\necho x\necho AFTER\necho FINAL\n";
+    for (const {
+      name,
+      open,
+      close,
+      body = "echo FIRST\necho MIDDLE\necho LAST\n",
+    } of [
+      { name: "a brace group", open: "{\n", close: "}\n" },
+      { name: "a subshell", open: "(\n", close: ")\n" },
+      { name: "a function body", open: "f() {\n", close: "}\n" },
+      { name: "nested brace groups", open: "{\n{\n", close: "}\n}\n" },
+      {
+        name: "a while loop",
+        open: "while :; do\n",
+        close: "done\n",
+        body: loopBody,
+      },
+      {
+        name: "an until loop",
+        open: "until false; do\n",
+        close: "done\n",
+        body: loopBody,
+      },
+      {
+        name: "a for loop",
+        open: "for x in a; do\n",
+        close: "done\n",
+        body: loopBody,
+      },
+      {
+        name: "a select loop",
+        open: "select x in a; do\n",
+        close: "done\n",
+        body: loopBody,
+      },
+      {
+        name: "a repeat loop",
+        open: "repeat 2 do\n",
+        close: "done\n",
+        body: loopBody,
+      },
+      {
+        name: "an arithmetic for loop",
+        open: "for ((i=0;i<1;i++)); do\n",
+        close: "done\n",
+        body: loopBody,
+      },
+      {
+        name: "nested for loops",
+        open: "for x in a; do\nfor x in a; do\n",
+        close: "done\ndone\n",
+        body: loopBody,
+      },
+    ]) {
+      test(`an unclosed body in ${name} preserves the preceding command and repairs to the fresh CST`, () => {
+        const source = `echo BEFORE\n${open}${body}`;
+        const parsed = parse(source);
+        assert.equal(parsed.hasError, true, parsed.output);
+        const nodes = sourceNodes(parsed.output, source);
+        assert.equal(nodes[0].type, "program", parsed.output);
+        assertOutsideErrors(nodes, ["BEFORE"]);
+        const inserted = `${close}echo OUTSIDE\n`;
+        const repair = {
+          byte: source.length,
+          deleteBytes: 0,
+          insert: inserted,
+        };
+        const damage = {
+          byte: source.length,
+          deleteBytes: inserted.length,
+          insert: "",
+        };
+        const repaired = source + inserted;
+        const fresh = valid(repaired);
+        const repairedNodes = sourceNodes(fresh, repaired);
+        const outside = repairedNodes.find(
+          (node) =>
+            node.type === "simple_command" && node.text === "echo OUTSIDE",
+        );
+        assert.ok(outside);
+        for (const node of repairedNodes.filter(
+          (node) => node.type === "do_group",
+        ))
+          assert.ok(node.end <= outside.start, fresh);
+        assert.equal(valid(source, [repair]), fresh);
+        assert.equal(valid(repaired, [damage, repair]), fresh);
       });
     }
 
@@ -384,6 +767,34 @@ for (const language of grammars) {
         after: `echo BEFORE\necho "\${x:-ok}"\necho AFTER\n`,
       },
       {
+        name: "an unknown parameter flag",
+        before: `echo BEFORE\necho \${(?)name}\necho AFTER\n`,
+        removed: "?",
+        inserted: "q",
+        after: `echo BEFORE\necho \${(q)name}\necho AFTER\n`,
+      },
+      {
+        name: "an invalid final flag option",
+        before: `echo BEFORE\necho \${(g:oox:)name}\necho AFTER\n`,
+        removed: "oox",
+        inserted: "ooc",
+        after: `echo BEFORE\necho \${(g:ooc:)name}\necho AFTER\n`,
+      },
+      {
+        name: "an invalid flag argument containing a quoted delimiter",
+        before: `echo BEFORE\necho \${(g{"x}"})name}\necho AFTER\n`,
+        removed: "g{",
+        inserted: "j{",
+        after: `echo BEFORE\necho \${(j{"x}"})name}\necho AFTER\n`,
+      },
+      {
+        name: "an unclosed flag argument inside a heredoc",
+        before: `echo BEFORE\ncat <<E\n\${(j)name}\nE\necho AFTER\n`,
+        removed: "j)",
+        inserted: "j:,:)",
+        after: `echo BEFORE\ncat <<E\n\${(j:,:)name}\nE\necho AFTER\n`,
+      },
+      {
         name: "a parameter inside a tab-stripped heredoc",
         before: `echo BEFORE\ncat <<-E\n\t\${x!bad}\n\tE\necho AFTER\n`,
         removed: "!bad",
@@ -430,6 +841,27 @@ for (const language of grammars) {
         { body: "${x", complete: `\${x}`, insert: "}" },
         { body: "${x[", complete: `\${x[1]}`, insert: "1]}" },
         { body: `"\${x:-"}"`, complete: `"\${x:-"}"}"`, insert: '}"' },
+        { body: `\${(j:"x`, complete: `\${(j:"x":)name}`, insert: '":)name}' },
+        {
+          body: `\${(j:"x\\"`,
+          complete: `\${(j:"x\\"":)name}`,
+          insert: '":)name}',
+        },
+        {
+          body: `\${(j.\${other:-"}"}`,
+          complete: `\${(j.\${other:-"}"}.)name}`,
+          insert: ".)name}",
+        },
+        {
+          body: `\${(j:$(echo x)`,
+          complete: `\${(j:$(echo x):)name}`,
+          insert: ":)name}",
+        },
+        {
+          body: `\${(j:prefix$(`,
+          complete: `\${(j:prefix$(echo x):)name}`,
+          insert: "echo x):)name}",
+        },
       ]) {
         const source = `cat <<OUT\n${body}\nOUT\nprint AFTER\n`;
         const repaired = `cat <<OUT\n${complete}\nOUT\nprint AFTER\n`;

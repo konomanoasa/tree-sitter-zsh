@@ -284,3 +284,65 @@ for ((a=0+$x;0;)) do :; done
                           name: (word
                             (literal)))))))
                 (done_keyword)))))))))
+
+==================
+Arithmetic source fallback re-reads an unclosed backquote as a subshell
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+(( '`' ))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (complex_command
+            (subshell
+              body: (list
+                (sublist
+                  (pipeline
+                    (command
+                      (complex_command
+                        (subshell
+                          body: (list
+                            (sublist
+                              (pipeline
+                                (command
+                                  (simple_command
+                                    name: (word
+                                      (single_quoted
+                                        (single_quote_content)))))))))))))))))))))
+
+==================
+Arithmetic expansion fallback re-reads an unclosed backquote as a command substitution
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+x=$(('`'))
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value
+                (command_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (complex_command
+                            (subshell
+                              body: (list
+                                (sublist
+                                  (pipeline
+                                    (command
+                                      (simple_command
+                                        name: (word
+                                          (single_quoted
+                                            (single_quote_content)))))))))))))))))))))))

@@ -618,3 +618,56 @@ Quoted and arithmetic reverse subscripts retain alternatives
 print "$x[(r)a(b|c)]"; (( x[(r)a(b|c)] ))
 ---
 (program (list (sublist (pipeline (command (simple_command name: (word (literal)) argument: (word (double_quoted (parameter_expansion parameter: (variable_name) (parameter_suffix_source (array_subscript source: (subscript_source (subscript_flags (subscript_flag (subscript_flag_name))) candidate: (subscript_pattern_candidate (pattern_candidate_text) (pattern_candidate_group_source (pattern_candidate_alternatives (pattern_candidate_alternative (pattern_candidate_text)) (pattern_candidate_alternation) (pattern_candidate_alternative (pattern_candidate_text))))))))))))))) (sublist (pipeline (command (complex_command (arithmetic_command (arithmetic_source expression: (arithmetic_array_reference name: (arithmetic_variable) subscript: (array_subscript source: (subscript_source (subscript_flags (subscript_flag (subscript_flag_name))) candidate: (subscript_pattern_candidate (pattern_candidate_text) (pattern_candidate_group_source (pattern_candidate_alternatives (pattern_candidate_alternative (pattern_candidate_text)) (pattern_candidate_alternation) (pattern_candidate_alternative (pattern_candidate_text))))))))))))))))
+
+==================
+An open pattern group inside a backquote keeps the subscript boundary
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+x[`a (`]=1; print $x[`a (`]
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              subscript: (array_subscript
+                source: (subscript_source
+                  (backquote_substitution
+                    body: (list
+                      (sublist
+                        (pipeline
+                          (command
+                            (simple_command
+                              name: (word
+                                (literal))
+                              argument: (word
+                                (pattern_group_source))))))))))
+              (assignment_operator)
+              value: (assignment_value
+                (literal)))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word
+              (literal))
+            argument: (word
+              (parameter_expansion
+                parameter: (variable_name)
+                (parameter_suffix_source
+                  (array_subscript
+                    source: (subscript_source
+                      (backquote_substitution
+                        body: (list
+                          (sublist
+                            (pipeline
+                              (command
+                                (simple_command
+                                  name: (word
+                                    (literal))
+                                  argument: (word
+                                    (pattern_group_source)))))))))))))))))))

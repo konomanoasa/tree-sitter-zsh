@@ -1461,3 +1461,59 @@ print AFTER
               (literal))
             argument: (word
               (literal))))))))
+
+==================
+A decoded backquote delimiter retains its complete quoted source
+:language(zsh)
+:language(zsh_extended_glob)
+==================
+x=`cat <<\`E\``; echo AFTER
+
+---
+(program
+  (list
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            (assignment_word
+              name: (variable_name)
+              (assignment_operator)
+              value: (assignment_value
+                (backquote_substitution
+                  body: (list
+                    (sublist
+                      (pipeline
+                        (command
+                          (simple_command
+                            name: (word (literal))
+                            (io_here
+                              (dless)
+                              here_end: (word
+                                (here_document_delimiter_quoted)))))))))))))))
+    (sublist
+      (pipeline
+        (command
+          (simple_command
+            name: (word (literal))
+            argument: (word (literal))))))))
+
+==================
+An unclosed decoded backquote delimiter remains an error
+:language(zsh)
+:language(zsh_extended_glob)
+:error
+==================
+x=`cat <<\`E`; echo AFTER
+
+---
+
+==================
+An unclosed decoded backquote delimiter in a nested source remains an error
+:language(zsh)
+:language(zsh_extended_glob)
+:error
+==================
+x=`echo \`cat <<\\\`E\``; echo AFTER
+
+---

@@ -1,6 +1,37 @@
-#include "scanner.c"
 #include <assert.h>
 #include <locale.h>
+#include <stdlib.h>
+
+#include "../src/tree_sitter/parser.h"
+
+struct RecoveryInput {
+  TSLexer lexer;
+  const int32_t *source;
+  size_t length;
+  size_t position;
+  size_t marked;
+};
+
+static void recovery_advance(TSLexer *lexer, bool skip) {
+  (void)skip;
+  struct RecoveryInput *input = (struct RecoveryInput *)lexer;
+  assert(input->position < input->length);
+  input->position++;
+  lexer->lookahead =
+    input->position == input->length ? 0 : input->source[input->position];
+}
+
+static void recovery_mark_end(TSLexer *lexer) {
+  struct RecoveryInput *input = (struct RecoveryInput *)lexer;
+  input->marked = input->position;
+}
+
+static bool recovery_eof(const TSLexer *lexer) {
+  const struct RecoveryInput *input = (const struct RecoveryInput *)lexer;
+  return input->position == input->length;
+}
+
+#include "scanner.c"
 
 static void identifier_characters_do_not_depend_on_the_process_locale(void) {
   const struct {
@@ -53,34 +84,8 @@ void *(*ts_current_realloc)(void *, size_t) = realloc;
 void (*ts_current_free)(void *) = free;
 #endif
 
-struct RecoveryInput {
-  TSLexer lexer;
-  const int32_t *source;
-  size_t length;
-  size_t position;
-  size_t marked;
-};
-
-static void recovery_advance(TSLexer *lexer, bool skip) {
-  (void)skip;
-  struct RecoveryInput *input = (struct RecoveryInput *)lexer;
-  assert(input->position < input->length);
-  input->position++;
-  lexer->lookahead =
-    input->position == input->length ? 0 : input->source[input->position];
-}
-
-static void recovery_mark_end(TSLexer *lexer) {
-  struct RecoveryInput *input = (struct RecoveryInput *)lexer;
-  input->marked = input->position;
-}
-
-static bool recovery_eof(const TSLexer *lexer) {
-  const struct RecoveryInput *input = (const struct RecoveryInput *)lexer;
-  return input->position == input->length;
-}
-
-static void unrecognized_recovery_source_preserves_context(void) {
+static void
+unrecognized_recovery_source_preserves_context_and_restoration(void) {
   const int32_t source[] = {'$', 0, '\n'};
   struct RecoveryInput input = {
     .lexer =
@@ -96,15 +101,92 @@ static void unrecognized_recovery_source_preserves_context(void) {
   struct Scanner state = {0};
   assert(init_source(&state));
   assert(push(&state, WORD_BEGIN));
+  bool valid[TOKEN_COUNT] = {[RECOVERY] = true};
+  assert(zsh_scanner_scan(&state, &input.lexer, valid));
+  assert(input.lexer.result_symbol == UNRECOGNIZED_SOURCE);
+  assert(input.marked == 0 && state.remaining == 1);
   char before[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   unsigned length = zsh_scanner_serialize(&state, before);
-  bool valid[TOKEN_COUNT] = {0};
-  valid[RECOVERY] = true;
-  assert(!zsh_scanner_scan(&state, &input.lexer, valid));
+  zsh_scanner_deserialize(&state, before, length);
+  input.position = input.marked;
+  input.lexer.lookahead = source[input.position];
+  bool wrong_token[TOKEN_COUNT] = {[PIECE] = true};
+  assert(!zsh_scanner_scan(&state, &input.lexer, wrong_token));
   char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   assert(zsh_scanner_serialize(&state, after) == length);
   assert(memcmp(before, after, length) == 0);
+  input.position = 0;
+  input.lexer.lookahead = source[0];
+  assert(zsh_scanner_scan(&state, &input.lexer, valid));
+  assert(input.lexer.result_symbol == UNRECOGNIZED_SOURCE);
+  assert(input.marked == 1 && state.remaining == 0);
+  assert(state.count == 1 && state.contexts[0].opener == WORD_BEGIN);
   clear(&state);
+}
+
+static void
+decoded_recovery_source_preserves_the_real_backquote_boundary(void) {
+  const struct {
+    const char *source;
+    size_t levels;
+    size_t decoded_end;
+  } cases[] = {
+    {"\\``", 1, 2},
+    {"\\$`", 1, 2},
+    {"\\\\`", 1, 2},
+    {"\\\\\\``", 2, 4},
+  };
+  for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); ++i) {
+    int32_t characters[8];
+    size_t length = strlen(cases[i].source);
+    for (size_t j = 0; j < length; ++j) characters[j] = cases[i].source[j];
+    struct RecoveryInput input = {
+      .lexer =
+        {
+          .lookahead = characters[0],
+          .advance = recovery_advance,
+          .mark_end = recovery_mark_end,
+          .eof = recovery_eof,
+        },
+      .source = characters,
+      .length = length,
+    };
+    struct Scanner state = {0};
+    assert(init_source(&state));
+    for (size_t level = 0; level < cases[i].levels; ++level)
+      assert(push(&state, BACKQUOTE_OPEN));
+    bool valid[TOKEN_COUNT] = {[RECOVERY] = true};
+    assert(zsh_scanner_scan(&state, &input.lexer, valid));
+    assert(input.lexer.result_symbol == UNRECOGNIZED_SOURCE);
+    assert(input.marked == 0 && state.remaining == cases[i].decoded_end);
+    do {
+      char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+      unsigned bytes = zsh_scanner_serialize(&state, saved);
+      assert(bytes > 0);
+      zsh_scanner_deserialize(&state, saved, bytes);
+      assert(!state.failed);
+      input.position = input.marked;
+      input.lexer.lookahead = characters[input.position];
+      assert(zsh_scanner_scan(&state, &input.lexer, valid));
+      assert(input.lexer.result_symbol == UNRECOGNIZED_SOURCE);
+      assert(state.count == cases[i].levels);
+    } while (state.remaining);
+    assert(input.marked == cases[i].decoded_end);
+    while (state.count) {
+      input.position = input.marked;
+      input.lexer.lookahead = characters[input.position];
+      assert(zsh_scanner_scan(&state, &input.lexer, valid));
+      assert(input.lexer.result_symbol == BACKQUOTE_CLOSE);
+      if (state.remaining) {
+        input.position = input.marked;
+        input.lexer.lookahead = characters[input.position];
+        assert(zsh_scanner_scan(&state, &input.lexer, valid));
+        assert(input.lexer.result_symbol == CHARACTER_BACKQUOTE);
+      }
+    }
+    assert(input.marked == length);
+    clear(&state);
+  }
 }
 
 static void recovery_tokens_preserve_boundaries_and_survive_restoration(void) {
@@ -113,22 +195,34 @@ static void recovery_tokens_preserve_boundaries_and_survive_restoration(void) {
     enum Token context;
     enum Token token;
     size_t contexts_after;
+    size_t consumed;
   } cases[] = {
-    {"done", TOKEN_COUNT, DONE_KEYWORD, 0},
-    {"do\\\nne", TOKEN_COUNT, DONE_KEYWORD, 0},
-    {"done_suffix", TOKEN_COUNT, TOKEN_COUNT, 0},
-    {"end", TOKEN_COUNT, END_KEYWORD, 0},
-    {"always", TOKEN_COUNT, ALWAYS_KEYWORD, 0},
-    {"done ; )", SQ_OPEN, SINGLE_QUOTE_CONTENT, 1},
-    {"done ; )", DQ_OPEN, DOUBLE_QUOTE_TEXT, 1},
-    {"'", SQ_OPEN, SQ_CLOSE, 0},
-    {"\"", DQ_OPEN, DQ_CLOSE, 0},
-    {"}", PARAMETER_OPEN, PARAMETER_CLOSE, 0},
-    {"}", DQ_OPEN, DOUBLE_QUOTE_TEXT, 1},
-    {")", COMMAND_OPEN, COMMAND_CLOSE, 0},
-    {"`", BACKQUOTE_OPEN, BACKQUOTE_CLOSE, 0},
-    {"]", CONDITION_BEGIN, TOKEN_COUNT, 1},
-    {"]]suffix", CONDITION_BEGIN, TOKEN_COUNT, 1},
+    {"", TOKEN_COUNT, TOKEN_COUNT, 0, 0},
+    {"done", TOKEN_COUNT, DONE_KEYWORD, 0, 4},
+    {"do\\\nne", TOKEN_COUNT, DONE_KEYWORD, 0, 6},
+    {"done_suffix", TOKEN_COUNT, UNRECOGNIZED_SOURCE, 0, 1},
+    {"end", TOKEN_COUNT, END_KEYWORD, 0, 3},
+    {"always", TOKEN_COUNT, ALWAYS_KEYWORD, 0, 6},
+    {";;", TOKEN_COUNT, CASE_BREAK, 0, 2},
+    {";&", TOKEN_COUNT, CASE_FALLTHROUGH, 0, 2},
+    {";|", TOKEN_COUNT, CASE_CONTINUE, 0, 2},
+    {";\\\n;", TOKEN_COUNT, CASE_BREAK, 0, 4},
+    {";\\\n&", COMMAND_OPEN, CASE_FALLTHROUGH, 1, 4},
+    {";\\\n|", BACKQUOTE_OPEN, CASE_CONTINUE, 1, 4},
+    {";; ;& ;|", SQ_OPEN, SINGLE_QUOTE_CONTENT, 1, 8},
+    {";; ;& ;|", DQ_OPEN, DOUBLE_QUOTE_TEXT, 1, 8},
+    {"done ; )", SQ_OPEN, SINGLE_QUOTE_CONTENT, 1, 8},
+    {"done ; )", DQ_OPEN, DOUBLE_QUOTE_TEXT, 1, 8},
+    {"'", SQ_OPEN, SQ_CLOSE, 0, 1},
+    {"\"", DQ_OPEN, DQ_CLOSE, 0, 1},
+    {"}", PARAMETER_OPEN, PARAMETER_CLOSE, 0, 1},
+    {")", PARAMETER_FLAGS_OPEN, PARAMETER_FLAGS_CLOSE, 0, 1},
+    {")", SUBSCRIPT_FLAGS_OPEN, SUBSCRIPT_FLAGS_CLOSE, 0, 1},
+    {"}", DQ_OPEN, DOUBLE_QUOTE_TEXT, 1, 1},
+    {")", COMMAND_OPEN, COMMAND_CLOSE, 0, 1},
+    {"`", BACKQUOTE_OPEN, BACKQUOTE_CLOSE, 0, 1},
+    {"]", CONDITION_BEGIN, UNRECOGNIZED_SOURCE, 1, 1},
+    {"]]suffix", CONDITION_BEGIN, UNRECOGNIZED_SOURCE, 1, 1},
   };
   for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); ++i) {
     int32_t characters[32];
@@ -138,7 +232,7 @@ static void recovery_tokens_preserve_boundaries_and_survive_restoration(void) {
     struct RecoveryInput input = {
       .lexer =
         {
-          .lookahead = characters[0],
+          .lookahead = length ? characters[0] : 0,
           .advance = recovery_advance,
           .mark_end = recovery_mark_end,
           .eof = recovery_eof,
@@ -155,7 +249,7 @@ static void recovery_tokens_preserve_boundaries_and_survive_restoration(void) {
     assert(accepted == (cases[i].token != TOKEN_COUNT));
     if (accepted) {
       assert(input.lexer.result_symbol == cases[i].token);
-      assert(input.marked == 0 && state.remaining == length);
+      assert(input.marked == 0 && state.remaining == cases[i].consumed);
       do {
         char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
         unsigned bytes = zsh_scanner_serialize(&state, saved);
@@ -166,7 +260,7 @@ static void recovery_tokens_preserve_boundaries_and_survive_restoration(void) {
         input.lexer.lookahead = input.source[input.position];
         assert(zsh_scanner_scan(&state, &input.lexer, valid));
       } while (state.remaining);
-      assert(input.marked == length);
+      assert(input.marked == cases[i].consumed);
       assert(state.count == cases[i].contexts_after);
     }
     clear(&state);
@@ -174,12 +268,29 @@ static void recovery_tokens_preserve_boundaries_and_survive_restoration(void) {
 }
 
 static void
-heredoc_recovery_keeps_the_end_after_skipped_parameter_source(void) {
-  const int32_t source[] = {'!', 'b', 'a', 'd', '}', '\n', 'E', '\n', 'x'};
-  const enum Token expected[] = {
-    PARAMETER_CLOSE,
-    CHARACTER_RIGHT_BRACE,
-    HERE_DOCUMENT_TEXT,
+heredoc_recovery_preserves_the_end_after_flag_argument_source(void) {
+  const int32_t source[] = {'!', 'b', 'a', 'd', '\n', 'E', '\n', 'x'};
+  const enum Token unrecognized[] = {
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    UNRECOGNIZED_SOURCE,
+    HERE_END_BEGIN,
+    HERE_DOCUMENT_END_TEXT,
+    PIECE,
+    NEWLINE,
+    PIECE,
+    HERE_END_FINISH,
+    DOCUMENT_FINISH,
+  };
+  const enum Token text[] = {
+    FLAG_ARGUMENT_TEXT,
     PIECE,
     HERE_END_BEGIN,
     HERE_DOCUMENT_END_TEXT,
@@ -189,58 +300,128 @@ heredoc_recovery_keeps_the_end_after_skipped_parameter_source(void) {
     HERE_END_FINISH,
     DOCUMENT_FINISH,
   };
-  struct RecoveryInput input = {
-    .lexer =
-      {
-        .lookahead = source[0],
-        .advance = recovery_advance,
-        .mark_end = recovery_mark_end,
-        .eof = recovery_eof,
-      },
-    .source = source,
-    .length = sizeof(source) / sizeof(*source),
+  const struct {
+    int32_t flag;
+    const enum Token *tokens;
+    size_t length;
+  } cases[] = {
+    {'g', unrecognized, sizeof(unrecognized) / sizeof(*unrecognized)},
+    {'j', text, sizeof(text) / sizeof(*text)},
   };
-  struct Scanner state = {0};
-  assert(init_source(&state));
-  state.documents = ts_calloc(1, sizeof(*state.documents));
-  assert(state.documents);
-  state.document_count = state.document_capacity = 1;
-  state.documents[0] = (struct Document){.length = 1, .active = true};
-  state.documents[0].delimiter = ts_malloc(1);
-  assert(state.documents[0].delimiter);
-  state.documents[0].delimiter[0] = 'E';
-  assert(push(&state, DOCUMENT_BEGIN));
-  assert(push(&state, PARAMETER_OPEN));
-  for (size_t i = 0; i < state.source.stage_count; ++i)
-    state.source.stages[i].at_line_start = false;
-  bool valid[TOKEN_COUNT] = {[RECOVERY] = true};
-  size_t recognized = 0;
-  size_t skipped = 0;
-  while (recognized < sizeof(expected) / sizeof(*expected)) {
-    char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-    unsigned length = zsh_scanner_serialize(&state, saved);
-    assert(length > 0);
-    zsh_scanner_deserialize(&state, saved, length);
-    assert(!state.failed);
-    input.position = input.marked;
-    input.lexer.lookahead = source[input.position];
-    size_t start = input.position;
-    if (!zsh_scanner_scan(&state, &input.lexer, valid)) {
-      char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
-      assert(zsh_scanner_serialize(&state, after) == length);
-      assert(memcmp(saved, after, length) == 0);
-      assert(start < 4);
-      input.marked = start + 1;
-      skipped++;
-      continue;
+  for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); ++i) {
+    struct RecoveryInput input = {
+      .lexer =
+        {
+          .lookahead = source[0],
+          .advance = recovery_advance,
+          .mark_end = recovery_mark_end,
+          .eof = recovery_eof,
+        },
+      .source = source,
+      .length = sizeof(source) / sizeof(*source),
+    };
+    struct Scanner state = {0};
+    assert(init_source(&state));
+    state.documents = ts_calloc(1, sizeof(*state.documents));
+    assert(state.documents);
+    state.document_count = state.document_capacity = 1;
+    state.documents[0] = (struct Document){.length = 1, .active = true};
+    state.documents[0].delimiter = ts_malloc(1);
+    assert(state.documents[0].delimiter);
+    state.documents[0].delimiter[0] = 'E';
+    assert(push(&state, DOCUMENT_BEGIN));
+    assert(push(&state, PARAMETER_OPEN));
+    assert(commit(&state, PARAMETER_FLAGS_OPEN));
+    state.contexts[state.count - 1].flag_name = cases[i].flag;
+    state.argument_delimiter = ')';
+    assert(push(&state, FLAG_ARGUMENT_OPEN));
+    for (size_t stage = 0; stage < state.source.stage_count; ++stage)
+      state.source.stages[stage].at_line_start = false;
+    bool valid[TOKEN_COUNT] = {[RECOVERY] = true};
+    size_t recognized = 0;
+    while (recognized < cases[i].length) {
+      char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+      unsigned length = zsh_scanner_serialize(&state, saved);
+      assert(length > 0);
+      zsh_scanner_deserialize(&state, saved, length);
+      assert(!state.failed);
+      input.position = input.marked;
+      input.lexer.lookahead = source[input.position];
+      assert(zsh_scanner_scan(&state, &input.lexer, valid));
+      assert(input.lexer.result_symbol == cases[i].tokens[recognized++]);
     }
-    assert(input.lexer.result_symbol == expected[recognized++]);
+    assert(input.marked == 7);
+    assert(state.count == 0);
+    assert(state.documents[0].finished);
+    clear(&state);
   }
-  assert(skipped == 4);
-  assert(input.marked == 8);
-  assert(state.count == 0);
-  assert(state.documents[0].finished);
-  clear(&state);
+}
+
+static void
+flag_argument_text_preserves_a_valid_prefix_and_failed_suffix(void) {
+  const struct {
+    const char *source;
+    int32_t flag;
+    size_t prefix;
+    bool dollar;
+  } cases[] = {
+    {"oooox", 'g', 4, false},
+    {"abc}", 'j', 3, false},
+    {"abc$(", 'j', 4, true},
+  };
+  for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); ++i) {
+    int32_t characters[8];
+    size_t length = strlen(cases[i].source);
+    assert(length < sizeof(characters) / sizeof(*characters));
+    for (size_t j = 0; j < length; ++j) characters[j] = cases[i].source[j];
+    struct RecoveryInput input = {
+      .lexer =
+        {
+          .lookahead = characters[0],
+          .advance = recovery_advance,
+          .mark_end = recovery_mark_end,
+          .eof = recovery_eof,
+        },
+      .source = characters,
+      .length = length,
+    };
+    struct Scanner state = {0};
+    assert(init_source(&state));
+    assert(push(&state, PARAMETER_OPEN));
+    assert(commit(&state, PARAMETER_FLAGS_OPEN));
+    state.contexts[state.count - 1].flag_name = cases[i].flag;
+    state.argument_delimiter = ':';
+    assert(push(&state, FLAG_ARGUMENT_OPEN));
+    const bool valid[TOKEN_COUNT] = {
+      [FLAG_ARGUMENT_TEXT] = true,
+      [PIECE] = true
+    };
+    assert(zsh_scanner_scan(&state, &input.lexer, valid));
+    assert(input.lexer.result_symbol == FLAG_ARGUMENT_TEXT);
+    assert(input.marked == 0 && state.remaining == cases[i].prefix);
+    do {
+      char saved[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+      unsigned bytes = zsh_scanner_serialize(&state, saved);
+      assert(bytes > 0);
+      zsh_scanner_deserialize(&state, saved, bytes);
+      assert(!state.failed);
+      input.position = input.marked;
+      input.lexer.lookahead = characters[input.position];
+      assert(zsh_scanner_scan(&state, &input.lexer, valid));
+    } while (state.remaining);
+    assert(input.marked == cases[i].prefix);
+    assert(state.parameter_count == 1);
+    assert(state.parameter_frames[0].dollar == cases[i].dollar);
+    char before[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+    unsigned bytes = zsh_scanner_serialize(&state, before);
+    input.position = input.marked;
+    input.lexer.lookahead = characters[input.position];
+    assert(!zsh_scanner_scan(&state, &input.lexer, valid));
+    char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+    assert(zsh_scanner_serialize(&state, after) == bytes);
+    assert(memcmp(before, after, bytes) == 0);
+    clear(&state);
+  }
 }
 
 static void condition_recovery_closes_only_after_both_source_brackets(void) {
@@ -986,9 +1167,11 @@ timing_scope_survives_restoration_and_independent_command_sources(void) {
 int main(void) {
   identifier_characters_do_not_depend_on_the_process_locale();
   timing_scope_survives_restoration_and_independent_command_sources();
-  unrecognized_recovery_source_preserves_context();
+  unrecognized_recovery_source_preserves_context_and_restoration();
+  decoded_recovery_source_preserves_the_real_backquote_boundary();
   recovery_tokens_preserve_boundaries_and_survive_restoration();
-  heredoc_recovery_keeps_the_end_after_skipped_parameter_source();
+  heredoc_recovery_preserves_the_end_after_flag_argument_source();
+  flag_argument_text_preserves_a_valid_prefix_and_failed_suffix();
   condition_recovery_closes_only_after_both_source_brackets();
   source_continuation_retains_physical_origin();
   logical_lookahead_restores_each_continuation_stage();
