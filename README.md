@@ -24,8 +24,7 @@ For zsh parsing with `EXTENDED_GLOB` enabled, use `zsh_extended_glob`.
 ## Development
 
 ```sh
-npm install
-npm run build
+npm ci
 npm test
 ```
 
