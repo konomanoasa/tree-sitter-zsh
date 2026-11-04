@@ -3,6 +3,7 @@
 [![CI](https://github.com/konomanoasa/tree-sitter-zsh/actions/workflows/ci.yaml/badge.svg)](https://github.com/konomanoasa/tree-sitter-zsh/actions/workflows/ci.yaml)
 [![crates.io](https://img.shields.io/crates/v/konomanoasa-tree-sitter-zsh)](https://crates.io/crates/konomanoasa-tree-sitter-zsh)
 [![npm](https://img.shields.io/npm/v/@konomanoasa/tree-sitter-zsh)](https://www.npmjs.com/package/@konomanoasa/tree-sitter-zsh)
+[![PyPI](https://img.shields.io/pypi/v/konomanoasa-tree-sitter-zsh)](https://pypi.org/project/konomanoasa-tree-sitter-zsh/)
 
 [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammars for
 Z Shell 5.9.2.
